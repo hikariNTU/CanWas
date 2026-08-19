@@ -54,6 +54,22 @@ const translations = {
     "zh-TW": "貼上截圖，選取其中的文字。",
     "en-US": "Paste screenshots. Select the text inside them.",
   },
+  "ocr.queued": {
+    "zh-TW": "等待辨識",
+    "en-US": "Waiting to read",
+  },
+  "ocr.running": {
+    "zh-TW": "辨識中",
+    "en-US": "Reading",
+  },
+  "ocr.failed": {
+    "zh-TW": "辨識失敗",
+    "en-US": "Could not read",
+  },
+  "ocr.done": {
+    "zh-TW": "文字可選取",
+    "en-US": "Text is selectable",
+  },
   "menu.open": {
     "zh-TW": "選單",
     "en-US": "Menu",

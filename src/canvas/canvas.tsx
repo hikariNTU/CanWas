@@ -22,6 +22,8 @@ import { useIngest } from "@/board/use-ingest";
 import { BoardMenu } from "@/canvas/board-menu";
 import { BoardName } from "@/canvas/board-name";
 import { measureHeight, TextNodeView } from "@/canvas/text-node";
+import { OcrBadge } from "@/canvas/ocr-badge";
+import { useOcr } from "@/ocr/use-ocr";
 import { Icon } from "@/ui/icon";
 import { screenToWorld } from "@/canvas/coords";
 import { useNodeGestures } from "@/canvas/use-node-gestures";
@@ -101,6 +103,10 @@ export function Canvas({ boardId }: { boardId: string }) {
   }, [commit, select, startEditing, surfaceRef, viewport]);
 
   useIngest({ boardId, viewport, surfaceRef, nodes });
+  // Recognition is derived from the pixels, so it runs off the node list rather
+  // than off any user action: an image that arrives by paste, by drop, or by
+  // being restored from disk is read the same way.
+  useOcr(nodes);
   useBoardShortcuts(boardId);
 
   // A press on empty canvas clears the selection. Registered natively so it
@@ -180,6 +186,12 @@ export function Canvas({ boardId }: { boardId: string }) {
                 data-node-kind={node.kind}
                 data-node-id={node.id}
                 data-selected={isSelected || undefined}
+                data-ocr-status={asset?.ocr.status}
+                data-ocr-words={
+                  asset?.ocr.status === "done"
+                    ? asset.ocr.words.length
+                    : undefined
+                }
                 onPointerDown={(event) => {
                   if (!isEditing) {
                     startMove(event, node.id);
@@ -204,12 +216,15 @@ export function Canvas({ boardId }: { boardId: string }) {
                 }}
               >
                 {node.kind === "image" && asset ? (
-                  <img
-                    src={asset.url}
-                    alt=""
-                    draggable={false}
-                    className="pointer-events-none block h-full w-full select-none"
-                  />
+                  <>
+                    <img
+                      src={asset.url}
+                      alt=""
+                      draggable={false}
+                      className="pointer-events-none block h-full w-full select-none"
+                    />
+                    <OcrBadge ocr={asset.ocr} scale={viewport.scale} />
+                  </>
                 ) : node.kind === "text" ? (
                   <TextNodeView
                     node={isEditing ? { ...node, text: draft } : node}

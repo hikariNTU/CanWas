@@ -679,3 +679,68 @@ beneath it.
 
 Reverses if: the grid stops being a plain CSS background — a canvas-drawn or
 tiled grid would want its own compositing story anyway.
+
+---
+
+## D39 — The OCR queue is one job deep
+
+**2026-08-19 · settled**
+
+The main thread sends one image to the worker and waits for its answer before
+sending the next.
+
+The mock finishes in single-digit milliseconds and would not care. A real
+engine holds a model plus its intermediate tensors, and running several images
+at once multiplies that by the number in flight for no throughput at all — the
+worker is one thread either way. Serialising also makes `queued` and `running`
+honest states rather than decoration.
+
+Reverses if: recognition moves to several workers with a shared model, at which
+point the queue depth should match the worker count.
+
+---
+
+## D40 — Only terminal OCR states reach disk
+
+**2026-08-19 · settled**
+
+`done` and `failed` are written to the Asset record. `queued` and `running` are
+memory-only.
+
+A stored `running` would outlive the run that produced it: after a reload there
+is no job behind it and no code path that resolves it, so the image would sit
+at a spinner forever. The states that describe work in progress belong to the
+session doing the work.
+
+A stored `done` is never recomputed — that is the entire reason for persisting
+it. A stored `failed` is retried once per session, since the failure may have
+been the tab running out of memory rather than anything about the pixels.
+
+Reverses if: recognition becomes resumable, in which case a persisted progress
+value is worth something.
+
+---
+
+## D41 — The mock recognizer reads real ink
+
+**2026-08-19 · settled**
+
+`MockRecognizer` projects the image's ink onto both axes to find lines and
+words, and only invents the _strings_. It does not emit boxes on a grid.
+
+The mock exists so the selection overlay can be built and judged before an
+engine exists (step 7 precedes step 9). An overlay is only judgeable when its
+highlights sit on real glyphs — boxes on a grid would make every overlay bug
+invisible and every correct overlay look wrong.
+
+Word splitting is read off each line rather than from a fixed ratio of the line
+height. Measured on a 34px bold sans line, spaces were 9px and letter gaps 3px,
+either side of any ratio worth guessing; sorting the line's gaps and cutting at
+the widest jump between consecutive values separates the two clusters without
+knowing the font.
+
+Boxes are seeded by the asset id, which is the content hash, so the same bytes
+always produce the same fake reading and a reload does not reshuffle anything.
+
+Reverses if: a real engine lands. The mock stays as a test fixture, not as a
+fallback — a fallback that invents text would be worse than an error.

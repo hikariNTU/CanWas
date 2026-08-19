@@ -302,5 +302,11 @@ which would make the required happy-path E2E impossible to write.
 ## Worker boundary
 
 OCR runs in a dedicated Web Worker. `ImageBitmap` transfers to it zero-copy.
-The main thread posts `{ nodeId, bitmap }` and receives `Word[]` or an error;
-it never learns which engine answered.
+The main thread posts `{ assetId, bitmap }` and receives `Word[]` or an error;
+it never learns which engine answered. (This said `nodeId` until step 6 built
+it — a leftover that contradicted [D13](decisions.md), which puts recognition
+on the Asset. Keying by node would recognize the same pixels once per node and
+orphan a result when its node was deleted mid-run.)
+
+The main thread sends one job at a time and waits for an answer before sending
+the next. See [D39](decisions.md).
