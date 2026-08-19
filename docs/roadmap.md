@@ -8,8 +8,8 @@ before it is independently useful.
 | 0   | Documentation + design grilling                                                   | ✅ done        |
 | 1   | Skeleton: Vite 8, React 19, TS 7, Tailwind 4, oxlint/oxfmt, router, CI            | ⏳ in progress |
 | 2   | Viewport: pan, zoom, world↔screen transform                                       | ☐              |
-| 3   | Ingest: paste + drop → Asset + Node, fit to viewport                              | ☐              |
-| 4   | Board store + **history stack**: select, move, resize, delete, reorder, undo/redo | ☐              |
+| 3   | Ingest: paste + drop → Asset + Node, fit to viewport                              | ✅ done        |
+| 4   | Board store + **history stack**: select, move, resize, delete, reorder, undo/redo | ⏳ next        |
 | 5   | Persistence: IndexedDB assets + boards, startup sweep, Home board list            | ☐              |
 | 6   | OCR seam: `Recognizer`, `MockRecognizer`, worker wiring, per-asset status         | ☐              |
 | 7   | Selection overlay: transparent spans, scaleX fit, single-node scope               | ☐              |

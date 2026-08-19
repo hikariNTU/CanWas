@@ -70,6 +70,10 @@ const translations = {
     "zh-TW": "拖曳以平移，捲動以平移，Shift 或 ⌘ 加捲動以縮放",
     "en-US": "Drag to pan · scroll to pan · shift or ⌘ + scroll to zoom",
   },
+  "canvas.empty": {
+    "zh-TW": "貼上或拖曳圖片到這裡",
+    "en-US": "Paste or drop an image here",
+  },
   "canvas.zoomIn": {
     "zh-TW": "放大",
     "en-US": "Zoom in",

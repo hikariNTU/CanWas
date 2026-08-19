@@ -1,5 +1,8 @@
+import { useAtomValue } from "jotai";
 import { useRef } from "react";
 
+import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
+import { useIngest } from "@/board/use-ingest";
 import { useViewportControls } from "@/canvas/use-viewport-controls";
 import { useTranslation } from "@/translations";
 
@@ -12,6 +15,10 @@ export function Canvas({ boardId }: { boardId: string }) {
     surfaceRef,
   );
   const { t } = useTranslation();
+
+  useIngest({ boardId, viewport, surfaceRef });
+  const nodes = readNodes(useAtomValue(boardNodesAtom), boardId);
+  const assets = useAtomValue(assetsAtom);
 
   const gridSize = GRID_SPACING * viewport.scale;
 
@@ -40,17 +47,45 @@ export function Canvas({ boardId }: { boardId: string }) {
             transform: `translate(${viewport.tx}px, ${viewport.ty}px) scale(${viewport.scale})`,
           }}
         >
-          {/* World origin marker. Nodes render here from step 3. */}
           <div
             aria-hidden
             data-testid="world-origin"
             className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-neutral-700"
           />
+          {nodes.map((node) => {
+            const asset = assets[node.assetId];
+            if (!asset) {
+              return null;
+            }
+            return (
+              <div
+                key={node.id}
+                data-testid="board-node"
+                data-node-id={node.id}
+                className="absolute"
+                style={{
+                  left: node.x,
+                  top: node.y,
+                  width: node.w,
+                  height: node.h,
+                }}
+              >
+                <img
+                  src={asset.url}
+                  alt=""
+                  draggable={false}
+                  className="pointer-events-none block h-full w-full select-none"
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between p-3">
-        <p className="text-xs text-neutral-600">{t("canvas.hint")}</p>
+        <p className="text-xs text-neutral-600">
+          {nodes.length === 0 ? t("canvas.empty") : t("canvas.hint")}
+        </p>
         <div className="pointer-events-auto flex items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900/90 p-1 backdrop-blur">
           <button
             type="button"

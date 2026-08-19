@@ -183,6 +183,28 @@ Hash history, TanStack Router, file-based routes.
 
 Hash avoids the GitHub Pages deep-link 404 with no `404.html` redirect trick.
 
+## Ingest
+
+`Blob → hash → Asset → Node`.
+
+1. SHA-256 the bytes. The hash **is** the `AssetId`, so identical bytes can never
+   occupy two Assets and a duplicate paste inherits the existing recognition
+   result.
+2. `createImageBitmap` for intrinsic dimensions, then close the bitmap.
+3. Size the node to at most 40% of the visible canvas, never enlarging (D19).
+4. Centre it on the drop point, or on the viewport centre for a paste, which has
+   no coordinates of its own.
+5. Cascade off any node already at that origin.
+
+**Cascade must consult the board, not the batch.** Offsetting by index within one
+drop is not enough: pasting the same image twice is two separate ingests, each
+starting from index 0, so the second copy lands exactly under the first and looks
+like nothing happened. Placement is therefore resolved inside the state setter,
+where the authoritative node list is visible.
+
+Object URLs are created per Asset and are currently never revoked — Assets live
+for the session. Lifecycle arrives with persistence at step 5.
+
 ## Clipboard constraint
 
 Ingest reads images from the paste event's `clipboardData.files`. It must **never**
