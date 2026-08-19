@@ -170,10 +170,23 @@ export function useNodeGestures(boardId: string, viewport: Viewport) {
       const aspect = base.w / base.h;
 
       const rectFrom = (clientX: number, clientY: number): Rect => {
-        // Driven by whichever axis moved further, then aspect-locked. Images
-        // have one true aspect ratio; free resize would only ever distort them.
         const dx = (clientX - origin.x) / viewport.scale;
         const dy = (clientY - origin.y) / viewport.scale;
+
+        // Text resizes on one axis: `w` is its wrap width and its height
+        // follows from how the text lays out. Dragging height would either be
+        // ignored or clip the content.
+        if (base.kind === "text") {
+          return {
+            x: base.x,
+            y: base.y,
+            w: Math.max(MIN_NODE_SIZE, base.w + dx),
+            h: base.h,
+          };
+        }
+
+        // Images resize on whichever axis moved further, aspect-locked: they
+        // have one true ratio, so a free resize could only distort them.
         const w = Math.max(MIN_NODE_SIZE, base.w + Math.max(dx, dy * aspect));
         return { x: base.x, y: base.y, w, h: w / aspect };
       };

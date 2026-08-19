@@ -1,4 +1,4 @@
-import type { BoardNode, OcrState } from "@/board/types";
+import { assetIdsOf, type BoardNode, type OcrState } from "@/board/types";
 import type { Viewport } from "@/canvas/coords";
 
 const DB_NAME = "canwas";
@@ -116,9 +116,7 @@ export async function sweepOrphanedAssets(): Promise<number> {
     getAllBoards(),
     getAllAssetIds(),
   ]);
-  const live = new Set(
-    boards.flatMap((board) => board.nodes.map((node) => node.assetId)),
-  );
+  const live = new Set(boards.flatMap((board) => assetIdsOf(board.nodes)));
   const orphans = assetIds.filter((id) => !live.has(id));
   await Promise.all(orphans.map((id) => deleteAsset(id)));
   return orphans.length;

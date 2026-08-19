@@ -49,7 +49,25 @@ export interface ImageNode {
   assetId: AssetId;
 }
 
-export type BoardNode = ImageNode;
+export interface TextNode {
+  id: NodeId;
+  kind: "text";
+  /** World coordinates of the top-left corner. */
+  x: number;
+  y: number;
+  /**
+   * `w` is the wrap width and is authoritative. `h` is a cached measurement of
+   * the laid-out text, refreshed whenever the content changes — text nodes
+   * render at automatic height, so nothing depends on `h` being exact.
+   */
+  w: number;
+  h: number;
+  text: string;
+  /** World units, so text scales with the canvas like everything else. */
+  fontSize: number;
+}
+
+export type BoardNode = ImageNode | TextNode;
 
 /**
  * Paint order is the array order and nothing else — there is no `z` field
@@ -61,4 +79,11 @@ export interface Board {
   nodes: BoardNode[];
   createdAt: number;
   updatedAt: number;
+}
+
+/** Asset ids referenced by a node list. Text nodes reference none. */
+export function assetIdsOf(nodes: readonly BoardNode[]): AssetId[] {
+  return nodes
+    .filter((node): node is ImageNode => node.kind === "image")
+    .map((node) => node.assetId);
 }

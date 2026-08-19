@@ -586,3 +586,46 @@ board segment always begins with its id, so no board can ever produce one.
 Third time the restricted alphabet has paid for itself: it made the hyphen an
 unambiguous slug delimiter (D33), and now makes `~` a permanently safe prefix.
 A UUID or base62 id would have needed a separate escaping rule for both.
+
+---
+
+## D35 — Text nodes, capped at 2000 characters
+
+**2026-08-19 · settled**
+
+Double-click empty canvas to create one; double-click a node to reopen it.
+Pasting text creates one at the pointer. Images win when the clipboard carries
+both — a screenshot copied from a browser usually drags its alt text or source
+URL along.
+
+Text lays out at **automatic height**: `w` is the wrap width and authoritative,
+`h` is a cached measurement. Resize therefore moves one axis only; dragging a
+height would either be ignored or clip the content. Images stay aspect-locked.
+
+Content and its measured height commit as **one Change**, since a patch is a
+list. Committing the height separately would put an entry on the undo stack that
+the user never performed.
+
+An empty text node is discarded on blur rather than left behind: it renders
+nothing, so it would be invisible and unselectable but still on the board.
+
+**2000 characters, then an ellipsis.** A board is a spatial reference tool, not a
+document editor — a whole article becomes a node unreadable at any zoom that
+still costs layout every frame. Truncating keeps a paste recognisable as what it
+came from while staying a glanceable card.
+
+---
+
+## D36 — Noto Sans at weight 700
+
+**2026-08-19 · settled**
+
+Loaded from Google Fonts: `Noto Sans` for the Latin UI and `Noto Sans TC` for
+the zh-TW translations, so both scripts render in one design instead of falling
+back to whatever each system supplies.
+
+Only weight 700 is fetched, and it is the body default, so there is a single
+font file per script and no weight the design does not use.
+
+Trade-off accepted: an offline or CDN-blocked visitor falls back to the system
+sans stack. Nothing about the layout depends on the webfont loading.

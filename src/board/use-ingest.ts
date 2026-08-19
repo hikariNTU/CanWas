@@ -11,6 +11,7 @@ import {
 } from "@/board/ingest";
 import { useBoardHistory } from "@/board/history";
 import { insertNodes } from "@/board/mutations";
+import { createTextNode, DEFAULT_TEXT_WIDTH } from "@/board/text";
 import { assetsAtom } from "@/board/store";
 import { createId } from "@/lib/id";
 import { putAsset } from "@/storage/db";
@@ -155,10 +156,41 @@ export function useIngest({
     };
   }, [surfaceRef]);
 
+  const ingestText = useCallback(
+    (text: string, screenPoint: Point | null) => {
+      const surface = surfaceRef.current;
+      if (text.trim() === "" || !surface) {
+        return;
+      }
+      const rect = surface.getBoundingClientRect();
+      const anchor = screenPoint ?? {
+        x: rect.width / 2,
+        y: rect.height / 2,
+      };
+      const centre = screenToWorld(anchor, viewport);
+      // Wrap width tracks the zoom so a paste is legible where it lands, not
+      // a hairline at 20% or a wall at 400%.
+      const width = Math.min(
+        DEFAULT_TEXT_WIDTH / viewport.scale,
+        rect.width / viewport.scale / 2,
+      );
+      const node = createTextNode(centre.x - width / 2, centre.y, text, width);
+      commit((current) => insertNodes(current, [node], "paste text"));
+    },
+    [commit, surfaceRef, viewport],
+  );
+
   useEffect(() => {
     function handlePaste(event: ClipboardEvent) {
       const files = imageFilesFrom(event.clipboardData);
       if (files.length === 0) {
+        // Images win when the clipboard carries both: a screenshot copied from
+        // a browser also brings its alt text or source URL along.
+        const text = event.clipboardData?.getData("text/plain") ?? "";
+        if (text.trim() !== "") {
+          event.preventDefault();
+          ingestText(text, pointerRef.current);
+        }
         return;
       }
       event.preventDefault();
@@ -166,7 +198,7 @@ export function useIngest({
     }
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
-  }, [ingestFiles]);
+  }, [ingestFiles, ingestText]);
 
   useEffect(() => {
     const surface = surfaceRef.current;

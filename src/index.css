@@ -18,12 +18,12 @@ body {
   overscroll-behavior: none;
   background-color: var(--color-neutral-950);
   color: var(--color-neutral-100);
+  font-weight: 700;
   font-family:
+    "Noto Sans",
+    "Noto Sans TC",
     ui-sans-serif,
     system-ui,
     -apple-system,
-    "Segoe UI",
-    Roboto,
-    "Noto Sans TC",
     sans-serif;
 }

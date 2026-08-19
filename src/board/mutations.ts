@@ -124,3 +124,38 @@ export function reorderNodes(
 
   return { label: `bring to ${target}`, apply, invert };
 }
+
+/**
+ * Text content plus the height it laid out to, as one Change.
+ *
+ * A patch is a list, so the content edit and its measurement travel together
+ * and undo as a single step — the alternative, committing the height
+ * separately, would put a second entry on the stack that the user never
+ * performed.
+ */
+export function setTextContent(
+  nodes: readonly BoardNode[],
+  id: NodeId,
+  text: string,
+  height: number,
+): Change {
+  const node = nodes.find((candidate) => candidate.id === id);
+  if (
+    !node ||
+    node.kind !== "text" ||
+    (node.text === text && node.h === height)
+  ) {
+    return { label: "edit text", apply: [], invert: [] };
+  }
+  return {
+    label: "edit text",
+    apply: [
+      { kind: "text", id, text },
+      { kind: "geometry", id, rect: { ...rectOf(node), h: height } },
+    ],
+    invert: [
+      { kind: "text", id, text: node.text },
+      { kind: "geometry", id, rect: rectOf(node) },
+    ],
+  };
+}

@@ -20,6 +20,7 @@ export type NodeOp =
   | { kind: "insert"; index: number; node: BoardNode }
   | { kind: "remove"; index: number; node: BoardNode }
   | { kind: "geometry"; id: NodeId; rect: Rect }
+  | { kind: "text"; id: NodeId; text: string }
   | { kind: "reorder"; from: number; to: number };
 
 export type Patch = NodeOp[];
@@ -61,6 +62,13 @@ function applyOp(nodes: BoardNode[], op: NodeOp): BoardNode[] {
     case "geometry": {
       return nodes.map((node) =>
         node.id === op.id ? { ...node, ...op.rect } : node,
+      );
+    }
+    case "text": {
+      return nodes.map((node) =>
+        node.id === op.id && node.kind === "text"
+          ? { ...node, text: op.text }
+          : node,
       );
     }
     case "reorder": {

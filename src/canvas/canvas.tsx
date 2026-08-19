@@ -1,13 +1,18 @@
 import { useAtomValue } from "jotai";
 import { MinusIcon, PlusIcon, Redo2Icon, Undo2Icon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useBoardHistory } from "@/board/history";
+import { useBoardHistory, useSelection } from "@/board/history";
+import { deleteNodes, insertNodes, setTextContent } from "@/board/mutations";
+import { createTextNode, MAX_TEXT_LENGTH, truncateText } from "@/board/text";
+import type { NodeId } from "@/board/types";
 import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
 import { useBoardShortcuts } from "@/board/use-board-shortcuts";
 import { useIngest } from "@/board/use-ingest";
 import { BoardMenu } from "@/canvas/board-menu";
 import { BoardName } from "@/canvas/board-name";
+import { measureHeight, TextNodeView } from "@/canvas/text-node";
+import { screenToWorld } from "@/canvas/coords";
 import { useNodeGestures } from "@/canvas/use-node-gestures";
 import { useViewportControls } from "@/canvas/use-viewport-controls";
 import { useTranslation } from "@/translations";
@@ -24,9 +29,63 @@ export function Canvas({ boardId }: { boardId: string }) {
 
   const nodes = readNodes(useAtomValue(boardNodesAtom), boardId);
   const assets = useAtomValue(assetsAtom);
-  const { undo, redo, canUndo, canRedo } = useBoardHistory(boardId);
+  const { commit, undo, redo, canUndo, canRedo } = useBoardHistory(boardId);
   const { selection, setSelection, startMove, startResize, rectFor } =
     useNodeGestures(boardId, viewport);
+
+  const [editingId, setEditingId] = useState<NodeId | null>(null);
+  const [draft, setDraft] = useState("");
+  const bodyRef = useRef<HTMLElement | null>(null);
+  const { setSelection: select } = useSelection(boardId);
+
+  const startEditing = useCallback((id: NodeId, text: string) => {
+    setDraft(text);
+    setEditingId(id);
+  }, []);
+
+  /**
+   * Commits the draft and its measured height as one Change, or deletes the
+   * node if nothing was typed — an empty text node is invisible and
+   * unselectable, so leaving one behind would strand it on the board.
+   */
+  const finishEditing = useCallback(() => {
+    const id = editingId;
+    if (id === null) {
+      return;
+    }
+    const height = measureHeight(bodyRef.current);
+    const text = truncateText(draft);
+    setEditingId(null);
+    if (text.trim() === "") {
+      commit((current) => deleteNodes(current, [id]));
+      return;
+    }
+    commit((current) => setTextContent(current, id, text, height));
+  }, [commit, draft, editingId]);
+
+  // Double-clicking empty canvas starts a new text node where the pointer is.
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) {
+      return;
+    }
+    function handleDoubleClick(event: MouseEvent) {
+      if ((event.target as Element | null)?.closest?.("[data-node-id]")) {
+        return;
+      }
+      const rect = surface!.getBoundingClientRect();
+      const world = screenToWorld(
+        { x: event.clientX - rect.left, y: event.clientY - rect.top },
+        viewport,
+      );
+      const node = createTextNode(world.x, world.y);
+      commit((current) => insertNodes(current, [node], "add text"));
+      select([node.id]);
+      startEditing(node.id, "");
+    }
+    surface.addEventListener("dblclick", handleDoubleClick);
+    return () => surface.removeEventListener("dblclick", handleDoubleClick);
+  }, [commit, select, startEditing, surfaceRef, viewport]);
 
   useIngest({ boardId, viewport, surfaceRef, nodes });
   useBoardShortcuts(boardId);
@@ -79,37 +138,61 @@ export function Canvas({ boardId }: { boardId: string }) {
             className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-neutral-800"
           />
           {nodes.map((node) => {
-            const asset = assets[node.assetId];
-            if (!asset) {
-              return null;
-            }
             const rect = rectFor(node);
             const isSelected = selection.includes(node.id);
+            const isEditing = editingId === node.id;
+            const asset = node.kind === "image" ? assets[node.assetId] : null;
+            if (node.kind === "image" && !asset) {
+              return null;
+            }
             return (
               <div
                 key={node.id}
                 data-testid="board-node"
+                data-node-kind={node.kind}
                 data-node-id={node.id}
                 data-selected={isSelected || undefined}
-                onPointerDown={(event) => startMove(event, node.id)}
+                onPointerDown={(event) => {
+                  if (!isEditing) {
+                    startMove(event, node.id);
+                  }
+                }}
+                onDoubleClick={() => {
+                  if (node.kind === "text" && !isEditing) {
+                    startEditing(node.id, node.text);
+                  }
+                }}
                 className="absolute cursor-move"
                 style={{
                   left: rect.x,
                   top: rect.y,
                   width: rect.w,
-                  height: rect.h,
+                  // Text lays out at automatic height; only images are sized
+                  // in both axes.
+                  height: node.kind === "image" ? rect.h : undefined,
                   outline: isSelected
                     ? `${hairline}px solid var(--color-sky-500)`
                     : undefined,
                 }}
               >
-                <img
-                  src={asset.url}
-                  alt=""
-                  draggable={false}
-                  className="pointer-events-none block h-full w-full select-none"
-                />
-                {isSelected && selection.length === 1 && (
+                {node.kind === "image" && asset ? (
+                  <img
+                    src={asset.url}
+                    alt=""
+                    draggable={false}
+                    className="pointer-events-none block h-full w-full select-none"
+                  />
+                ) : node.kind === "text" ? (
+                  <TextNodeView
+                    node={isEditing ? { ...node, text: draft } : node}
+                    editing={isEditing}
+                    maxLength={MAX_TEXT_LENGTH}
+                    onChange={setDraft}
+                    onFinish={finishEditing}
+                    bodyRef={bodyRef}
+                  />
+                ) : null}
+                {isSelected && selection.length === 1 && !isEditing && (
                   <div
                     data-testid="resize-handle"
                     onPointerDown={(event) => startResize(event, node.id)}

@@ -2,7 +2,7 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 
 import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
-import type { Asset } from "@/board/types";
+import { assetIdsOf, type Asset } from "@/board/types";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { readViewport, viewportsAtom } from "@/canvas/viewport-atom";
 import { getAsset, getBoard, putBoard, type StoredBoard } from "@/storage/db";
@@ -85,7 +85,7 @@ export function useBoardPersistence(boardId: string) {
       // Assets are content-addressed, so one already in memory is
       // byte-identical and its object URL can be reused for the whole session.
       const inMemory = store.get(assetsAtom);
-      const needed = [...new Set(stored.nodes.map((node) => node.assetId))];
+      const needed = [...new Set(assetIdsOf(stored.nodes))];
       const loaded = await Promise.all(
         needed.filter((id) => !inMemory[id]).map((id) => getAsset(id)),
       );
