@@ -1,4 +1,4 @@
-import type { AssetId, Word } from "@/board/types";
+import type { AssetId, OcrPhase, Word } from "@/board/types";
 
 /**
  * The seam OCR sits behind (docs/domain-model.md). The rest of the app knows
@@ -19,7 +19,7 @@ export interface Recognizer {
 export interface RecognizeOptions {
   signal?: AbortSignal;
   /** 0..1. Called on the worker side; forwarded to the main thread as progress. */
-  onProgress?: (progress: number) => void;
+  onProgress?: (progress: number, phase?: OcrPhase) => void;
 }
 
 /**
@@ -27,13 +27,21 @@ export interface RecognizeOptions {
  * pixels (D13), so two nodes sharing an asset are one job, and a node deleted
  * mid-run does not orphan a result.
  */
+export type EngineName = "paddle" | "mock";
+
 export type OcrRequest = {
   kind: "recognize";
   assetId: AssetId;
   bitmap: ImageBitmap;
+  engine: EngineName;
 };
 
 export type OcrResponse =
-  | { kind: "progress"; assetId: AssetId; progress: number }
+  | {
+      kind: "progress";
+      assetId: AssetId;
+      progress: number;
+      phase?: OcrPhase;
+    }
   | { kind: "done"; assetId: AssetId; words: Word[] }
   | { kind: "failed"; assetId: AssetId; error: string };

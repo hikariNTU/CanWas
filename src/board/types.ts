@@ -13,10 +13,17 @@ export interface Word {
   confidence: number;
 }
 
+/**
+ * What a running job is busy with. The first image on a fresh browser spends
+ * most of its wait fetching 21 MB of weights, and a bar labelled "reading"
+ * through that is a bar that looks stuck.
+ */
+export type OcrPhase = "download" | "read";
+
 export type OcrState =
   | { status: "idle" }
   | { status: "queued" }
-  | { status: "running"; progress?: number }
+  | { status: "running"; progress?: number; phase?: OcrPhase }
   | { status: "done"; words: Word[] }
   | { status: "failed"; error: string };
 

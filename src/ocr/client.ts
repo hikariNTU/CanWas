@@ -1,5 +1,18 @@
-import type { AssetId } from "@/board/types";
-import type { OcrRequest, OcrResponse } from "@/ocr/types";
+import type { AssetId, OcrPhase } from "@/board/types";
+import type { EngineName, OcrRequest, OcrResponse } from "@/ocr/types";
+
+/**
+ * Which engine the worker should build.
+ *
+ * `?engine=mock` selects the fake one. It exists for the end-to-end suite,
+ * which must not pull 21 MB of weights on every run, and for looking at the
+ * overlay without waiting for a download. Anything else, including no
+ * parameter at all, gets the real engine.
+ */
+function selectedEngine(): EngineName {
+  const requested = new URLSearchParams(location.search).get("engine");
+  return requested === "mock" ? "mock" : "paddle";
+}
 
 /**
  * The main thread's half of the worker boundary: a queue of one.
@@ -14,7 +27,7 @@ import type { OcrRequest, OcrResponse } from "@/ocr/types";
 
 export interface OcrEvents {
   onRunning(assetId: AssetId): void;
-  onProgress(assetId: AssetId, progress: number): void;
+  onProgress(assetId: AssetId, progress: number, phase?: OcrPhase): void;
   onDone(
     assetId: AssetId,
     response: Extract<OcrResponse, { kind: "done" }>,
@@ -84,7 +97,7 @@ export class OcrClient {
       return;
     }
     if (message.kind === "progress") {
-      this.events?.onProgress(message.assetId, message.progress);
+      this.events?.onProgress(message.assetId, message.progress, message.phase);
       return;
     }
     if (message.kind === "done") {
@@ -112,6 +125,7 @@ export class OcrClient {
         kind: "recognize",
         assetId: job.assetId,
         bitmap,
+        engine: selectedEngine(),
       };
       this.ensureWorker().postMessage(request, [bitmap]);
     } catch (error) {

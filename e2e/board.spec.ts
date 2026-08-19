@@ -72,7 +72,7 @@ function storedName(page: Page, boardId: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("#/demo");
+  await page.goto("?engine=mock#/demo");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
 
@@ -292,7 +292,7 @@ test("a cancelled gesture aborts instead of committing, and unsticks", async ({
 });
 
 test("the board is renamable, and the name persists", async ({ page }) => {
-  await page.goto("#/renameme");
+  await page.goto("?engine=mock#/renameme");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 
   const name = page.getByTestId("board-name");
@@ -317,7 +317,7 @@ test("the board is renamable, and the name persists", async ({ page }) => {
 test("escape abandons a rename, and an empty name is refused", async ({
   page,
 }) => {
-  await page.goto("#/keepname");
+  await page.goto("?engine=mock#/keepname");
   const name = page.getByTestId("board-name");
   await expect(name).toHaveText("keepname");
 
@@ -333,7 +333,7 @@ test("escape abandons a rename, and an empty name is refused", async ({
 });
 
 test("editing the name does not trigger board shortcuts", async ({ page }) => {
-  await page.goto("#/shortcutsafe");
+  await page.goto("?engine=mock#/shortcutsafe");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await pasteImage(page, 300, 200, 140);
   await expect(page.getByTestId("board-node")).toHaveCount(1);

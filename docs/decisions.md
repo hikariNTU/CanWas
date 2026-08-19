@@ -832,3 +832,101 @@ Two traps were paid for along the way:
 
 Reverses if: the overlay adopts a font with no webfont dependency, which removes
 the loading race but not the measurement.
+
+---
+
+## D45 — Weights are fetched from Hugging Face and cached in IndexedDB
+
+**2026-08-19 · settled**
+
+PP-OCRv5 mobile detection and recognition are downloaded from the official
+`PaddlePaddle/*_onnx` repositories on first use, then cached in an IndexedDB
+store.
+
+The research notes said the official Hugging Face repositories carried only
+Paddle's own `.pdiparams`, which is why third-party ONNX mirrors were the
+assumed route. That is no longer true — `PP-OCRv5_mobile_det_onnx` and
+`PP-OCRv5_mobile_rec_onnx` publish `inference.onnx` under Apache-2.0, served
+with `access-control-allow-origin: *`. Measured: 4.83 MB and 16.53 MB. The
+question of trusting a one-maintainer mirror does not have to be answered,
+because it no longer has to be asked.
+
+Cached in IndexedDB rather than left to the HTTP cache: an evictable cache is
+not something to bet a 21 MB download on, and on a miss it happens again with
+nothing to show that it did.
+
+The character list is generated into the repo instead, by
+`scripts/extract-charset.mjs`, from the same model's own `inference.yml`. It is
+111 KB, so nothing is gained by fetching it, and taking it from the model's
+config rather than a loose `ppocrv5_dict.txt` means the labels cannot drift
+from the weights. The script asserts the count: 18383 entries, plus a blank and
+a space, is exactly the graph's 18385 output classes.
+
+Reverses if: Hugging Face stops allowing cross-origin reads, at which point the
+weights have to be mirrored somewhere this project controls.
+
+---
+
+## D46 — The engine is chosen by `?engine=mock`
+
+**2026-08-19 · settled**
+
+The real recognizer is the default. `?engine=mock` selects the fake one.
+
+The end-to-end suite runs on the mock, so it stays fast and offline and asserts
+the same fake reading every time. One opt-in spec, gated behind
+`E2E_REAL_OCR=1`, runs the real engine and asserts it actually reads — both a
+34px page and 13px light-on-dark UI text, which is the case this app exists for.
+
+The mock is not a fallback. If the real engine fails, the asset fails (D40) and
+says so; inventing plausible text when recognition is broken would be worse
+than an error, because it looks like success.
+
+Reverses if: the suite gets a reliable way to serve the weights locally, which
+would make running the real engine everywhere cheap.
+
+---
+
+## D47 — Detection returns axis-aligned boxes only
+
+**2026-08-19 · settled**
+
+The DB postprocess flood-fills the thresholded probability map and takes each
+region's bounding box. It does not fit minimum-area rectangles.
+
+PaddleOCR fits rotated quads. Nothing downstream can use one: a `Word` is an
+axis-aligned box in asset space, and the overlay renders unrotated spans, so a
+rotated result would be squared off anyway. Screenshots — the case this app is
+for — have no rotation to recover.
+
+Everything else follows the model's own `inference.yml` rather than a port's
+constants: threshold 0.3, box score 0.6, unclip ratio 1.5. For an axis-aligned
+box the unclip reduces exactly to offsetting each edge by
+`area x ratio / perimeter`.
+
+Reverses if: photographed pages become a real use case, which needs the rotated
+quad, a warp in the crop step, and a rotation on the span.
+
+---
+
+## D48 — Words come from CTC timesteps, split only at spaces
+
+**2026-08-19 · settled**
+
+Detection finds lines, not words. Each line is split into words using the
+timestep each character was decoded at: a CTC head reads a line left to right
+in T slices, so the slice a character survives in says where in the line it
+sits.
+
+Without this a line would be one `Word` holding a whole sentence, and selection
+granularity would be the line — double-clicking a word would take the sentence.
+
+Split **only at real spaces**, never per character. Chinese writes without
+them, so a per-character split would be right for selection and wrong for
+everything else: the overlay puts a space between consecutive words, and
+copying a Chinese line would come back with a space between every character. A
+CJK line stays one `Word`, which costs selection granularity and keeps the copy
+correct.
+
+Reverses if: the overlay learns to distinguish a word break from a character
+break, at which point CJK can be split per character and joined without spaces.

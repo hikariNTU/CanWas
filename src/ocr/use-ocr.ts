@@ -54,8 +54,8 @@ export function useOcr(nodes: readonly BoardNode[]) {
     ocrClient.setEvents({
       onRunning: (assetId) =>
         applyOcr(assetId, { status: "running", progress: 0 }),
-      onProgress: (assetId, progress) =>
-        applyOcr(assetId, { status: "running", progress }),
+      onProgress: (assetId, progress, phase) =>
+        applyOcr(assetId, { status: "running", progress, phase }),
       onDone: (assetId, response) =>
         applyOcr(assetId, { status: "done", words: response.words }),
       onFailed: (assetId, error) =>

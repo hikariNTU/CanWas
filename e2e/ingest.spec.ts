@@ -45,7 +45,7 @@ async function surfaceBox(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("#/demo");
+  await page.goto("?engine=mock#/demo");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
 

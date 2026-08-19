@@ -49,7 +49,7 @@ async function wordsOn(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("#/ocrboard");
+  await page.goto("?engine=mock#/ocrboard");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
 

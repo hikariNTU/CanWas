@@ -38,16 +38,26 @@ export function OcrBadge({ ocr, scale }: { ocr: OcrState; scale: number }) {
     return null;
   }
   const progress = ocr.status === "running" ? ocr.progress : undefined;
+  // The first image on a fresh browser spends most of its wait fetching 21 MB
+  // of weights. Saying so is the difference between a slow app and a stuck one.
+  const label: TranslationsKey =
+    ocr.status === "running" && ocr.phase === "download"
+      ? "ocr.downloading"
+      : presentation.label;
   return (
     <div
       data-testid="ocr-badge"
       data-ocr-status={ocr.status}
-      title={t(presentation.label)}
+      title={t(label)}
       className="pointer-events-none absolute bottom-0 left-0 flex origin-bottom-left items-center gap-1 bg-neutral-950/80 px-1.5 py-1"
       style={{ transform: `scale(${1 / scale})` }}
     >
       <Icon
-        name={presentation.icon}
+        name={
+          ocr.status === "running" && ocr.phase === "download"
+            ? "cloud_download"
+            : presentation.icon
+        }
         size={14}
         className={
           ocr.status === "running"
@@ -56,7 +66,7 @@ export function OcrBadge({ ocr, scale }: { ocr: OcrState; scale: number }) {
         }
       />
       <span className="text-[11px] leading-none text-neutral-300">
-        {t(presentation.label)}
+        {t(label)}
         {progress === undefined ? "" : ` ${Math.round(progress * 100)}%`}
       </span>
     </div>

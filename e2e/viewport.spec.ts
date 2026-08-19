@@ -17,7 +17,7 @@ async function centerOf(page: Page, testId: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("#/demo");
+  await page.goto("?engine=mock#/demo");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
 

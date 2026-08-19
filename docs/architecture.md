@@ -131,12 +131,14 @@ All three spaces are defined in [the domain model](domain-model.md). Two rules:
 
 ## Persistence
 
-IndexedDB, two stores:
+IndexedDB, three stores:
 
 - `assets` — `{ id, blob, width, height, hash, ocr }`, content-addressed and
   shared across every Board.
 - `boards` — `{ id, name, nodes[], viewport, createdAt, updatedAt }`, plain
   JSON-serializable so a future `.canwas` export needs no schema migration.
+- `models` — `{ id, bytes, etag, fetchedAt }`, the recognizer's weights. Added in
+  schema version 2 and never migrated: an empty cache costs one download.
 
 `blob:` URLs do not survive reload, so they are recreated from stored Blobs on
 board open and revoked on close. Board content writes are debounced; viewport
@@ -319,8 +321,32 @@ which would make the required happy-path E2E impossible to write.
 ## Worker boundary
 
 OCR runs in a dedicated Web Worker. `ImageBitmap` transfers to it zero-copy.
-The main thread posts `{ assetId, bitmap }` and receives `Word[]` or an error;
-it never learns which engine answered. (This said `nodeId` until step 6 built
+The main thread posts `{ assetId, bitmap, engine }` and receives `Word[]` or an
+error; it never learns which engine answered, only which one it asked for
+([D46](decisions.md)).
+
+`src/ocr/worker.ts` is the only module that names a concrete recognizer, which
+is what made landing a real engine a change to one file.
+
+The real engine is PP-OCRv5 mobile on ONNX Runtime's WASM backend:
+
+1. **Detect.** The image is scaled towards a 960px long edge — upscaled up to 3x
+   if it is small, since screenshot text is 12-16px and the model wants around
+   30 — normalized with the ImageNet statistics, and run through DBNet, which
+   emits one probability channel. Thresholding and flood fill turn that into
+   line boxes ([D47](decisions.md)).
+2. **Read.** Each box is cropped from the _original_ bitmap, not from the
+   detection canvas, resized to height 48, and batched six at a time through
+   the CTC head. Greedy decoding keeps the timestep each character came from,
+   which is what splits a line back into words ([D48](decisions.md)).
+
+Single-threaded by necessity: WASM threads need `SharedArrayBuffer`, which needs
+cross-origin isolation, which needs COOP/COEP response headers, which GitHub
+Pages does not let anyone set.
+
+Weights are fetched once and cached in IndexedDB ([D45](decisions.md)). The
+progress a job reports carries a phase, so the first image on a fresh browser
+says it is downloading rather than showing a reading bar that does not move. (This said `nodeId` until step 6 built
 it — a leftover that contradicted [D13](decisions.md), which puts recognition
 on the Asset. Keying by node would recognize the same pixels once per node and
 orphan a result when its node was deleted mid-run.)

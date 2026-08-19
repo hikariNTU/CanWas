@@ -21,7 +21,7 @@ async function boxOf(page: Page, testId: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("#/overlayboard");
+  await page.goto("?engine=mock#/overlayboard");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
 

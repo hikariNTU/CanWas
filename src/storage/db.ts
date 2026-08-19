@@ -2,10 +2,11 @@ import { assetIdsOf, type BoardNode, type OcrState } from "@/board/types";
 import type { Viewport } from "@/canvas/coords";
 
 const DB_NAME = "canwas";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const ASSET_STORE = "assets";
 export const BOARD_STORE = "boards";
+export const MODEL_STORE = "models";
 
 /** What actually lands on disk. Object URLs are runtime-only and excluded. */
 export interface StoredAsset {
@@ -38,6 +39,12 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(BOARD_STORE)) {
         db.createObjectStore(BOARD_STORE, { keyPath: "id" });
+      }
+      // Added in version 2. Only ever created, never migrated: a cache with
+      // nothing in it costs one download, so there is nothing worth carrying
+      // across a schema change.
+      if (!db.objectStoreNames.contains(MODEL_STORE)) {
+        db.createObjectStore(MODEL_STORE, { keyPath: "id" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -81,6 +88,28 @@ export function getAllAssetIds(): Promise<string[]> {
 
 export function deleteAsset(id: string): Promise<undefined> {
   return run(ASSET_STORE, "readwrite", (store) => store.delete(id));
+}
+
+/**
+ * A downloaded model file. Cached because the recognizer's weights are 21 MB
+ * and the browser's HTTP cache is not something to bet a 21 MB download on —
+ * it is evictable, and on a cache miss the download happens again with no way
+ * to tell that it did.
+ */
+export interface StoredModel {
+  id: string;
+  bytes: ArrayBuffer;
+  /** The source's ETag, which Hugging Face sets to the content's SHA-256. */
+  etag: string;
+  fetchedAt: number;
+}
+
+export function putModel(model: StoredModel): Promise<IDBValidKey> {
+  return run(MODEL_STORE, "readwrite", (store) => store.put(model));
+}
+
+export function getModel(id: string): Promise<StoredModel | undefined> {
+  return run(MODEL_STORE, "readonly", (store) => store.get(id));
 }
 
 export function putBoard(board: StoredBoard): Promise<IDBValidKey> {

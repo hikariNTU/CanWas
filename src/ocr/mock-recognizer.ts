@@ -232,7 +232,7 @@ export class MockRecognizer implements Recognizer {
     const { signal, onProgress } = options;
     const { ink, width, height, scale } = sample(bitmap);
     signal?.throwIfAborted();
-    onProgress?.(0.4);
+    onProgress?.(0.4, "read");
 
     const minRowInk = Math.max(2, Math.round(width * ROW_INK_FRACTION));
     const rowHasInk: boolean[] = [];
@@ -250,7 +250,7 @@ export class MockRecognizer implements Recognizer {
     const lines = runsOf(rowHasInk).filter(
       ([top, bottom]) => bottom - top >= MIN_LINE_HEIGHT,
     );
-    onProgress?.(0.7);
+    onProgress?.(0.7, "read");
 
     const random = mulberry32(hashString(this.seed));
     const words: Word[] = [];
@@ -287,7 +287,7 @@ export class MockRecognizer implements Recognizer {
         });
       }
     }
-    onProgress?.(1);
+    onProgress?.(1, "read");
     return words;
   }
 }

@@ -55,6 +55,32 @@ Going PaddleOCR costs nothing in bytes.
 `.ort` is ONNX Runtime's pre-optimized serialization — smaller and faster to load,
 but version-locked to the runtime build. Prefer `.onnx` unless load time bites.
 
+## What was actually used (step 9)
+
+The survey below assumed the official Hugging Face repositories carried only
+Paddle's own `.pdiparams`, which made a third-party ONNX mirror look
+unavoidable. It is not the case. Official ONNX repositories exist:
+
+```
+PaddlePaddle/PP-OCRv5_mobile_det_onnx   inference.onnx   4,826,518 B   45k downloads
+PaddlePaddle/PP-OCRv5_mobile_rec_onnx   inference.onnx  16,534,782 B    3k downloads
+```
+
+Both Apache-2.0, both served with `access-control-allow-origin: *`, so the app
+fetches them directly ([D45](decisions.md)). The provenance section below is
+therefore of historical interest only — nothing here depends on the `ppu`
+mirror.
+
+The character list ships inline in the rec model's `inference.yml`, 18383
+entries. Plus a blank and a space, that is exactly the graph's 18385 classes,
+which settles the question the next section leaves open: **index 0 is the CTC
+blank**, indices 1..18383 are the dictionary, and 18384 is the space. The note
+below about `ppocrv5_dict.txt` being "pre-baked" describes the loose file, not
+the model's own config.
+
+`onnxruntime-web` 1.27 adds one more download the survey did not count: the
+WASM binary, 13.5 MB, 3.5 MB gzipped, served from this origin.
+
 ## Provenance check
 
 Converted ONNX from the `ppu-paddle-ocr-models` repo, compared against official

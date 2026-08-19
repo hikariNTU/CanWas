@@ -39,3 +39,19 @@ Read in this order:
 4. [UI guidelines](docs/ui-guidelines.md) — visual language and i18n rules.
 5. [Roadmap](docs/roadmap.md) — build order and current position.
 6. [OCR research](docs/ocr-research.md) — measured engine/weight survey, for when OCR lands.
+
+## Running the real recognizer
+
+The app uses PP-OCRv5 by default and fetches 21 MB of weights the first time an
+image needs reading, caching them in IndexedDB. `?engine=mock` swaps in the fake
+recognizer, which invents its strings but finds real ink — useful for looking at
+the overlay without the download.
+
+The end-to-end suite runs on the mock. To exercise the real one:
+
+```
+E2E_REAL_OCR=1 npx playwright test e2e/paddle.spec.ts
+```
+
+`scripts/extract-charset.mjs` regenerates `src/ocr/paddle/charset.ts` from the
+recognition model's own config. It only needs running if the model changes.

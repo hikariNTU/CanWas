@@ -62,6 +62,10 @@ const translations = {
     "zh-TW": "辨識中",
     "en-US": "Reading",
   },
+  "ocr.downloading": {
+    "zh-TW": "下載辨識模型",
+    "en-US": "Downloading the reader",
+  },
   "ocr.failed": {
     "zh-TW": "辨識失敗",
     "en-US": "Could not read",
