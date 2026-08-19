@@ -3,19 +3,19 @@
 Ordered so the risky part (the OCR overlay) is reachable early, and so every step
 before it is independently useful.
 
-| #   | Step                                                                              | State          |
-| --- | --------------------------------------------------------------------------------- | -------------- |
-| 0   | Documentation + design grilling                                                   | ✅ done        |
-| 1   | Skeleton: Vite 8, React 19, TS 7, Tailwind 4, oxlint/oxfmt, router, CI            | ⏳ in progress |
-| 2   | Viewport: pan, zoom, world↔screen transform                                       | ☐              |
-| 3   | Ingest: paste + drop → Asset + Node, fit to viewport                              | ✅ done        |
-| 4   | Board store + **history stack**: select, move, resize, delete, reorder, undo/redo | ⏳ next        |
-| 5   | Persistence: IndexedDB assets + boards, startup sweep, Home board list            | ☐              |
-| 6   | OCR seam: `Recognizer`, `MockRecognizer`, worker wiring, per-asset status         | ☐              |
-| 7   | Selection overlay: transparent spans, scaleX fit, single-node scope               | ☐              |
-| 8   | Playwright happy path + screenshots                                               | ☐              |
-| —   | _ship / evaluate_                                                                 |                |
-| 9   | Real PaddleOCR behind `Recognizer`                                                | ☐ future       |
+| #   | Step                                                                              | State    |
+| --- | --------------------------------------------------------------------------------- | -------- |
+| 0   | Documentation + design grilling                                                   | ✅ done  |
+| 1   | Skeleton: Vite 8, React 19, TS 7, Tailwind 4, oxlint/oxfmt, router, CI            | ✅ done  |
+| 2   | Viewport: pan, zoom, world↔screen transform                                       | ✅ done  |
+| 3   | Ingest: paste + drop → Asset + Node, fit to viewport                              | ✅ done  |
+| 4   | Board store + **history stack**: select, move, resize, delete, reorder, undo/redo | ⏳ next  |
+| 5   | Persistence: IndexedDB assets + boards, startup sweep, Home board list            | ☐        |
+| 6   | OCR seam: `Recognizer`, `MockRecognizer`, worker wiring, per-asset status         | ☐        |
+| 7   | Selection overlay: transparent spans, scaleX fit, single-node scope               | ☐        |
+| 8   | Playwright happy path + screenshots                                               | ☐        |
+| —   | _ship / evaluate_                                                                 |          |
+| 9   | Real PaddleOCR behind `Recognizer`                                                | ☐ future |
 
 ## Why history lands at step 4
 

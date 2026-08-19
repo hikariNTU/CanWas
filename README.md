@@ -6,8 +6,8 @@ canvas, arrange them freely, and select text out of them.
 Think PureRef's spatial freedom, with the text in your screenshots actually
 selectable.
 
-**Status:** step 1 of 9 complete — skeleton boots, routes, and switches language.
-No canvas yet. OCR is designed but not built.
+**Status:** steps 1-3 of 9 complete — pan/zoom canvas, paste and drop images.
+No selection or undo yet, nothing persists across reload, OCR is designed but not built.
 
 ## Quickstart
 
