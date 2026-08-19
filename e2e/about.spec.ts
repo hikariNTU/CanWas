@@ -43,3 +43,19 @@ test("the info panel reports the build and what is on disk", async ({
 
   await page.screenshot({ path: "e2e/screenshots/about.png" });
 });
+
+test("an unconfigured build says so instead of offering a dead button", async ({
+  page,
+}) => {
+  await page.getByTestId("about-open").click();
+
+  // No VITE_GOOGLE_CLIENT_ID in a test build. A sign-in button that cannot
+  // work is worse than none, and a silently missing one is a mystery to
+  // whoever has to debug it later.
+  await expect(page.getByTestId("sync-unconfigured")).toBeVisible();
+  await expect(page.getByTestId("sync-sign-in")).toHaveCount(0);
+
+  // Nothing third-party is fetched for a feature this build cannot offer.
+  const google = page.locator('script[src*="accounts.google.com"]');
+  await expect(google).toHaveCount(0);
+});

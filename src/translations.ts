@@ -142,6 +142,30 @@ const translations = {
     "zh-TW": "壓縮後（同步用）",
     "en-US": "WebP for sync",
   },
+  "sync.title": {
+    "zh-TW": "Google 雲端硬碟",
+    "en-US": "Google Drive",
+  },
+  "sync.signIn": {
+    "zh-TW": "登入 Google",
+    "en-US": "Sign in with Google",
+  },
+  "sync.signOut": {
+    "zh-TW": "登出",
+    "en-US": "Sign out",
+  },
+  "sync.connecting": {
+    "zh-TW": "連線中…",
+    "en-US": "Connecting…",
+  },
+  "sync.unconfigured": {
+    "zh-TW": "這個版本尚未設定 Google 用戶端 ID",
+    "en-US": "This build has no Google client id",
+  },
+  "sync.notSyncing": {
+    "zh-TW": "已登入，但尚未開始同步",
+    "en-US": "Signed in. Nothing syncs yet.",
+  },
   "menu.open": {
     "zh-TW": "選單",
     "en-US": "Menu",

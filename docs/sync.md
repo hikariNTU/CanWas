@@ -1,6 +1,8 @@
 # Sync design
 
-**Status: designed, not built.** Nothing here is implemented. Written so the
+**Status: designed, partly built.** Sign-in and the Drive transport exist
+(`src/sync/`). Nothing is uploaded or downloaded yet, and the conflict design
+below is not implemented at all. Written so the
 shape is agreed before code, in the same order as everything else in this
 project.
 
@@ -76,10 +78,61 @@ offline exactly as it does now.
 - **Push** on the same debounce that already writes a board locally, plus a
   flush on `pagehide`.
 - **Pull** on sign-in and on board open.
-- **Conflicts** are per board, resolved by `updatedAt`, last writer wins. This
-  is a real loss of data in one case — the same board edited on two devices
-  while both are offline — and the honest mitigation is to keep the loser as a
-  copy rather than to pretend the merge is possible.
+- **Conflicts** are the hard part, and they are not per board. See below.
+
+## Conflicts
+
+Per-board last-writer-wins is the obvious answer and it is wrong. Two devices
+that each add one image to the same board produce two whole-board writes, and
+whichever lands second erases the other's image. That is not an edge case; on
+two devices it is Tuesday.
+
+So the merge has to be per node. Three things are needed, and only the first is
+obvious:
+
+**1. Every node carries `updatedAt`.** The merge is the union of both node
+lists, and where both sides hold the same node id the newer one wins.
+
+**2. Deletions leave tombstones.** A node — or a board — deleted on the laptop
+must not be resurrected by the phone, which still holds it and will push it
+back as an addition. A tombstone is a record that something was deleted and
+when. They can be reclaimed after a fixed period, on the bet that no device
+stays offline longer than that.
+
+**3. Paint order has to stop being the array index.** This is the one that hurts,
+because it contradicts [D18](decisions.md): paint order is array order and there
+is no `z` field.
+
+Array position is not mergeable. Two devices that each append a node produce
+two arrays of the same length whose last elements differ, and there is no
+operation on those two arrays that recovers the intent of either. The fix is a
+**fractional index**: each node carries an order key, a string, and a node
+inserted between two others gets a key that sorts between theirs. Reordering
+touches one node instead of renumbering the list, and two devices reordering
+different nodes merge cleanly.
+
+D18 was right for a local app and is the specific thing sync breaks. It should
+be revisited _before_ sync is built, not during — every board written until
+then is a board without order keys.
+
+### Text is the remaining loss
+
+With per-node merge, the only true conflict left is the same text node edited on
+both devices while both were offline. There is no correct answer without a CRDT,
+and a CRDT for text means the store stops being an array of plain nodes and the
+history stack (D15, inverse patches) stops being expressible.
+
+That is not a trade worth making for a single-user app whose two devices are
+rarely editing the same paragraph at the same minute. So: **last writer wins,
+and the loser is kept as a second text node beside the winner.** Ugly, visible,
+and recoverable — which beats silent and correct-looking.
+
+### Undo does not cross the boundary
+
+History is in-memory and per session (D16), so a merge arriving from another
+device cannot be undone by the device that receives it. A merge must therefore
+land as an ordinary change with its own inverse, exactly like a paste, or the
+undo stack and the board disagree about what happened.
 
 ### Deletion needs tombstones
 
@@ -112,6 +165,9 @@ original, so a round trip through two devices is lossy exactly once.
 
 ## Open questions
 
+- Should node order keys land now, ahead of sync? Every board written without
+  them is a board that has to be migrated later, and the migration is
+  guesswork once two devices disagree.
 - Does the app sign in on its own, or does an unsigned user keep working
   entirely locally with sync as something they turn on? (Local-first says the
   latter.)

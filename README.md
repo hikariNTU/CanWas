@@ -55,3 +55,13 @@ E2E_REAL_OCR=1 npx playwright test e2e/paddle.spec.ts
 
 `scripts/extract-charset.mjs` regenerates `src/ocr/paddle/charset.ts` from the
 recognition model's own config. It only needs running if the model changes.
+
+## Google Drive
+
+Sign-in and the Drive transport exist; nothing syncs yet, and the info panel
+says so while signed in. The merge design — including the part where paint order
+has to stop being the array index — is in [docs/sync.md](docs/sync.md).
+
+To enable sign-in, copy `.env.example` to `.env` and set
+`VITE_GOOGLE_CLIENT_ID`. Without it the app runs exactly as before and the panel
+reports that the build has no client id.

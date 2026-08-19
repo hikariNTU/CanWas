@@ -1089,3 +1089,35 @@ model lands.
 Reverses if: storing both copies becomes the expensive half. The original could
 then be dropped once its WebP exists, at the cost of never being able to prove
 what was pasted.
+
+---
+
+## D53 — Google sign-in exists; sync does not
+
+**2026-08-19 · settled**
+
+`src/sync/` holds the token flow and a Drive REST client. Nothing is uploaded
+or downloaded, and the info panel says so in as many words while signed in.
+
+The transport is the easy half and the merge is the hard one (docs/sync.md).
+Shipping the easy half alone is fine as long as it does not pretend: a sync that
+half works is worse than none, because a board that looks backed up and is not
+is only discovered on the day it matters.
+
+Specifics worth keeping:
+
+- **Tokens live in memory only.** `localStorage` survives a reload, which is
+  exactly what makes it wrong for a bearer token — any script on this origin can
+  read it and it outlives the tab that earned it. An hour of silent re-consent
+  is cheaper.
+- **The Google script loads on demand**, not from `index.html`. It is a
+  third-party request on every page load for a feature most sessions never
+  touch, and this app opens straight onto a board.
+- **Drive is called over `fetch`**, not through Google's JS client. The surface
+  is four endpoints; the library is 100 KB and a second third-party script.
+- **A build with no client id says so** and offers no button. A sign-in that
+  cannot work is worse than none, and one that silently vanishes is a mystery
+  for whoever debugs it later.
+
+Reverses if: sync grows past what four endpoints can express — resumable
+uploads for very large assets would be the first sign.
