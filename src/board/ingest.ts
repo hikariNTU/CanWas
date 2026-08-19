@@ -1,11 +1,5 @@
 import type { Asset } from "@/board/types";
-import type { Point, Viewport } from "@/canvas/coords";
-
-/**
- * A pasted image is scaled to occupy at most this fraction of the visible
- * canvas, and is never enlarged (D19).
- */
-const VIEWPORT_FIT_FRACTION = 0.4;
+import type { Point } from "@/canvas/coords";
 
 /** Cascade offset in world units, so stacked placements stay distinguishable. */
 const CASCADE_STEP = 24;
@@ -30,23 +24,24 @@ export async function readIntrinsicSize(
 }
 
 /**
- * World size for a newly placed image: at most VIEWPORT_FIT_FRACTION of the
- * visible canvas in each axis, and never larger than intrinsic size — a 32x32
- * favicon must not be blown up to fill the screen.
+ * World size for a newly placed image: the size it was, and nothing else
+ * (D59).
+ *
+ * Not fitted to the viewport. A paste that resized itself to the window meant
+ * the same screenshot came out a different size depending on the zoom it
+ * happened to be pasted at, and two captures of the same screen at different
+ * crops came out the same size as each other — which destroys the one
+ * comparison a board of screenshots exists to make.
+ *
+ * `density` is the file's own idea of how many pixels it spends per CSS pixel,
+ * so a retina capture lands at the size it appeared on screen rather than at
+ * double it. See `density.ts`.
  */
-export function fitSize(
+export function naturalSize(
   asset: Pick<Asset, "width" | "height">,
-  viewport: Viewport,
-  surface: { width: number; height: number },
+  density = 1,
 ): { w: number; h: number } {
-  const visibleWorldWidth = surface.width / viewport.scale;
-  const visibleWorldHeight = surface.height / viewport.scale;
-  const factor = Math.min(
-    1,
-    (visibleWorldWidth * VIEWPORT_FIT_FRACTION) / asset.width,
-    (visibleWorldHeight * VIEWPORT_FIT_FRACTION) / asset.height,
-  );
-  return { w: asset.width * factor, h: asset.height * factor };
+  return { w: asset.width / density, h: asset.height / density };
 }
 
 /** Top-left corner that centres a `w × h` box on `centre`. */

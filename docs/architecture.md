@@ -293,7 +293,9 @@ Hash avoids the GitHub Pages deep-link 404 with no `404.html` redirect trick.
    occupy two Assets and a duplicate paste inherits the existing recognition
    result.
 2. `createImageBitmap` for intrinsic dimensions, then close the bitmap.
-3. Size the node to at most 40% of the visible canvas, never enlarging (D19).
+3. Size the node at the image's own size, divided by the density its `pHYs`
+   chunk claims — so a retina screenshot lands at the size it looked, and
+   nothing is fitted to the window (D59).
 4. Centre it on the drop point. A paste carries no coordinates, so the last
    pointer position over the canvas stands in, falling back to the viewport
    centre if the pointer has never been over it (D23).

@@ -3,12 +3,13 @@ import { useCallback, useEffect, useRef, type RefObject } from "react";
 
 import {
   cascadeFreeOrigin,
-  fitSize,
   hashBlob,
   imageFilesFrom,
+  naturalSize,
   placeCentred,
   readIntrinsicSize,
 } from "@/board/ingest";
+import { readDensity } from "@/board/density";
 import { useBoardHistory } from "@/board/history";
 import { insertNodes } from "@/board/mutations";
 import { createTextNode, DEFAULT_TEXT_WIDTH } from "@/board/text";
@@ -82,12 +83,11 @@ export function useIngest({
           newAssets.push(asset);
         }
 
+        // Read from the file rather than from this display: the machine
+        // pasting is not always the machine that captured.
         pending.push({
           asset,
-          size: fitSize(asset, viewport, {
-            width: rect.width,
-            height: rect.height,
-          }),
+          size: naturalSize(asset, await readDensity(file)),
         });
       }
 

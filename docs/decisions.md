@@ -288,7 +288,7 @@ is free.
 
 ## D19 — Paste sizes nodes to fit the viewport
 
-**2026-08-19 · settled**
+**2026-08-19 · settled · superseded by [D59](#d59--paste-sizes-nodes-at-their-own-size-corrected-for-density)**
 
 A pasted image is scaled to occupy at most ~40% of the current viewport, and is
 **never enlarged** — images smaller than that keep intrinsic size.
@@ -1366,3 +1366,41 @@ canvas takes the heavier tint — today that is the recognition badge.
 Reverses if: the blur costs real frames on a full board. `backdrop-filter` is
 per-element and composited, and a board is a dozen widgets, not a thousand — but
 a badge per image is the one that could grow.
+
+## D59 — Paste sizes nodes at their own size, corrected for density
+
+**2026-08-20 · settled · supersedes [D19](#d19--paste-sizes-nodes-to-fit-the-viewport)**
+
+A pasted image lands at its own pixel size, divided by the density its file
+claims. Nothing is fitted to the viewport, in either direction.
+
+D19 scaled every paste to at most 40% of the visible canvas, to dodge exactly
+one problem: retina screenshots are 2x and would otherwise land at double the
+size they appeared. That fixed the symptom by overriding the size entirely,
+which costs more than it saves.
+
+- **It was not deterministic.** The same screenshot pasted at two zoom levels
+  came out at two sizes, and D19 said so.
+- **It destroyed the comparison the app is for.** A board of screenshots is
+  read by putting two of them side by side. Fitting each to the window makes a
+  full-page capture and a cropped detail the same width, which is the one
+  relationship worth preserving.
+- **It never actually corrected the density**, only hid it. Under the clamp —
+  a small capture, a button or a toast — the 2x error came through untouched,
+  so the same UI element pasted at two sizes depending on which machine took
+  the screenshot.
+
+The density now comes from the file's own `pHYs` chunk, which is what macOS
+`screencapture` writes, rather than from `devicePixelRatio`. Two reasons: the
+machine pasting is not always the machine that captured, and a large photo is
+not a 2x anything — dividing every image by the current display's ratio would
+shrink real content for no reason. Only whole-number multiples of the 72 and 96
+DPI baselines count as density; a 300 DPI scan divides into neither and is left
+at full size, which is right, because it is a big image rather than a small one
+recorded densely. An image that says nothing is taken at face value.
+
+**Known cost, accepted:** a 10000x10000 paste is now a 10000x10000 node, and at
+100% zoom the window shows a corner of it with no sign that anything landed.
+This is expected behaviour rather than a bug — the zoom controls are right
+there, and the alternative was resizing every ordinary paste to protect against
+an unusual one.
