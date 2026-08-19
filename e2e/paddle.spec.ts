@@ -50,6 +50,22 @@ test("PP-OCRv5 reads a pasted screenshot", async ({ page }) => {
     expect(text).toContain(expected);
   }
 
+  // The overlay has only ever been judged against the mock's boxes. Real
+  // detections are wider than the ink and come from a different code path, so
+  // the highlight is worth looking at once with them.
+  const box = (await node.boundingBox())!;
+  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByTestId("ocr-overlay")).toHaveAttribute(
+    "data-active",
+    "true",
+  );
+  await page.keyboard.press("Meta+a");
+  const selected = await page.evaluate(
+    () => window.getSelection()?.toString() ?? "",
+  );
+  expect(selected.trim().split("\n")).toHaveLength(LINES.length);
+  expect(selected.toLowerCase()).toContain("quick brown fox");
+
   await page.screenshot({ path: "e2e/screenshots/ocr-real.png" });
 });
 

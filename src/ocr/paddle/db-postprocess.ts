@@ -12,20 +12,68 @@ const BINARY_THRESHOLD = 0.3;
 /** Mean probability a box must reach to be kept. */
 const BOX_SCORE_THRESHOLD = 0.6;
 /**
- * How far a box is grown after thresholding. The binarized map is tighter than
- * the glyphs that produced it, and without this the box clips ascenders and the
- * crop handed to the recognizer is missing the tops of its letters.
+ * How far the thresholded region is grown before it is cropped and read.
+ * PaddleOCR's own value: deliberately generous, because a crop that clips
+ * ascenders costs accuracy and a crop with slack costs nothing.
  */
-const UNCLIP_RATIO = 1.5;
+const CROP_UNCLIP_RATIO = 1.5;
+/**
+ * How far it is grown to get back the box the glyphs actually occupy.
+ *
+ * DBNet is trained against regions shrunk by Vatti clipping with a ratio of
+ * 0.4, offset inward by `area x (1 - 0.4^2) / perimeter`. Expanding by the same
+ * quantity is the inverse of that, so this constant is the training recipe read
+ * backwards rather than a number tuned until the highlight looked right.
+ *
+ * Measured against ink at y 45.3..77.2 on a 34px line: the raw region was
+ * y 51..69, the crop expansion gave y 37..83, and this one gives y 44..76.
+ */
+const TEXT_UNCLIP_RATIO = 1 - 0.4 * 0.4;
 /** Smaller than this in either axis is speckle. */
 const MIN_SIDE = 3;
 
-export interface DetectedBox {
+export interface Box {
   x0: number;
   y0: number;
   x1: number;
   y1: number;
+}
+
+export interface DetectedBox extends Box {
   score: number;
+  /**
+   * Where the glyphs are, as opposed to where they are cropped from.
+   *
+   * DBNet predicts a *shrunk* version of each text region, so the raw region is
+   * smaller than the glyphs and both of these boxes are expansions of it — but
+   * for different jobs. The outer one is cropped and read, and is deliberately
+   * loose. This one is what a `Word` reports, because it is the box a highlight
+   * has to sit on, and 8px of slack there is 8px of highlight hanging off the
+   * text.
+   */
+  text: Box;
+}
+
+/** Offsets every edge outward by `area x ratio / perimeter`, as Vatti would. */
+function expand(
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  ratio: number,
+  width: number,
+  height: number,
+): Box {
+  const boxWidth = right - left;
+  const boxHeight = bottom - top;
+  const distance =
+    (boxWidth * boxHeight * ratio) / (2 * (boxWidth + boxHeight));
+  return {
+    x0: Math.max(0, left - distance),
+    y0: Math.max(0, top - distance),
+    x1: Math.min(width, right + distance),
+    y1: Math.min(height, bottom + distance),
+  };
 }
 
 /**
@@ -104,16 +152,26 @@ export function boxesFromProbabilityMap(
       continue;
     }
 
-    // The same expansion PaddleOCR applies, which for an axis-aligned box
-    // reduces to offsetting every edge by area x ratio / perimeter.
-    const distance =
-      (boxWidth * boxHeight * UNCLIP_RATIO) / (2 * (boxWidth + boxHeight));
     boxes.push({
-      x0: Math.max(0, left - distance),
-      y0: Math.max(0, top - distance),
-      x1: Math.min(width, right + 1 + distance),
-      y1: Math.min(height, bottom + 1 + distance),
+      ...expand(
+        left,
+        top,
+        right + 1,
+        bottom + 1,
+        CROP_UNCLIP_RATIO,
+        width,
+        height,
+      ),
       score,
+      text: expand(
+        left,
+        top,
+        right + 1,
+        bottom + 1,
+        TEXT_UNCLIP_RATIO,
+        width,
+        height,
+      ),
     });
   }
 

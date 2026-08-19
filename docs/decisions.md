@@ -899,10 +899,31 @@ axis-aligned box in asset space, and the overlay renders unrotated spans, so a
 rotated result would be squared off anyway. Screenshots — the case this app is
 for — have no rotation to recover.
 
-Everything else follows the model's own `inference.yml` rather than a port's
+Thresholds come from the model's own `inference.yml` rather than a port's
 constants: threshold 0.3, box score 0.6, unclip ratio 1.5. For an axis-aligned
 box the unclip reduces exactly to offsetting each edge by
 `area x ratio / perimeter`.
+
+**Two expansions, not one.** DBNet predicts a _shrunk_ region, so the raw
+detection is smaller than the glyphs and every usable box is an expansion of
+it — but the crop and the highlight want different ones. Measured against ink at
+y 45.3..77.2 on a 34px line:
+
+```
+raw region          y 51..69     what the network actually outputs
+x1.5  (PaddleOCR)   y 37..83     what gets cropped and read
+x0.84 (this)        y 44..76     what a Word reports
+```
+
+The reading crop keeps PaddleOCR's generous 1.5, because a crop that clips
+ascenders costs accuracy and slack costs nothing. The reported box uses
+`1 - 0.4^2`, which is the training-time shrink read backwards — DBNet's labels
+are offset inward by `area x (1 - 0.4^2) / perimeter`, so expanding by the same
+quantity inverts it. It is the recipe, not a number tuned until the highlight
+looked right.
+
+Reporting the crop box instead put the highlight 8px proud of the text on every
+side, which is what it looked like: a bar floating above the words.
 
 Reverses if: photographed pages become a real use case, which needs the rotated
 quad, a warp in the crop step, and a rotation on the span.
@@ -927,6 +948,19 @@ everything else: the overlay puts a space between consecutive words, and
 copying a Chinese line would come back with a space between every character. A
 CJK line stays one `Word`, which costs selection granularity and keeps the copy
 correct.
+
+**Words are tiled, not trusted.** A CTC head marks a character in the single
+slice it fires in, which sits late and spans less than the glyph: measured,
+words came out about 30% narrower than their ink and drifted left. So the
+timesteps are used for the _boundaries between_ words — each word extends to
+meet its neighbour halfway, and the outer two reach the ends of the line's box.
+That also matches what selecting text looks like, since a real highlight covers
+the spaces between words too.
+
+The overlay measures each word's separating space into its box for the same
+reason. Left to overflow, the space paints its own selection rectangle on top of
+the tiled neighbour, and two translucent highlights stack into a dark seam at
+every word boundary.
 
 Reverses if: the overlay learns to distinguish a word break from a character
 break, at which point CJK can be split per character and joined without spaces.

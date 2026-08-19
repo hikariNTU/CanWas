@@ -31,13 +31,13 @@ import type { Word } from "@/board/types";
  * resize of the node itself invalidates them.
  */
 function measureWidths(
-  words: readonly Word[],
+  texts: readonly string[],
   fontSizes: readonly number[],
   // Not read. Present so the measurement is redone when the real font replaces
   // the fallback, and so the reason is visible at the call site.
   _fontRevision: number,
 ): number[] {
-  if (words.length === 0) {
+  if (texts.length === 0) {
     return [];
   }
   const host = document.createElement("div");
@@ -45,7 +45,7 @@ function measureWidths(
   host.style.cssText =
     "position:absolute;left:-99999px;top:0;visibility:hidden;white-space:pre;line-height:1";
 
-  const probes = words.map((word, index) => {
+  const probes = texts.map((text, index) => {
     const span = document.createElement("span");
     // The same class the real spans carry, so the same font is measured.
     span.className = "ocr-word";
@@ -57,7 +57,7 @@ function measureWidths(
     span.style.top = "0";
     span.style.left = "0";
     span.style.fontSize = `${fontSizes[index]}px`;
-    span.textContent = word.text;
+    span.textContent = text;
     host.append(span);
     return span;
   });
@@ -151,15 +151,36 @@ export function OcrOverlay({
   // Asset space to world space. Images resize with a locked aspect ratio, so
   // one factor covers both axes.
   const scale = assetWidth > 0 ? nodeWidth / assetWidth : 0;
+  const lines = useMemo(() => groupIntoLines(words), [words]);
   const fontSizes = useMemo(
     () => words.map((word) => (word.y1 - word.y0) * scale),
     [words, scale],
   );
+  /**
+   * What each span actually renders: the word, plus the space that separates it
+   * from the next one on its line.
+   *
+   * The space is measured *into* the box rather than left to overflow it. Real
+   * detections tile a line's words edge to edge, so an overflowing space paints
+   * its own selection rectangle on top of the next word — two translucent
+   * highlights stacking into a dark seam at every word boundary. Including it
+   * means the correction below maps word-plus-space onto the box, and the gap
+   * the box already contains is where the space goes.
+   */
+  const texts = useMemo(() => {
+    const rendered = words.map((word) => word.text);
+    for (const line of lines) {
+      for (let i = 0; i < line.length - 1; i++) {
+        rendered[line[i]] += " ";
+      }
+    }
+    return rendered;
+  }, [lines, words]);
   // `fontRevision` is a dependency without being an argument: it is what forces
   // the re-measure once the real font replaces the fallback.
   const widths = useMemo(
-    () => measureWidths(words, fontSizes, fontRevision),
-    [words, fontSizes, fontRevision],
+    () => measureWidths(texts, fontSizes, fontRevision),
+    [texts, fontSizes, fontRevision],
   );
 
   if (words.length === 0 || scale <= 0) {
@@ -179,7 +200,7 @@ export function OcrOverlay({
         active ? "cursor-text select-text" : "pointer-events-none select-none",
       )}
     >
-      {groupIntoLines(words).map((line, lineIndex) => {
+      {lines.map((line, lineIndex) => {
         const head = words[line[0]];
         // Every word on a line shares the line's band, so the line owns the
         // font size and the vertical placement and the words only have to
@@ -225,7 +246,6 @@ export function OcrOverlay({
                   ? (word.x0 - previous.x0) * scale -
                     widths[line[positionInLine - 1]]
                   : 0;
-                const isLast = positionInLine === line.length - 1;
                 return (
                   <span
                     key={index}
@@ -241,8 +261,9 @@ export function OcrOverlay({
                     }}
                   >
                     {/* Spans that abut with nothing between them copy as one
-                      run-on word, so every word but the last carries a space. */}
-                    {isLast ? word.text : `${word.text} `}
+                        run-on word, so every word but the last carries a
+                        space. It is part of what was measured — see `texts`. */}
+                    {texts[index]}
                   </span>
                 );
               })}

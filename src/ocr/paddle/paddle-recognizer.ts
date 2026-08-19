@@ -8,6 +8,7 @@ import { decodeLine, splitIntoWords } from "@/ocr/paddle/ctc";
 import {
   boxesFromProbabilityMap,
   inReadingOrder,
+  type Box,
   type DetectedBox,
 } from "@/ocr/paddle/db-postprocess";
 import {
@@ -141,13 +142,17 @@ export class PaddleRecognizer implements Recognizer {
     // Detection ran on a resized canvas; the boxes have to come back to the
     // asset's own pixels, which is the only space a Word is ever expressed in.
     const toAsset = input.inverseScale * (input.width / width);
+    const rescale = (box: Box): Box => ({
+      x0: Math.max(0, box.x0 * toAsset),
+      y0: Math.max(0, box.y0 * toAsset),
+      x1: Math.min(bitmap.width, box.x1 * toAsset),
+      y1: Math.min(bitmap.height, box.y1 * toAsset),
+    });
     return inReadingOrder(
       found.map((box) => ({
-        x0: Math.max(0, box.x0 * toAsset),
-        y0: Math.max(0, box.y0 * toAsset),
-        x1: Math.min(bitmap.width, box.x1 * toAsset),
-        y1: Math.min(bitmap.height, box.y1 * toAsset),
+        ...rescale(box),
         score: box.score,
+        text: rescale(box.text),
       })),
     );
   }
@@ -183,27 +188,53 @@ export class PaddleRecognizer implements Recognizer {
           classes,
           index * timesteps * classes,
         );
+        const decoded = splitIntoWords(line).filter(
+          (word) => word.text.trim() !== "",
+        );
+        if (decoded.length === 0) {
+          return;
+        }
+
+        // The CTC timesteps run across the padded batch width, while this line
+        // only occupies the part its own crop filled — so a fraction along the
+        // batch has to be rescaled by that share before it means anything in
+        // the box it came from.
+        const share = batch.width / crops[index].width;
         const boxWidth = box.x1 - box.x0;
-        for (const word of splitIntoWords(line)) {
-          if (word.text.trim() === "") {
-            continue;
-          }
+        const at = (fraction: number) =>
+          box.x0 + Math.min(1, fraction * share) * boxWidth;
+
+        const spans = decoded.map((word) => ({
+          word,
+          x0: at(word.start),
+          x1: at(word.end),
+        }));
+
+        // Tile the words across the line rather than trusting each peak's own
+        // extent. A CTC head marks a character in the one slice it fires in,
+        // which sits late and covers less than the glyph does: measured, words
+        // came out about 30% narrower than their ink and drifted left. Meeting
+        // each neighbour halfway restores the line, and matches what selecting
+        // text looks like anyway — the highlight covers the spaces too.
+        for (let i = 0; i < spans.length; i++) {
+          const previous = spans[i - 1];
+          const next = spans[i + 1];
+          const left =
+            previous === undefined
+              ? box.text.x0
+              : (previous.x1 + spans[i].x0) / 2;
+          const right =
+            next === undefined ? box.text.x1 : (spans[i].x1 + next.x0) / 2;
           words.push({
-            text: word.text,
-            // The CTC timesteps run across the padded batch width, while this
-            // line only occupies the part its own crop filled — so a fraction
-            // along the line has to be rescaled by that share before it means
-            // anything in the box.
-            x0:
-              box.x0 +
-              word.start * boxWidth * (batch.width / crops[index].width),
-            x1: Math.min(
-              box.x1,
-              box.x0 + word.end * boxWidth * (batch.width / crops[index].width),
-            ),
-            y0: box.y0,
-            y1: box.y1,
-            confidence: word.confidence * box.score,
+            text: spans[i].word.text,
+            x0: left,
+            x1: Math.max(left + 1, right),
+            // The tight box, not the expanded one that was cropped and read:
+            // the expansion exists to keep ascenders out of the crop's edge,
+            // and reporting it would sit the highlight 8px proud of the ink.
+            y0: box.text.y0,
+            y1: box.text.y1,
+            confidence: spans[i].word.confidence * box.score,
           });
         }
       });
