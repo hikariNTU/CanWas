@@ -6,7 +6,7 @@ canvas, arrange them freely, and select text out of them.
 Think PureRef's spatial freedom, with the text in your screenshots actually
 selectable.
 
-**Status:** skeleton. OCR is stubbed behind an interface and does not run yet.
+**Status:** step 1 of 9 — skeleton. OCR is stubbed behind an interface and does not run yet.
 
 ## Quickstart
 

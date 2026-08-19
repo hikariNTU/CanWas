@@ -5,17 +5,17 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ INGEST            paste · drop · file picker · getDisplayMedia│
-│                   Blob → hash → Asset → Node at cursor        │
+│                   Blob → hash → Asset → Node, fit to viewport │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│ STORE (jotai)     boards · nodes · assets(meta) · viewport    │
+│ STORE (jotai)     boards · nodes · assets · viewport · history│
 │                   single source of truth, world coordinates   │
 └─────────────────────────────────────────────────────────────┘
              │                                    │
 ┌────────────────────────────┐   ┌──────────────────────────────┐
 │ PERSISTENCE (IndexedDB)    │   │ RENDER (DOM)                 │
-│ asset blobs · board docs   │   │ one CSS transform on scene   │
+│ asset blobs + OCR results  │   │ one CSS transform on scene   │
 │ debounced writes           │   │ <img> per node + OCR overlay │
 └────────────────────────────┘   └──────────────────────────────┘
                                               │
@@ -86,12 +86,64 @@ All three spaces are defined in [the domain model](domain-model.md). Two rules:
 
 IndexedDB, two stores:
 
-- `assets` — `{ id, blob, width, height, hash }`, content-addressed and refcounted.
-- `boards` — `{ id, name, nodes[], viewport, createdAt, updatedAt }`.
+- `assets` — `{ id, blob, width, height, hash, ocr }`, content-addressed and
+  shared across every Board.
+- `boards` — `{ id, name, nodes[], viewport, createdAt, updatedAt }`, plain
+  JSON-serializable so a future `.canwas` export needs no schema migration.
 
 `blob:` URLs do not survive reload, so they are recreated from stored Blobs on
-board open and revoked on close. Board writes are debounced; asset writes are
-immediate (they are the irreplaceable part).
+board open and revoked on close. Board content writes are debounced; viewport
+writes are debounced harder and never bump `updatedAt`; asset writes are
+immediate, since they are the irreplaceable part.
+
+`navigator.storage.persist()` is requested at startup. Without it IndexedDB is
+evictable under disk pressure, and eviction is silent — the first sign of trouble
+would be an empty Home screen.
+
+### Asset garbage collection
+
+Assets are **not** reference-counted. A stored counter has to be adjusted on
+every mutation path, and a crash between the two writes desyncs it permanently —
+either leaking blobs forever or deleting an image still on screen.
+
+Instead, mark-and-sweep, **at startup only**:
+
+```
+live = union of every board's nodes' assetId
+for asset in assets:
+    if asset.id not in live: delete asset
+```
+
+There is no state to corrupt, so a crash mid-write cannot break it — the next
+sweep repairs everything. Boards are small; the walk is milliseconds.
+
+Startup is the safe moment because undo history is in-memory and therefore always
+empty at that point. If the sweep ran after a board delete, it could reclaim
+assets that an undo entry still needed. Board deletion is not undoable (it gets a
+confirmation dialog instead), so its orphans simply wait for the next startup.
+
+## History
+
+Per-Board, in-memory, cleared on reload. See
+[Change and History](domain-model.md#change) for the shape.
+
+Every mutation is written as a function returning both its forward patch and its
+exact inverse. A mutation without an inverse is a corruption bug, so the two are
+produced in the same place and never separately.
+
+```ts
+function moveNodes(ids: NodeId[], dx: number, dy: number): Change
+// apply:  each id += (dx, dy)
+// invert: each id -= (dx, dy)
+```
+
+Gestures coalesce. A drag mutates node positions live for feedback but pushes a
+single Change at pointer-up, carrying the position from pointer-*down*. Pushing
+per `pointermove` would bury every real action under hundreds of entries.
+
+Deleting a node stores the whole node plus its array index, so undo restores both
+the node and its exact place in the paint order — the same array position that
+[D8](decisions.md) made canonical.
 
 ## Routing
 
@@ -103,6 +155,17 @@ Hash history, TanStack Router, file-based routes.
 ```
 
 Hash avoids the GitHub Pages deep-link 404 with no `404.html` redirect trick.
+
+## Clipboard constraint
+
+Ingest reads images from the paste event's `clipboardData.files`. It must **never**
+use `navigator.clipboard.read()`.
+
+This is a testability constraint, not a preference. Real OS-clipboard image paste
+cannot be automated reliably across browsers; the only workable path is
+dispatching a synthetic `ClipboardEvent` carrying a `DataTransfer` from inside
+`page.evaluate`. An app reading the async Clipboard API cannot be driven that way,
+which would make the required happy-path E2E impossible to write.
 
 ## Worker boundary
 
