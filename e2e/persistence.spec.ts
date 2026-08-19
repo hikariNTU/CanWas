@@ -72,7 +72,7 @@ function storedNodeCount(page: Page, boardId: string) {
 }
 
 test("a pasted image survives a reload", async ({ page }) => {
-  await page.goto("/CanWas/#/board/persistme");
+  await page.goto("/CanWas/#/persistme");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 
   await pasteImage(page);
@@ -100,7 +100,7 @@ test("a pasted image survives a reload", async ({ page }) => {
 });
 
 test("viewport is restored but does not count as an edit", async ({ page }) => {
-  await page.goto("/CanWas/#/board/viewportme");
+  await page.goto("/CanWas/#/viewportme");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await pasteImage(page);
   await expect.poll(() => countStore(page, "boards")).toBe(1);

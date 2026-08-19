@@ -10,6 +10,14 @@
 const MAX_SLUG_LENGTH = 48;
 
 /**
+ * Boards live at the root, so any future non-board route must be impossible to
+ * confuse with an id. `~` is not in the base32 alphabet (D32) and `toSlug`
+ * strips it, so a segment starting with it can never be a board:
+ * `#/~settings` is always a route, `#/qyzs34jb14rz-notes` always a board.
+ */
+export const RESERVED_PREFIX = "~";
+
+/**
  * A readable fragment of a board name.
  *
  * Letters and numbers in *any* script survive — `\p{L}` keeps 未命名畫板 intact

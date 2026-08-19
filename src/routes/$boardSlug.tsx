@@ -7,7 +7,7 @@ import { boardSlug, parseBoardId } from "@/lib/slug";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import { useBoardPersistence } from "@/storage/use-board-persistence";
 
-export const Route = createFileRoute("/board/$boardSlug")({
+export const Route = createFileRoute("/$boardSlug")({
   component: BoardScreen,
 });
 
@@ -30,7 +30,7 @@ function BoardScreen() {
     const canonical = boardSlug(meta.id, meta.name);
     if (canonical !== segment) {
       void navigate({
-        to: "/board/$boardSlug",
+        to: "/$boardSlug",
         params: { boardSlug: canonical },
         replace: true,
       });

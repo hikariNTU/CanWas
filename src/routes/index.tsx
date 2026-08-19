@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
   beforeLoad: async () => {
     const board = await resolveLandingBoard(translate("home.untitled"));
     throw redirect({
-      to: "/board/$boardSlug",
+      to: "/$boardSlug",
       params: { boardSlug: boardSlug(board.id, board.name) },
     });
   },

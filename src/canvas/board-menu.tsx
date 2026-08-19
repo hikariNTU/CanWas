@@ -60,7 +60,7 @@ export function BoardMenu({
     const board = await createBoard(t("home.untitled"));
     setBoardsMeta((previous) => ({ ...previous, [board.id]: metaOf(board) }));
     await navigate({
-      to: "/board/$boardSlug",
+      to: "/$boardSlug",
       params: { boardSlug: boardSlug(board.id, board.name) },
     });
   }
@@ -80,7 +80,7 @@ export function BoardMenu({
     const target =
       remaining[0] ?? metaOf(await createBoard(t("home.untitled")));
     await navigate({
-      to: "/board/$boardSlug",
+      to: "/$boardSlug",
       params: { boardSlug: boardSlug(target.id, target.name) },
     });
   }
@@ -129,7 +129,7 @@ export function BoardMenu({
                   const target = boardsMeta[String(value)];
                   if (target) {
                     void navigate({
-                      to: "/board/$boardSlug",
+                      to: "/$boardSlug",
                       params: { boardSlug: boardSlug(target.id, target.name) },
                     });
                   }

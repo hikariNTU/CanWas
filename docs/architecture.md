@@ -253,10 +253,11 @@ Middle-drag still pans from anywhere, including over a node.
 Hash history, TanStack Router, file-based routes.
 
 ```
-#/                          resolves to the latest board, or creates one
-#/board/$boardSlug          Canvas — the only screen (D31)
-      └─ qyzs34jb14rz-mood-board
-         ^^^^^^^^^^^^ authoritative id   ^^^^^^^^^^ decoration (D33)
+#/                        resolves to the latest board, or creates one
+#/$boardSlug              Canvas — the only screen (D31)
+   └─ qyzs34jb14rz-mood-board
+      ^^^^^^^^^^^^ authoritative id  ^^^^^^^^^^ decoration (D33)
+#/~*                      reserved for future non-board routes (D34)
 ```
 
 A bare id or a stale slug both resolve; the app then rewrites the URL to the

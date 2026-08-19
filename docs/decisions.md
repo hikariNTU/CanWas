@@ -561,3 +561,28 @@ Slugs keep letters and numbers in **any** script — `\p{L}`, not `[a-z]` — so
 設計參考 survives as itself instead of being stripped to an empty slug. It
 appears percent-encoded in `location.href` and decoded in the address bar, as
 non-ASCII URLs always have.
+
+---
+
+## D34 — Boards live at the root, `~` is reserved
+
+**2026-08-19 · settled**
+
+`#/qyzs34jb14rz-mood-board`, not `#/board/qyzs34jb14rz-mood-board`.
+
+Since D31 removed the home screen the app has one screen type, so `/board/`
+distinguished nothing — it was a constant prefix naming a category with one
+member.
+
+The namespace it protected is recovered with a reserved character instead: `~`
+is absent from the base32 id alphabet (D32) and stripped by `toSlug`, and a
+board segment always begins with its id, so no board can ever produce one.
+
+```
+#/qyzs34jb14rz-mood-board   always a board
+#/~settings                 always a route
+```
+
+Third time the restricted alphabet has paid for itself: it made the hyphen an
+unambiguous slug delimiter (D33), and now makes `~` a permanently safe prefix.
+A UUID or base62 id would have needed a separate escaping rule for both.
