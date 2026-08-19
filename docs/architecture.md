@@ -77,6 +77,31 @@ image, so the browser's own selection highlights land on the right pixels.
 order, which has nothing to do with spatial order, so dragging a selection across
 two images yields scrambled text. Only one Node's overlay is selectable at a time.
 
+## Input model
+
+| Gesture                                        | Effect                            |
+| ---------------------------------------------- | --------------------------------- |
+| Drag on empty canvas, or middle-drag           | Pan                               |
+| Two-finger scroll                              | Pan                               |
+| Pinch (`ctrlKey` + wheel), `shift`/`⌘` + wheel | Zoom, anchored at cursor          |
+| `⌘0`                                           | Reset viewport                    |
+| `⌘=` / `⌘-`                                    | Zoom, anchored at viewport centre |
+
+Wheel and pointer listeners are attached natively rather than via React props,
+because the wheel handler must `preventDefault` and React's synthetic listener
+cannot be made non-passive.
+
+Every viewport update goes through the functional setter form. That keeps the
+listeners independent of the current viewport, so they are attached once rather
+than being torn down and re-attached on every frame of a pan — which would drop
+pointer events mid-gesture.
+
+**Wheel delta must be clamped before it reaches the zoom exponent.** The same
+`ctrlKey + wheel` signal arrives from two very different devices: a trackpad
+pinch streams small deltas (~1-5), a mouse sends one large delta per notch
+(100-240). One exponential over both makes a single mouse notch cross the entire
+zoom range.
+
 ## Coordinate handling
 
 All three spaces are defined in [the domain model](domain-model.md). Two rules:

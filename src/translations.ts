@@ -66,6 +66,22 @@ const translations = {
     "zh-TW": "返回畫板列表",
     "en-US": "Back to boards",
   },
+  "canvas.hint": {
+    "zh-TW": "拖曳以平移，捲動以平移，Shift 或 ⌘ 加捲動以縮放",
+    "en-US": "Drag to pan · scroll to pan · shift or ⌘ + scroll to zoom",
+  },
+  "canvas.zoomIn": {
+    "zh-TW": "放大",
+    "en-US": "Zoom in",
+  },
+  "canvas.zoomOut": {
+    "zh-TW": "縮小",
+    "en-US": "Zoom out",
+  },
+  "canvas.resetView": {
+    "zh-TW": "重設檢視",
+    "en-US": "Reset view",
+  },
   "board.placeholder": {
     "zh-TW": "畫布尚未實作。這裡之後會是無限畫布。",
     "en-US": "Canvas not implemented yet. The infinite canvas lands here.",

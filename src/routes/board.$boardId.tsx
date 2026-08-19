@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { Canvas } from "@/canvas/canvas";
 import { useTranslation } from "@/translations";
 
 export const Route = createFileRoute("/board/$boardId")({
@@ -23,10 +24,8 @@ function BoardScreen() {
           {boardId}
         </span>
       </div>
-      <div className="grid min-h-0 flex-1 place-items-center border-t border-neutral-800">
-        <p className="max-w-sm px-6 text-center text-sm text-neutral-600">
-          {t("board.placeholder")}
-        </p>
+      <div className="min-h-0 flex-1 border-t border-neutral-800">
+        <Canvas boardId={boardId} />
       </div>
     </div>
   );
