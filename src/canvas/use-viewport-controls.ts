@@ -110,10 +110,20 @@ export function useViewportControls(
     let last: Point = { x: 0, y: 0 };
 
     function handlePointerDown(event: PointerEvent) {
-      // Left button on empty canvas, or middle button anywhere. Once nodes
-      // exist, they will stop propagation so a drag on a node moves the node.
       const isPanButton = event.button === 0 || event.button === 1;
       if (!isPanButton || panningPointerId !== null) {
+        return;
+      }
+      // A left press that landed on a node is a node drag, not a pan.
+      //
+      // The node's own handler cannot prevent this by calling stopPropagation:
+      // React delegates events to the root container, so this native listener
+      // on an ancestor runs first, during real DOM propagation. The ownership
+      // test has to live here. Middle-drag still pans from anywhere.
+      if (
+        event.button === 0 &&
+        (event.target as Element | null)?.closest?.("[data-node-id]")
+      ) {
         return;
       }
       panningPointerId = event.pointerId;

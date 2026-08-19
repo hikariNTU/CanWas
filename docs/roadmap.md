@@ -9,8 +9,8 @@ before it is independently useful.
 | 1   | Skeleton: Vite 8, React 19, TS 7, Tailwind 4, oxlint/oxfmt, router, CI            | ✅ done  |
 | 2   | Viewport: pan, zoom, world↔screen transform                                       | ✅ done  |
 | 3   | Ingest: paste + drop → Asset + Node, fit to viewport                              | ✅ done  |
-| 4   | Board store + **history stack**: select, move, resize, delete, reorder, undo/redo | ⏳ next  |
-| 5   | Persistence: IndexedDB assets + boards, startup sweep, Home board list            | ☐        |
+| 4   | Board store + **history stack**: select, move, resize, delete, reorder, undo/redo | ✅ done  |
+| 5   | Persistence: IndexedDB assets + boards, startup sweep, Home board list            | ⏳ next  |
 | 6   | OCR seam: `Recognizer`, `MockRecognizer`, worker wiring, per-asset status         | ☐        |
 | 7   | Selection overlay: transparent spans, scaleX fit, single-node scope               | ☐        |
 | 8   | Playwright happy path + screenshots                                               | ☐        |

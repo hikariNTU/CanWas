@@ -172,6 +172,44 @@ Deleting a node stores the whole node plus its array index, so undo restores bot
 the node and its exact place in the paint order — the same array position that
 [D8](decisions.md) made canonical.
 
+## Gestures
+
+A drag renders from a **transient overlay** held in component state, not from the
+store. The store changes exactly once per gesture, at pointer-up, which is the
+granularity the history stack wants (D17) — and an abandoned gesture needs no
+cleanup, because the store was never touched.
+
+```
+pointerdown → overlay = { ids, dx: 0, dy: 0 }
+pointermove → overlay.dx/dy = (client - origin) / scale     ← render only
+pointerup   → commit(moveNodes(...))  ·  overlay = null
+```
+
+Selection chrome is drawn inside the scene, so its thickness is divided by
+`viewport.scale` to stay constant on screen.
+
+Resize is aspect-locked. Images have one true aspect ratio; a free resize could
+only ever distort them.
+
+### Event ownership between native and React listeners
+
+The canvas attaches `pointerdown` **natively** (it needs non-passive wheel
+handling, and both live together), while nodes use React props. React delegates
+to the root container, so the canvas's native ancestor listener runs _first_,
+during real DOM propagation — before React's synthetic handler exists.
+
+A node therefore **cannot** call `stopPropagation()` to stop a pan. It fails
+silently and doubly: the node moves by the drag delta _and_ the whole viewport
+pans by the same delta, so the node appears to travel twice as far.
+
+The ownership test lives in the pan handler instead:
+
+```ts
+if (event.button === 0 && event.target.closest("[data-node-id]")) return;
+```
+
+Middle-drag still pans from anywhere, including over a node.
+
 ## Routing
 
 Hash history, TanStack Router, file-based routes.

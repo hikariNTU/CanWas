@@ -74,6 +74,14 @@ const translations = {
     "zh-TW": "貼上或拖曳圖片到這裡",
     "en-US": "Paste or drop an image here",
   },
+  "canvas.undo": {
+    "zh-TW": "復原",
+    "en-US": "Undo",
+  },
+  "canvas.redo": {
+    "zh-TW": "重做",
+    "en-US": "Redo",
+  },
   "canvas.zoomIn": {
     "zh-TW": "放大",
     "en-US": "Zoom in",

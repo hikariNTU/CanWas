@@ -6,8 +6,9 @@ canvas, arrange them freely, and select text out of them.
 Think PureRef's spatial freedom, with the text in your screenshots actually
 selectable.
 
-**Status:** steps 1-3 of 9 complete — pan/zoom canvas, paste and drop images.
-No selection or undo yet, nothing persists across reload, OCR is designed but not built.
+**Status:** steps 1-4 of 9 complete — pan/zoom canvas, paste and drop images,
+select/move/resize/delete/reorder with full undo/redo. Nothing persists across
+reload yet, and OCR is designed but not built.
 
 ## Quickstart
 

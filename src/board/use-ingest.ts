@@ -1,4 +1,4 @@
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import { useCallback, useEffect, type RefObject } from "react";
 
 import {
@@ -9,7 +9,9 @@ import {
   placeCentred,
   readIntrinsicSize,
 } from "@/board/ingest";
-import { assetsAtom, boardNodesAtom } from "@/board/store";
+import { useBoardHistory } from "@/board/history";
+import { insertNodes } from "@/board/mutations";
+import { assetsAtom } from "@/board/store";
 import type { Asset, BoardNode } from "@/board/types";
 import { screenToWorld, type Point, type Viewport } from "@/canvas/coords";
 
@@ -17,6 +19,7 @@ interface IngestOptions {
   boardId: string;
   viewport: Viewport;
   surfaceRef: RefObject<HTMLElement | null>;
+  nodes: readonly BoardNode[];
 }
 
 /**
@@ -26,9 +29,14 @@ interface IngestOptions {
  * (D21): the async Clipboard API cannot be driven by a synthetic event, which
  * would make the paste path impossible to cover in Playwright.
  */
-export function useIngest({ boardId, viewport, surfaceRef }: IngestOptions) {
+export function useIngest({
+  boardId,
+  viewport,
+  surfaceRef,
+  nodes,
+}: IngestOptions) {
   const [assets, setAssets] = useAtom(assetsAtom);
-  const setNodesByBoard = useSetAtom(boardNodesAtom);
+  const { commit } = useBoardHistory(boardId);
 
   const ingestFiles = useCallback(
     async (files: File[], screenPoint: Point | null) => {
@@ -85,32 +93,30 @@ export function useIngest({ boardId, viewport, surfaceRef }: IngestOptions) {
           return next;
         });
       }
-      // Placement is resolved inside the setter, where the authoritative node
-      // list lives — the cascade has to see nodes added by earlier pastes.
-      setNodesByBoard((previous) => {
-        const existing = previous[boardId] ?? [];
-        const taken = existing.map((node) => ({ x: node.x, y: node.y }));
-        const added: BoardNode[] = [];
+      // Placement consults the board, not the batch: pasting the same image
+      // twice is two ingests, each starting from index 0, so without this the
+      // second copy would land exactly under the first.
+      const taken = nodes.map((node) => ({ x: node.x, y: node.y }));
+      const added: BoardNode[] = [];
+      for (const { asset, size } of pending) {
+        const origin = cascadeFreeOrigin(taken, placeCentred(centre, size));
+        taken.push(origin);
+        added.push({
+          id: crypto.randomUUID(),
+          kind: "image",
+          x: origin.x,
+          y: origin.y,
+          w: size.w,
+          h: size.h,
+          assetId: asset.id,
+        });
+      }
 
-        for (const { asset, size } of pending) {
-          const origin = cascadeFreeOrigin(taken, placeCentred(centre, size));
-          taken.push(origin);
-          added.push({
-            id: crypto.randomUUID(),
-            kind: "image",
-            x: origin.x,
-            y: origin.y,
-            w: size.w,
-            h: size.h,
-            assetId: asset.id,
-          });
-        }
-
-        // Appending puts new nodes on top, since array order is paint order.
-        return { ...previous, [boardId]: [...existing, ...added] };
-      });
+      // Paste is undoable (D17), so it goes through the history stack like any
+      // other mutation rather than writing to the store directly.
+      commit(insertNodes(nodes, added, `paste ${added.length} image(s)`));
     },
-    [assets, boardId, setAssets, setNodesByBoard, surfaceRef, viewport],
+    [assets, commit, nodes, setAssets, surfaceRef, viewport],
   );
 
   useEffect(() => {
