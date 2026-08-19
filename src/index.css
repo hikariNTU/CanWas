@@ -57,3 +57,16 @@ body {
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
+
+/* The OCR overlay: real text, invisible ink. The browser draws the selection
+   highlight itself, so it lands exactly where a native text selection would.
+   Font must match OVERLAY_FONT in ocr-overlay.tsx — the widths measured there
+   are what each span's scaleX correction is built from. */
+.ocr-word {
+  font-family: "Noto Sans", ui-sans-serif, sans-serif;
+  font-weight: 700;
+}
+.ocr-word::selection {
+  background: color-mix(in srgb, var(--color-sky-400) 45%, transparent);
+  color: transparent;
+}

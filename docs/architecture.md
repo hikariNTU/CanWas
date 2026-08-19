@@ -62,20 +62,37 @@ hatch is virtualization by viewport culling, not a rewrite to canvas.
 The hard part of the whole app, and the reason `MockRecognizer` ships first: the
 overlay must be built and proven before a real engine exists.
 
-Each `Word` becomes one absolutely positioned `<span>`, transparent text over the
-image, so the browser's own selection highlights land on the right pixels.
+Each `Word` becomes one `<span>` of transparent text over the image, so the
+browser's own selection highlights land on the right pixels.
 
-1. Position and size from the Word's Asset-space box, scaled by `node.w / asset.width`.
-2. `font-size` from the box height.
-3. Measure the rendered text; apply `transform: scaleX(boxWidth / measuredWidth)`
-   with `transform-origin: left top`. Without this correction, selection
-   rectangles drift right across a line and the highlight stops matching the pixels.
+Words are grouped into **lines**, and the line — not the word — is the
+positioned box:
+
+1. A line is a block, absolutely positioned at the band's top, stretched the
+   full width of the overlay and pushed in with `padding-left`. It carries the
+   `font-size`, taken from the band height, and `white-space: nowrap`.
+2. Words inside it are `inline-block` in normal flow, each pinned to its
+   measured natural width, with `margin-left` making up the gap to the previous
+   word. The flow then places them exactly on their Asset-space boxes.
+3. `transform: scaleX(boxWidth / measuredWidth)` with `transform-origin: left
+top` stretches the glyphs to fill the box. The transform does not affect
+   layout, so the flow above still advances by the untransformed width.
 4. `color: transparent` with `::selection` background left visible.
-5. `white-space: pre`, no wrapping — one span is one word, wrapping is a bug.
+5. Every word but the last on its line carries a trailing space, which overflows
+   the pinned width rather than widening it. Lines sit inside an in-flow wrapper
+   so a block boundary separates them.
+
+Steps 1 and 2 are what make selection behave; see [D43](decisions.md).
 
 **Cross-node selection is deliberately blocked.** Native selection follows DOM
 order, which has nothing to do with spatial order, so dragging a selection across
 two images yields scrambled text. Only one Node's overlay is selectable at a time.
+
+An image is entered by double-clicking it, which is already what double-click
+means for a text node — go inside. While an image is entered it does not drag,
+since the same gesture selects its text, and the board's own shortcuts are
+suspended so Delete and Select All belong to the selection. Escape leaves, as
+does a press anywhere else.
 
 ## Input model
 

@@ -23,6 +23,7 @@ import { BoardMenu } from "@/canvas/board-menu";
 import { BoardName } from "@/canvas/board-name";
 import { measureHeight, TextNodeView } from "@/canvas/text-node";
 import { OcrBadge } from "@/canvas/ocr-badge";
+import { OcrOverlay } from "@/canvas/ocr-overlay";
 import { useOcr } from "@/ocr/use-ocr";
 import { Icon } from "@/ui/icon";
 import { screenToWorld } from "@/canvas/coords";
@@ -49,6 +50,12 @@ export function Canvas({ boardId }: { boardId: string }) {
     useNodeGestures(boardId, viewport);
 
   const [editingId, setEditingId] = useState<NodeId | null>(null);
+  /**
+   * The image whose text is currently selectable. Exactly one at a time: native
+   * selection follows DOM order, so letting two overlays be selectable at once
+   * would let a drag produce text from both, interleaved by nothing meaningful.
+   */
+  const [readingId, setReadingId] = useState<NodeId | null>(null);
   const [draft, setDraft] = useState("");
   const bodyRef = useRef<HTMLElement | null>(null);
   const { setSelection: select } = useSelection(boardId);
@@ -107,7 +114,7 @@ export function Canvas({ boardId }: { boardId: string }) {
   // than off any user action: an image that arrives by paste, by drop, or by
   // being restored from disk is read the same way.
   useOcr(nodes);
-  useBoardShortcuts(boardId);
+  useBoardShortcuts(boardId, readingId === null);
 
   // A press on empty canvas clears the selection. Registered natively so it
   // runs before the pan handler claims the pointer.
@@ -117,13 +124,57 @@ export function Canvas({ boardId }: { boardId: string }) {
       return;
     }
     function handlePointerDown(event: PointerEvent) {
-      if (!(event.target as Element | null)?.closest?.("[data-node-id]")) {
+      const nodeElement = (event.target as Element | null)?.closest?.(
+        "[data-node-id]",
+      );
+      if (!nodeElement) {
         setSelection([]);
       }
+      // Pressing anywhere that is not the node being read leaves reading mode,
+      // including a press on a different node — one overlay at a time. Read
+      // through the setter rather than a ref, so this listener never has to be
+      // re-registered and never sees a stale value.
+      setReadingId((current) =>
+        current !== null &&
+        nodeElement?.getAttribute("data-node-id") !== current
+          ? null
+          : current,
+      );
     }
     surface.addEventListener("pointerdown", handlePointerDown);
     return () => surface.removeEventListener("pointerdown", handlePointerDown);
   }, [setSelection]);
+
+  // Reading mode owns two keys while it is on. Escape leaves it, and Select All
+  // means "all the text in this image" rather than "every node on the board" —
+  // the browser's own Select All would take the whole document, chrome included.
+  useEffect(() => {
+    if (readingId === null) {
+      return;
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setReadingId(null);
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
+        const overlay = surfaceRef.current?.querySelector(
+          "[data-testid=ocr-overlay][data-active]",
+        );
+        if (!overlay) {
+          return;
+        }
+        event.preventDefault();
+        const range = document.createRange();
+        range.selectNodeContents(overlay);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [readingId]);
 
   // The size control belongs to exactly one selected text node: with several,
   // it is unclear which the buttons would act on.
@@ -175,6 +226,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             const rect = rectFor(node);
             const isSelected = selection.includes(node.id);
             const isEditing = editingId === node.id;
+            const isReading = readingId === node.id;
             const asset = node.kind === "image" ? assets[node.assetId] : null;
             if (node.kind === "image" && !asset) {
               return null;
@@ -193,16 +245,28 @@ export function Canvas({ boardId }: { boardId: string }) {
                     : undefined
                 }
                 onPointerDown={(event) => {
-                  if (!isEditing) {
+                  // A node being read is not draggable: the same drag is how
+                  // its text gets selected.
+                  if (!isEditing && !isReading) {
                     startMove(event, node.id);
                   }
                 }}
                 onDoubleClick={() => {
                   if (node.kind === "text" && !isEditing) {
                     startEditing(node.id, node.text);
+                    return;
+                  }
+                  // Double-click means "go inside this node" for both kinds:
+                  // into the text to edit it, into the image to read it.
+                  if (node.kind === "image" && asset?.ocr.status === "done") {
+                    select([node.id]);
+                    setReadingId(node.id);
                   }
                 }}
-                className="absolute cursor-move"
+                className={clsx(
+                  "absolute",
+                  isReading ? "cursor-text" : "cursor-move",
+                )}
                 style={{
                   left: rect.x,
                   top: rect.y,
@@ -224,6 +288,14 @@ export function Canvas({ boardId }: { boardId: string }) {
                       className="pointer-events-none block h-full w-full select-none"
                     />
                     <OcrBadge ocr={asset.ocr} scale={viewport.scale} />
+                    {asset.ocr.status === "done" && (
+                      <OcrOverlay
+                        words={asset.ocr.words}
+                        assetWidth={asset.width}
+                        nodeWidth={rect.w}
+                        active={isReading}
+                      />
+                    )}
                   </>
                 ) : node.kind === "text" ? (
                   <TextNodeView
@@ -235,19 +307,22 @@ export function Canvas({ boardId }: { boardId: string }) {
                     bodyRef={bodyRef}
                   />
                 ) : null}
-                {isSelected && selection.length === 1 && !isEditing && (
-                  <div
-                    data-testid="resize-handle"
-                    onPointerDown={(event) => startResize(event, node.id)}
-                    className="absolute cursor-nwse-resize bg-sky-500"
-                    style={{
-                      width: hairline * 5,
-                      height: hairline * 5,
-                      right: -hairline * 2.5,
-                      bottom: -hairline * 2.5,
-                    }}
-                  />
-                )}
+                {isSelected &&
+                  selection.length === 1 &&
+                  !isEditing &&
+                  !isReading && (
+                    <div
+                      data-testid="resize-handle"
+                      onPointerDown={(event) => startResize(event, node.id)}
+                      className="absolute cursor-nwse-resize bg-sky-500"
+                      style={{
+                        width: hairline * 5,
+                        height: hairline * 5,
+                        right: -hairline * 2.5,
+                        bottom: -hairline * 2.5,
+                      }}
+                    />
+                  )}
               </div>
             );
           })}

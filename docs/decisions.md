@@ -744,3 +744,91 @@ always produce the same fake reading and a reload does not reshuffle anything.
 
 Reverses if: a real engine lands. The mock stays as a test fixture, not as a
 fallback — a fallback that invents text would be worse than an error.
+
+---
+
+## D42 — Double-click enters a node
+
+**2026-08-19 · settled**
+
+Double-clicking a text node edits it; double-clicking a recognized image makes
+its text selectable. One gesture, one meaning: go inside this node.
+
+An image being read does not drag, because the same drag is how its text gets
+selected, and the board's keyboard shortcuts are suspended while it is entered
+so Delete and Select All apply to the text rather than to the board. Escape
+leaves, as does a press anywhere else — including on another node, since only
+one overlay may be selectable at a time.
+
+The alternatives were a modifier key and a mode toggle in the chrome. Both add
+something to learn for a gesture the app already had a meaning for.
+
+Reverses if: images grow a second inside-the-node action, at which point
+double-click has to choose between them.
+
+---
+
+## D43 — The overlay positions lines, not words
+
+**2026-08-19 · settled**
+
+A line is one absolutely positioned block spanning the overlay's full width;
+its words are `inline-block` in normal flow, placed by margins and pinned to
+their measured widths.
+
+The obvious construction — every word its own absolutely positioned box — looks
+identical and breaks selection. Measured: a drag that ended **five pixels** past
+the last glyph collapsed the whole selection, and a drag downward across lines
+selected nothing at all. With everything out of flow there are no line boxes to
+extend along, so a pointer that is not directly over a glyph has no text
+position to reach for. Nobody releases the mouse exactly on the final letter.
+
+With real line boxes the same drags select what they look like they select, an
+overshoot of 150px still lands at the end of the line, and a drag down the image
+selects across lines.
+
+Two details carry their weight:
+
+- Lines are stretched full width and pushed in with `padding-left` rather than
+  positioned at the first word, so an overshoot to the right stays inside the
+  line's own box.
+- Each line sits inside an in-flow wrapper, so a block boundary separates them
+  and a copied selection comes back with its line breaks.
+
+Reverses if: the overlay ever needs per-word rotation, which flow cannot express.
+
+---
+
+## D44 — Word widths are measured in the DOM, at the size they will render
+
+**2026-08-19 · settled**
+
+Each word is measured by laying it out offscreen at its real font size, in one
+batched pass, using the same class the real spans carry.
+
+Three attempts, in order:
+
+1. `canvas.measureText` — about 1% off what the same font rendered as a span.
+2. DOM at one reference size, scaled linearly — still drifted, because glyph
+   advances are not linear in font size; hinting rounds them at small sizes,
+   worth about 2% on short words.
+3. DOM at the real size — exact.
+
+Measuring at the real size costs nothing extra, because these font sizes are in
+world units: panning and zooming do not change them, only resizing the node
+does.
+
+Two traps were paid for along the way:
+
+- **`document.fonts.status === "loaded"` is not a font-loaded check.** It is
+  true whenever nothing is _pending_, including before the page has asked for
+  the font. Measuring then captured the fallback's advances and nothing
+  invalidated them — every span came out ~1.5% wide, intermittently, only on a
+  cold font cache. The overlay now calls `document.fonts.load()` for the face by
+  name and re-measures when it resolves, in addition to watching `loadingdone`.
+- **Probes must be taken out of flow.** Laid out as inline siblings on one line
+  each probe starts at a fractional x-offset and its glyphs snap to it, moving a
+  measured width by half a pixel — the same order as the error being corrected.
+
+Reverses if: the overlay adopts a font with no webfont dependency, which removes
+the loading race but not the measurement.

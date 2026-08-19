@@ -14,13 +14,18 @@ import { boardNodesAtom } from "@/board/store";
  * next render, which made Select All quietly select only the nodes that existed
  * when the listener was last registered.
  */
-export function useBoardShortcuts(boardId: string) {
+export function useBoardShortcuts(boardId: string, enabled = true) {
   const store = useStore();
   const { commit, undo, redo } = useBoardHistory(boardId);
   const { selection, setSelection } = useSelection(boardId);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
+      // Suspended while an image's text is being read: there, Delete and
+      // Select All belong to the text selection, not to the board.
+      if (!enabled) {
+        return;
+      }
       const target = event.target as HTMLElement | null;
       // Never steal keys from a text field.
       if (
@@ -97,5 +102,5 @@ export function useBoardShortcuts(boardId: string) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [boardId, commit, redo, selection, setSelection, store, undo]);
+  }, [boardId, commit, enabled, redo, selection, setSelection, store, undo]);
 }

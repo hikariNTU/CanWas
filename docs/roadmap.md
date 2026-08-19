@@ -12,8 +12,8 @@ before it is independently useful.
 | 4   | Board store + **history stack**: select, move, resize, delete, reorder, undo/redo | ✅ done  |
 | 5   | Persistence: IndexedDB assets + boards, startup sweep, board list in menu         | ✅ done  |
 | 6   | OCR seam: `Recognizer`, `MockRecognizer`, worker wiring, per-asset status         | ✅ done  |
-| 7   | Selection overlay: transparent spans, scaleX fit, single-node scope               | ⏳ next  |
-| 8   | Playwright happy path + screenshots                                               | ☐        |
+| 7   | Selection overlay: transparent spans, scaleX fit, single-node scope               | ✅ done  |
+| 8   | Playwright happy path + screenshots                                               | ⏳ next  |
 | —   | _ship / evaluate_                                                                 |          |
 | 9   | Real PaddleOCR behind `Recognizer`                                                | ☐ future |
 

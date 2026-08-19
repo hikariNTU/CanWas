@@ -72,6 +72,18 @@ No Unicode glyphs standing in for icons.
   a background marks a thing as interactive or editable. The board title is bare
   text at rest and gains a field only while being edited.
 
+## Reading an image
+
+A recognized image is entered by double-clicking it, the same gesture that opens
+a text node for editing ([D42](decisions.md)). Entered, it takes a text cursor,
+stops dragging, and its words become selectable; the board's shortcuts stand
+down so Delete and Select All belong to the selection. Escape leaves, as does a
+press anywhere else.
+
+Nothing marks a finished image as recognized. The badge is for work in progress
+only — a permanent label on every image would be clutter on a full board, and
+the text answering to a cursor is the affordance.
+
 ## Motion
 
 Transitions on hover/focus state only, `duration-150`. Never animate pan, zoom,
