@@ -113,3 +113,37 @@ test("zoom is clamped at both ends", async ({ page }) => {
   await page.keyboard.up("Control");
   await expect(reset).toHaveText("10%");
 });
+
+test("content stays visible below the grid's fade threshold", async ({
+  page,
+}) => {
+  // The grid fades out once its dots crowd together, which happens at 25%.
+  // It used to be painted onto the surface, so fading it faded every node
+  // with it: the board went blank at exactly the zoom where you most want
+  // the overview.
+  const surface = await centerOf(page, "canvas-surface");
+  await page.mouse.dblclick(surface.x, surface.y);
+  await page.keyboard.type("Still here");
+  await page.mouse.move(surface.x, surface.y);
+  await page.keyboard.press("Escape");
+
+  const node = page.getByTestId("board-node");
+  await expect(node).toBeVisible();
+
+  await page.keyboard.down("Control");
+  for (let i = 0; i < 30; i++) {
+    await page.mouse.wheel(0, 120);
+  }
+  await page.keyboard.up("Control");
+
+  const { scale } = await readTransform(page);
+  expect(scale).toBeLessThan(0.25);
+
+  await expect(page.getByTestId("canvas-grid")).toHaveCSS("opacity", "0");
+  await expect(page.getByTestId("canvas-surface")).toHaveCSS("opacity", "1");
+  await expect(node).toBeVisible();
+  const box = await node.boundingBox();
+  expect(box?.width).toBeGreaterThan(0);
+
+  await page.screenshot({ path: "e2e/screenshots/canvas-zoomed-out.png" });
+});

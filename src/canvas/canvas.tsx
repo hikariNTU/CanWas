@@ -29,6 +29,8 @@ import { useViewportControls } from "@/canvas/use-viewport-controls";
 import { useTranslation } from "@/translations";
 
 const GRID_SPACING = 24;
+/** Below this on-screen dot spacing the grid reads as noise, so it fades out. */
+const GRID_FADE_BELOW = 6;
 
 export function Canvas({ boardId }: { boardId: string }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -135,14 +137,22 @@ export function Canvas({ boardId }: { boardId: string }) {
         ref={surfaceRef}
         data-testid="canvas-surface"
         className="absolute inset-0 cursor-grab touch-none bg-neutral-950"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle, var(--color-neutral-800) 1px, transparent 1px)",
-          backgroundSize: `${gridSize}px ${gridSize}px`,
-          backgroundPosition: `${viewport.tx}px ${viewport.ty}px`,
-          opacity: gridSize < 6 ? 0 : 1,
-        }}
       >
+        {/* The grid is its own layer rather than a background on the surface:
+            it fades out when the dots crowd together, and fading the surface
+            would take the whole scene with it. */}
+        <div
+          aria-hidden
+          data-testid="canvas-grid"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, var(--color-neutral-800) 1px, transparent 1px)",
+            backgroundSize: `${gridSize}px ${gridSize}px`,
+            backgroundPosition: `${viewport.tx}px ${viewport.ty}px`,
+            opacity: gridSize < GRID_FADE_BELOW ? 0 : 1,
+          }}
+        />
         <div
           data-testid="canvas-scene"
           className="absolute top-0 left-0 origin-top-left"

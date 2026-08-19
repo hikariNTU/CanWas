@@ -656,3 +656,17 @@ never shift the position of the permanent ones.
 Changing size is one undoable Change. The node's cached `h` goes stale until the
 text is next edited, which costs nothing: text renders at automatic height and
 nothing reads `h` for layout.
+
+## D38 — The grid is a layer, not a background on the surface
+
+The dot grid fades out once its on-screen spacing drops below 6px, which at a
+24px world spacing means below 25% zoom. It was painted as a background on the
+canvas surface, so fading it faded the surface's descendants too — the whole
+board went blank at exactly the zoom where an overview is most useful.
+
+The grid now renders as its own `pointer-events-none` layer behind the scene.
+Opacity on decoration must never sit on an element that also has content
+beneath it.
+
+Reverses if: the grid stops being a plain CSS background — a canvas-drawn or
+tiled grid would want its own compositing story anyway.
