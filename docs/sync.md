@@ -99,21 +99,24 @@ back as an addition. A tombstone is a record that something was deleted and
 when. They can be reclaimed after a fixed period, on the bet that no device
 stays offline longer than that.
 
-**3. Paint order has to stop being the array index.** This is the one that hurts,
-because it contradicts [D18](decisions.md): paint order is array order and there
-is no `z` field.
+**3. Paint order has to stop being the array index.** ✅ Done ahead of the rest
+([D55](decisions.md)).
 
 Array position is not mergeable. Two devices that each append a node produce
 two arrays of the same length whose last elements differ, and there is no
-operation on those two arrays that recovers the intent of either. The fix is a
-**fractional index**: each node carries an order key, a string, and a node
-inserted between two others gets a key that sorts between theirs. Reordering
-touches one node instead of renumbering the list, and two devices reordering
-different nodes merge cleanly.
+operation on those two arrays that recovers the intent of either. So each node
+now carries an `order` key — a **fractional index**, a string with room for
+another key between any two — and the board paints in `(order, id)` order.
+Reordering touches one node instead of renumbering the list, two devices
+reordering different nodes merge cleanly, and two devices that mint the _same_
+key still agree, because the id breaks the tie the same way on both.
 
-D18 was right for a local app and is the specific thing sync breaks. It should
-be revisited _before_ sync is built, not during — every board written until
-then is a board without order keys.
+This went first because every board written without keys is a board that needs
+migrating later, and the migration is guesswork once two devices already
+disagree. Boards saved by an older build are filled in from their stored array
+order on the way out of storage, on every hydration rather than once — a board
+written by an older build on another device is not a case that ever stops
+happening.
 
 ### Text is the remaining loss
 

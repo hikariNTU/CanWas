@@ -32,14 +32,22 @@ without reshaping the store.
 ```
 id        NodeId
 kind      "image"
+order     string        fractional index; paint order, lowest at the back
 x, y      number        WORLD coordinates of the top-left corner
 w, h      number        WORLD size
 assetId   AssetId       points at the Asset holding the bytes
 ```
 
-There is **no `z` field**. Position in `Board.nodes` is the paint order, and it is
-the only representation of it. Bring-to-front is a splice to the end of the array.
-DOM render order follows array order, so no `z-index` is used anywhere.
+There is **no `z` field** and **no reliance on array position**. `order` is a
+fractional index — a sortable string with room for another key between any two —
+and the board paints in `(order, id)` order (D55). Bring-to-front mints a key
+above everything staying put. The array is kept sorted by that comparison, so DOM
+render order still follows array order and no `z-index` is used anywhere.
+
+The id breaks ties because two devices inserting at the same place while offline
+mint the same key, and an array position cannot settle that argument: it is the
+one field a merge has no way to reconcile, which is why it is not the one that
+holds the answer.
 
 There is **no `ocr` field**. Recognition belongs to pixels, not to placement — see
 Asset.

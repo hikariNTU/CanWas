@@ -1,6 +1,7 @@
+import { keyAbove, orderKeysBetween } from "@/board/order";
 import { rectOf, type Change, type Patch, type Rect } from "@/board/patch";
 import { FONT_SIZES } from "@/board/text";
-import type { BoardNode, NodeId, TextNode } from "@/board/types";
+import type { BoardNode, NewNode, NodeId, TextNode } from "@/board/types";
 
 /**
  * Every mutation is built here, and every one returns its inverse alongside its
@@ -9,20 +10,27 @@ import type { BoardNode, NodeId, TextNode } from "@/board/types";
  * always produced by the same function, from the same snapshot of state.
  */
 
+/**
+ * Places new nodes on top, in the order given.
+ *
+ * The order keys are minted here rather than by whoever built the node: this is
+ * the only place that can see where the new node lands relative to what is
+ * already on the board.
+ */
 export function insertNodes(
   nodes: readonly BoardNode[],
-  added: readonly BoardNode[],
+  added: readonly NewNode[],
   label: string,
 ): Change {
-  // Appended, because array order is paint order and new nodes belong on top.
-  const apply: Patch = added.map((node, offset) => ({
-    kind: "insert",
-    index: nodes.length + offset,
-    node,
-  }));
-  const invert: Patch = [...added]
+  const keys = orderKeysBetween(keyAbove(nodes), null, added.length);
+  const placed = added.map(
+    (node, offset) => ({ ...node, order: keys[offset]! }) as BoardNode,
+  );
+
+  const apply: Patch = placed.map((node) => ({ kind: "insert", node }));
+  const invert: Patch = [...placed]
     .reverse()
-    .map((node) => ({ kind: "remove", index: -1, node }) as const);
+    .map((node) => ({ kind: "remove", node }) as const);
   return { label, apply, invert };
 }
 
@@ -30,23 +38,12 @@ export function deleteNodes(
   nodes: readonly BoardNode[],
   ids: readonly NodeId[],
 ): Change {
-  const targets = ids
-    .map((id) => ({ index: nodes.findIndex((node) => node.id === id), id }))
-    .filter((entry) => entry.index !== -1)
-    // Highest index first, so earlier removals cannot shift later ones.
-    .sort((a, b) => b.index - a.index);
+  const targets = nodes.filter((node) => ids.includes(node.id));
 
-  const apply: Patch = targets.map(({ index }) => ({
-    kind: "remove",
-    index,
-    node: nodes[index]!,
-  }));
-  // Reinsert lowest index first so each node lands back at its original slot.
-  const invert: Patch = [...targets].reverse().map(({ index }) => ({
-    kind: "insert",
-    index,
-    node: nodes[index]!,
-  }));
+  const apply: Patch = targets.map((node) => ({ kind: "remove", node }));
+  // Each node carries its own order key, so putting it back needs no memory of
+  // where it sat.
+  const invert: Patch = targets.map((node) => ({ kind: "insert", node }));
 
   return { label: `delete ${targets.length} node(s)`, apply, invert };
 }
@@ -87,41 +84,40 @@ export function resizeNode(
   };
 }
 
-/** Moves nodes to the end (front) or the start (back) of the paint order. */
+/**
+ * Moves nodes to the front or the back of the paint order.
+ *
+ * New keys are cut against the nodes that are *staying*, not against the whole
+ * list: bringing the topmost node to the front would otherwise mint a key above
+ * itself and creep upward on every press.
+ */
 export function reorderNodes(
   nodes: readonly BoardNode[],
   ids: readonly NodeId[],
   target: "front" | "back",
 ): Change {
-  const indices = nodes
-    .map((node, index) => ({ node, index }))
-    .filter(({ node }) => ids.includes(node.id))
-    .map(({ index }) => index);
-
-  if (indices.length === 0) {
+  const moved = nodes.filter((node) => ids.includes(node.id));
+  const staying = nodes.filter((node) => !ids.includes(node.id));
+  if (moved.length === 0 || staying.length === 0) {
     return { label: `bring to ${target}`, apply: [], invert: [] };
   }
 
-  const apply: Patch = [];
-  const invert: Patch = [];
+  const keys =
+    target === "front"
+      ? orderKeysBetween(staying.at(-1)!.order, null, moved.length)
+      : orderKeysBetween(null, staying[0]!.order, moved.length);
 
-  if (target === "front") {
-    // Lowest first: each moves to the end, preserving relative order.
-    for (const from of indices) {
-      apply.push({ kind: "reorder", from, to: nodes.length - 1 });
-    }
-  } else {
-    for (const from of [...indices].reverse()) {
-      apply.push({ kind: "reorder", from, to: 0 });
-    }
-  }
-
-  // Undo a sequence of moves by reversing each, in reverse order.
-  for (const op of [...apply].reverse()) {
-    if (op.kind === "reorder") {
-      invert.push({ kind: "reorder", from: op.to, to: op.from });
-    }
-  }
+  // Relative order among the moved nodes is preserved: they arrive as a block.
+  const apply: Patch = moved.map((node, offset) => ({
+    kind: "order",
+    id: node.id,
+    order: keys[offset]!,
+  }));
+  const invert: Patch = moved.map((node) => ({
+    kind: "order",
+    id: node.id,
+    order: node.order,
+  }));
 
   return { label: `bring to ${target}`, apply, invert };
 }

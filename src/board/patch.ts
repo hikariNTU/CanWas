@@ -1,3 +1,4 @@
+import { sortNodes } from "@/board/order";
 import type { BoardNode, NodeId } from "@/board/types";
 
 export interface Rect {
@@ -13,16 +14,20 @@ export interface Rect {
  * changes shape.
  *
  * `remove` carries the whole node rather than just its id: that is what lets
- * its inverse put the node back with its exact geometry *and* its exact array
- * index, which is the paint order (D18).
+ * its inverse put the node back with its exact geometry *and* its exact order
+ * key, which is the paint order (D55).
+ *
+ * No op names a position. An index is meaningless the moment another device
+ * has a list of its own, so restacking is `order` — a new key for one node —
+ * and an insert carries its key on the node itself.
  */
 export type NodeOp =
-  | { kind: "insert"; index: number; node: BoardNode }
-  | { kind: "remove"; index: number; node: BoardNode }
+  | { kind: "insert"; node: BoardNode }
+  | { kind: "remove"; node: BoardNode }
   | { kind: "geometry"; id: NodeId; rect: Rect }
   | { kind: "text"; id: NodeId; text: string }
   | { kind: "fontSize"; id: NodeId; fontSize: number }
-  | { kind: "reorder"; from: number; to: number };
+  | { kind: "order"; id: NodeId; order: string };
 
 export type Patch = NodeOp[];
 
@@ -33,6 +38,13 @@ export interface Change {
   invert: Patch;
 }
 
+/**
+ * The node list is kept sorted by order key, here and nowhere else.
+ *
+ * Everything downstream — rendering, hit testing, "the topmost node" — can then
+ * go on reading the array in paint order, and no caller has to remember to
+ * re-sort after an edit.
+ */
 export function applyPatch(
   nodes: readonly BoardNode[],
   patch: Patch,
@@ -41,15 +53,13 @@ export function applyPatch(
   for (const op of patch) {
     next = applyOp(next, op);
   }
-  return next;
+  return sortNodes(next);
 }
 
 function applyOp(nodes: BoardNode[], op: NodeOp): BoardNode[] {
   switch (op.kind) {
     case "insert": {
-      const next = [...nodes];
-      next.splice(op.index, 0, op.node);
-      return next;
+      return [...nodes, op.node];
     }
     case "remove": {
       const index = nodes.findIndex((node) => node.id === op.node.id);
@@ -79,14 +89,10 @@ function applyOp(nodes: BoardNode[], op: NodeOp): BoardNode[] {
           : node,
       );
     }
-    case "reorder": {
-      const next = [...nodes];
-      const [moved] = next.splice(op.from, 1);
-      if (!moved) {
-        return nodes;
-      }
-      next.splice(op.to, 0, moved);
-      return next;
+    case "order": {
+      return nodes.map((node) =>
+        node.id === op.id ? { ...node, order: op.order } : node,
+      );
     }
   }
 }

@@ -1,6 +1,6 @@
 import { createId } from "@/lib/id";
 
-import type { TextNode } from "@/board/types";
+import type { NewNode, TextNode } from "@/board/types";
 
 /**
  * Pasted text is truncated rather than refused.
@@ -33,12 +33,16 @@ export function truncateText(text: string): string {
     : normalised.slice(0, MAX_TEXT_LENGTH - 1).trimEnd() + ELLIPSIS;
 }
 
+/**
+ * A text node without a place in the paint order — `insertNodes` hands that
+ * out, since only it can see the rest of the board.
+ */
 export function createTextNode(
   x: number,
   y: number,
   text = "",
   width = DEFAULT_TEXT_WIDTH,
-): TextNode {
+): NewNode<TextNode> {
   return {
     id: createId(),
     kind: "text",

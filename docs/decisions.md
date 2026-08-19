@@ -267,7 +267,13 @@ dialog.
 
 ## D18 — Paint order is array order; `Node.z` does not exist
 
-**2026-08-19 · settled · supersedes `z` in the original model**
+**2026-08-19 · settled · superseded by [D55](#d55--paint-order-is-a-fractional-index-per-node) · supersedes `z` in the original model**
+
+> Superseded. Array order was right while the board lived on one device, and it
+> is the specific thing sync breaks — an index is the one field two devices
+> cannot merge. The reasoning below still holds against a `z` field; D55 keeps
+> the conclusion that paint order has exactly one representation and changes
+> what that representation is.
 
 Position in `Board.nodes` is the paint order and the only representation of it.
 DOM render order follows it, so no `z-index` is used anywhere.
@@ -1191,3 +1197,53 @@ Specifics worth keeping:
 
 Reverses if: a tool palette arrives. With an explicit select/pan mode, the
 modifier gymnastics stop earning their keep and the button follows the mode.
+
+---
+
+## D55 — Paint order is a fractional index per node
+
+**2026-08-19 · settled · supersedes [D18](#d18--paint-order-is-array-order-nodez-does-not-exist)**
+
+Every node carries an `order: string`, and the board paints in `(order, id)`
+order. The array is still kept sorted, so everything that reads it goes on
+reading paint order out of an index — but the key is what is authoritative and
+what survives being written on two devices.
+
+This landed _before_ sync rather than during it, deliberately. Array position is
+not mergeable: append a node on the laptop and another on the phone and you have
+two arrays whose last elements disagree, with no operation that recovers either
+intent. Every board written without keys is a board that needs migrating later,
+and the migration is guesswork once two devices already disagree — so the cost
+of waiting grows with every day of use, while the cost of doing it now is one
+afternoon on a handful of boards.
+
+Specifics worth keeping:
+
+- **The algorithm is Greenspan's**, the one Figma and Excalidraw use: a head
+  character encoding the length of the integer part, then an optional fraction.
+  The structure exists to keep repeated appends at constant length — `a0`, `a1`,
+  … `az`, `b00`. A fraction-only scheme is half the code and creeps a character
+  longer every few appends, forever; 5000 appends reach four characters here and
+  several hundred there.
+- **Written by hand, not installed.** It is one pure file with no imports and a
+  published specification, which is the profile of a dependency that costs more
+  to keep than to own.
+- **Ties break by id.** Two offline devices inserting at the same place mint the
+  _same_ key. Without a second term each board would paint them in whatever
+  order its array happened to hold, which is precisely the disagreement keys
+  exist to remove.
+- **`insertNodes` mints the keys**, not the code that builds the node — only it
+  can see where the new node lands relative to the board. Node constructors
+  return `NewNode`, a node minus its `order`, so a node with no place is a type
+  error rather than a runtime surprise.
+- **No patch op names a position.** `insert` carries its key on the node,
+  `remove` carries the whole node, and restacking is a new `order` op. This is
+  also what makes the delete inverse simpler than it was: a node knows where it
+  goes without anything having to remember the index it came from.
+- **Migration runs on every hydration, not once.** A board can arrive from
+  IndexedDB now and from Drive later, and one written by an older build on
+  another device is not a case that ever stops happening. Missing keys are
+  filled from the stored array order, which _was_ the paint order.
+
+Reverses if: nothing plausible. If sync is abandoned the keys are harmless; the
+cost is one `order` field and one pure module.

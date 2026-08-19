@@ -162,3 +162,72 @@ test("deleting a board leaves its assets to the startup sweep", async ({
   await page.reload();
   await expect.poll(() => countStore(page, "assets")).toBe(0);
 });
+
+test("a board saved before order keys existed keeps its paint order", async ({
+  page,
+}) => {
+  await page.goto("?engine=mock#/legacyorder");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+
+  await pasteImage(page, 200);
+  await pasteImage(page, 240);
+  await pasteImage(page, 280);
+  await expect(page.getByTestId("board-node")).toHaveCount(3);
+  await expect.poll(() => storedNodeCount(page, "legacyorder")).toBe(3);
+
+  const idsBefore = await page
+    .getByTestId("board-node")
+    .evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("data-node-id")),
+    );
+
+  // Rewrite the stored record into what an older build wrote: nodes in an
+  // array, with the paint order carried by nothing but their position.
+  const stripped = await page.evaluate(
+    (id) =>
+      new Promise<number>((resolve, reject) => {
+        const open = indexedDB.open("canwas");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const store = open.result
+            .transaction("boards", "readwrite")
+            .objectStore("boards");
+          const read = store.get(id);
+          read.onsuccess = () => {
+            const board = read.result;
+            let removed = 0;
+            for (const node of board.nodes) {
+              if (delete node.order) {
+                removed++;
+              }
+            }
+            const write = store.put(board);
+            write.onsuccess = () => resolve(removed);
+            write.onerror = () => reject(write.error);
+          };
+        };
+      }),
+    "legacyorder",
+  );
+  expect(stripped).toBe(3);
+
+  await page.reload();
+  await expect(page.getByTestId("board-node")).toHaveCount(3);
+
+  const idsAfter = await page
+    .getByTestId("board-node")
+    .evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("data-node-id")),
+    );
+  expect(idsAfter).toEqual(idsBefore);
+
+  // And the restored board can be restacked, which it cannot if the keys came
+  // back malformed — the algorithm throws rather than reordering quietly.
+  const nodes = page.getByTestId("board-node");
+  await nodes.last().click();
+  await page.keyboard.press("[");
+  const idsRestacked = await nodes.evaluateAll((elements) =>
+    elements.map((element) => element.getAttribute("data-node-id")),
+  );
+  expect(idsRestacked[0]).toBe(idsBefore[2]);
+});

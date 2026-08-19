@@ -219,9 +219,10 @@ Gestures coalesce. A drag mutates node positions live for feedback but pushes a
 single Change at pointer-up, carrying the position from pointer-_down_. Pushing
 per `pointermove` would bury every real action under hundreds of entries.
 
-Deleting a node stores the whole node plus its array index, so undo restores both
-the node and its exact place in the paint order — the same array position that
-[D8](decisions.md) made canonical.
+Deleting a node stores the whole node, which carries its own `order` key, so undo
+restores both the node and its exact place in the paint order without anything
+having to remember an index ([D55](decisions.md)). No patch op names a position:
+`insert` carries its key on the node and restacking is a new key for one node.
 
 ## Gestures
 

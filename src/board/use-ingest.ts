@@ -15,7 +15,7 @@ import { createTextNode, DEFAULT_TEXT_WIDTH } from "@/board/text";
 import { assetsAtom } from "@/board/store";
 import { createId } from "@/lib/id";
 import { putAsset } from "@/storage/db";
-import type { Asset, BoardNode } from "@/board/types";
+import type { Asset, BoardNode, NewNode } from "@/board/types";
 import { screenToWorld, type Point, type Viewport } from "@/canvas/coords";
 
 interface IngestOptions {
@@ -109,7 +109,7 @@ export function useIngest({
       // twice is two ingests, each starting from index 0, so without this the
       // second copy would land exactly under the first.
       const taken = nodes.map((node) => ({ x: node.x, y: node.y }));
-      const added: BoardNode[] = [];
+      const added: NewNode[] = [];
       for (const { asset, size } of pending) {
         const origin = cascadeFreeOrigin(taken, placeCentred(centre, size));
         taken.push(origin);

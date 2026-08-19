@@ -1,6 +1,7 @@
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 
+import { withOrderKeys } from "@/board/order";
 import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
 import { assetIdsOf, type Asset } from "@/board/types";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
@@ -107,7 +108,13 @@ export function useBoardPersistence(boardId: string) {
       if (Object.keys(restored).length > 0) {
         setAssets((previous) => ({ ...restored, ...previous }));
       }
-      setNodesByBoard((previous) => ({ ...previous, [boardId]: stored.nodes }));
+      // Boards written before order keys existed carry none, and their array
+      // order is what the paint order was. Filling them in on the way out of
+      // storage is the only place that knows both (D55).
+      setNodesByBoard((previous) => ({
+        ...previous,
+        [boardId]: withOrderKeys(stored.nodes),
+      }));
       setViewports((previous) => ({ ...previous, [boardId]: stored.viewport }));
       // The menu lists every board (D31), so all metadata is loaded here
       // rather than by a separate screen.

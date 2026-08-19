@@ -61,6 +61,15 @@ export interface Asset {
 export interface ImageNode {
   id: NodeId;
   kind: "image";
+  /**
+   * Paint order, as a fractional index (D55). Lowest sorts to the back.
+   *
+   * A string rather than a number because there is always room for another key
+   * between any two, which is what lets a node be restacked — or arrive from
+   * another device — without renumbering anything around it. `src/board/order.ts`
+   * owns every key that gets made.
+   */
+  order: string;
   /** World coordinates of the top-left corner. */
   x: number;
   y: number;
@@ -73,6 +82,8 @@ export interface ImageNode {
 export interface TextNode {
   id: NodeId;
   kind: "text";
+  /** See `ImageNode.order`. */
+  order: string;
   /** World coordinates of the top-left corner. */
   x: number;
   y: number;
@@ -91,8 +102,9 @@ export interface TextNode {
 export type BoardNode = ImageNode | TextNode;
 
 /**
- * Paint order is the array order and nothing else — there is no `z` field
- * (D18). Index 0 is backmost.
+ * Paint order is each node's `order` key (D55). The array is kept sorted by it
+ * so that index order and paint order still agree, but the key is what is
+ * authoritative and what survives a merge — an array position does not.
  */
 export interface Board {
   id: string;
@@ -108,3 +120,13 @@ export function assetIdsOf(nodes: readonly BoardNode[]): AssetId[] {
     .filter((node): node is ImageNode => node.kind === "image")
     .map((node) => node.assetId);
 }
+
+/**
+ * A node that does not have its place yet.
+ *
+ * Order keys are handed out by `insertNodes`, which is the only code that can
+ * see where the new node is going relative to everything already there.
+ */
+export type NewNode<T extends BoardNode = BoardNode> = T extends unknown
+  ? Omit<T, "order">
+  : never;
