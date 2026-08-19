@@ -8,6 +8,7 @@ import {
   type Point,
   type Viewport,
 } from "@/canvas/coords";
+import { isPanKeyDown } from "@/canvas/pan-key";
 import { readViewport, viewportsAtom } from "@/canvas/viewport-atom";
 
 const KEYBOARD_ZOOM_STEP = 1.2;
@@ -114,7 +115,11 @@ export function useViewportControls(
       if (!isPanButton || panningPointerId !== null) {
         return;
       }
-      // A left press that landed on a node is a node drag, not a pan.
+      // Who owns a left press.
+      //
+      // On a node it is a node drag. On empty canvas it is a lasso (D54) —
+      // unless the pan key is held, or the pointer is a finger, which has
+      // neither a middle button nor a keyboard and so must keep panning.
       //
       // The node's own handler cannot prevent this by calling stopPropagation:
       // React delegates events to the root container, so this native listener
@@ -122,7 +127,8 @@ export function useViewportControls(
       // test has to live here. Middle-drag still pans from anywhere.
       if (
         event.button === 0 &&
-        (event.target as Element | null)?.closest?.("[data-node-id]")
+        ((event.target as Element | null)?.closest?.("[data-node-id]") ||
+          (event.pointerType !== "touch" && !isPanKeyDown()))
       ) {
         return;
       }

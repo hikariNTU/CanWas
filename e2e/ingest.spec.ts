@@ -110,15 +110,16 @@ test("pasted node keeps its world position while panning and zooming", async ({
   const before = (await page.getByTestId("board-node").boundingBox())!;
 
   const surface = await surfaceBox(page);
-  // Away from the floating chrome in the corners.
+  // Away from the floating chrome in the corners. Middle button, because a
+  // left drag on empty canvas draws a selection box rather than panning (D54).
   await page.mouse.move(surface.x + surface.width * 0.5, surface.y + 80);
-  await page.mouse.down();
+  await page.mouse.down({ button: "middle" });
   await page.mouse.move(
     surface.x + surface.width * 0.5 + 100,
     surface.y + 150,
     { steps: 5 },
   );
-  await page.mouse.up();
+  await page.mouse.up({ button: "middle" });
 
   const after = (await page.getByTestId("board-node").boundingBox())!;
   expect(after.x - before.x).toBeCloseTo(100, 0);

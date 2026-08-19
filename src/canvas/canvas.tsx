@@ -30,6 +30,7 @@ import { useOcr } from "@/ocr/use-ocr";
 import { useCompression } from "@/image/use-compression";
 import { Icon } from "@/ui/icon";
 import { screenToWorld } from "@/canvas/coords";
+import { useLasso } from "@/canvas/use-lasso";
 import { useNodeGestures } from "@/canvas/use-node-gestures";
 import { useViewportControls } from "@/canvas/use-viewport-controls";
 import { useTranslation } from "@/translations";
@@ -51,6 +52,7 @@ export function Canvas({ boardId }: { boardId: string }) {
   const { commit, undo, redo, canUndo, canRedo } = useBoardHistory(boardId);
   const { selection, setSelection, startMove, startResize, rectFor } =
     useNodeGestures(boardId, viewport);
+  const { lasso } = useLasso(boardId, viewport, surfaceRef);
 
   const [editingId, setEditingId] = useState<NodeId | null>(null);
   /**
@@ -133,7 +135,10 @@ export function Canvas({ boardId }: { boardId: string }) {
       const nodeElement = (event.target as Element | null)?.closest?.(
         "[data-node-id]",
       );
-      if (!nodeElement) {
+      // An additive press on empty canvas is the start of an additive lasso,
+      // so it must not throw away the selection it is meant to add to.
+      const additive = event.shiftKey || event.metaKey || event.ctrlKey;
+      if (!nodeElement && !additive) {
         setSelection([]);
       }
       // Pressing anywhere that is not the node being read leaves reading mode,
@@ -199,7 +204,7 @@ export function Canvas({ boardId }: { boardId: string }) {
       <div
         ref={surfaceRef}
         data-testid="canvas-surface"
-        className="absolute inset-0 cursor-grab touch-none bg-neutral-950"
+        className="absolute inset-0 cursor-default touch-none bg-neutral-950"
       >
         {/* The grid is its own layer rather than a background on the surface:
             it fades out when the dots crowd together, and fading the surface
@@ -332,6 +337,20 @@ export function Canvas({ boardId }: { boardId: string }) {
               </div>
             );
           })}
+          {lasso && (
+            <div
+              aria-hidden
+              data-testid="lasso"
+              className="absolute bg-sky-500/10"
+              style={{
+                left: lasso.x,
+                top: lasso.y,
+                width: lasso.w,
+                height: lasso.h,
+                border: `${hairline}px solid var(--color-sky-500)`,
+              }}
+            />
+          )}
         </div>
       </div>
 

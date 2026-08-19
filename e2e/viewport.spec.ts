@@ -16,19 +16,34 @@ async function centerOf(page: Page, testId: string) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+/**
+ * Pans by dragging with the middle button.
+ *
+ * Left-drag on empty canvas draws a selection box, so it no longer pans (D54).
+ * Middle-drag and space+drag are what pan with a mouse now.
+ */
+async function panDrag(
+  page: Page,
+  from: { x: number; y: number },
+  dx: number,
+  dy: number,
+) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down({ button: "middle" });
+  await page.mouse.move(from.x + dx, from.y + dy, { steps: 8 });
+  await page.mouse.up({ button: "middle" });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("?engine=mock#/demo");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
 
-test("drag pans the scene", async ({ page }) => {
+test("middle-drag pans the scene", async ({ page }) => {
   const before = await readTransform(page);
   const surface = await centerOf(page, "canvas-surface");
 
-  await page.mouse.move(surface.x, surface.y);
-  await page.mouse.down();
-  await page.mouse.move(surface.x + 200, surface.y + 150, { steps: 10 });
-  await page.mouse.up();
+  await panDrag(page, surface, 200, 150);
 
   const after = await readTransform(page);
   expect(after.tx - before.tx).toBeCloseTo(200, 0);
@@ -44,10 +59,7 @@ test("ctrl+wheel zoom keeps the point under the cursor fixed", async ({
 }) => {
   // Pan first so the world origin sits somewhere useful to anchor on.
   const surface = await centerOf(page, "canvas-surface");
-  await page.mouse.move(surface.x, surface.y);
-  await page.mouse.down();
-  await page.mouse.move(surface.x + 120, surface.y + 90, { steps: 5 });
-  await page.mouse.up();
+  await panDrag(page, surface, 120, 90);
 
   const anchor = await centerOf(page, "world-origin");
   const before = await readTransform(page);
@@ -82,10 +94,7 @@ test("zoom controls and reset", async ({ page }) => {
   // Move away from identity, then confirm reset restores it exactly.
   await page.getByRole("button", { name: "Zoom in" }).click();
   const surface = await centerOf(page, "canvas-surface");
-  await page.mouse.move(surface.x, surface.y);
-  await page.mouse.down();
-  await page.mouse.move(surface.x + 80, surface.y + 40, { steps: 3 });
-  await page.mouse.up();
+  await panDrag(page, surface, 80, 40);
 
   await reset.click();
   await expect(reset).toHaveText("100%");
@@ -146,4 +155,28 @@ test("content stays visible below the grid's fade threshold", async ({
   expect(box?.width).toBeGreaterThan(0);
 
   await page.screenshot({ path: "e2e/screenshots/canvas-zoomed-out.png" });
+});
+
+test("space+drag pans, and left-drag alone does not", async ({ page }) => {
+  const surface = await centerOf(page, "canvas-surface");
+  const before = await readTransform(page);
+
+  // Without the pan key, a left drag on empty canvas is a selection box.
+  await page.mouse.move(surface.x, surface.y);
+  await page.mouse.down();
+  await page.mouse.move(surface.x + 60, surface.y + 40, { steps: 4 });
+  await expect(page.getByTestId("lasso")).toBeVisible();
+  await page.mouse.up();
+  expect(await readTransform(page)).toEqual(before);
+
+  await page.keyboard.down("Space");
+  await page.mouse.move(surface.x, surface.y);
+  await page.mouse.down();
+  await page.mouse.move(surface.x + 60, surface.y + 40, { steps: 4 });
+  await page.mouse.up();
+  await page.keyboard.up("Space");
+
+  const after = await readTransform(page);
+  expect(after.tx - before.tx).toBeCloseTo(60, 0);
+  expect(after.ty - before.ty).toBeCloseTo(40, 0);
 });

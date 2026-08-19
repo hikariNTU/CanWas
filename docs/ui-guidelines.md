@@ -72,6 +72,16 @@ No Unicode glyphs standing in for icons.
   a background marks a thing as interactive or editable. The board title is bare
   text at rest and gains a field only while being edited.
 
+## Selecting
+
+Click a node to select it, shift-click to add. Drag from empty canvas to draw a
+selection box; everything it touches is selected, and shift extends the existing
+selection instead of replacing it ([D54](decisions.md)). A selection of several
+moves and deletes as one action, and one undo puts it all back.
+
+Because the left button now selects, panning is two-finger scroll, middle-drag,
+or space+drag — and one finger on touch, which has no other way.
+
 ## Reading an image
 
 A recognized image is entered by double-clicking it, the same gesture that opens

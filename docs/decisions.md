@@ -1154,3 +1154,40 @@ Specifics worth keeping:
 
 Reverses if: sync grows past what four endpoints can express — resumable
 uploads for very large assets would be the first sign.
+
+## D54 — Left-drag on empty canvas selects; panning moves to space and the middle button
+
+**2026-08-19 · settled**
+
+A drag from empty canvas draws a selection box, and every node it _touches_ is
+selected. Contact rather than containment: a marquee that demands full
+containment cannot pick up the large screenshot that runs off the edge of the
+view, which is most of them.
+
+This takes the button that used to pan, so panning now has three ways in:
+two-finger scroll (unchanged, and the one most sessions use), middle-drag, and
+space+drag. That is the binding Figma, Excalidraw and Miro all share, so the
+muscle memory arrives with the user.
+
+Specifics worth keeping:
+
+- **One finger still pans.** Touch has no middle button and no space bar, so a
+  lasso on touch would leave a phone with no way to move around the board. The
+  pan handler tests `pointerType === "touch"` for exactly this.
+- **The pan key is module state, not store state** (`src/canvas/pan-key.ts`).
+  Its two readers are native pointerdown handlers that ask once, at the instant
+  of the press; nothing renders from it, so putting it in a store would
+  re-render the canvas twice per key press to answer a question no view asks. It
+  resets on `blur`, because a key released in another window never reports back
+  and a stuck pan modifier silently disables selection.
+- **A 3px threshold separates a click from a drag.** Below it no box appears and
+  no selection changes, so a click that drifts on a trackpad still reads as a
+  click.
+- **The marquee is not board state.** It lives in the hook, in world
+  coordinates, and never reaches a Change — drawing a box is not an edit (D17).
+- **Shift-drag adds.** Which is why the press that clears the selection now
+  skips when a modifier is held: it used to run first and empty the selection
+  the additive lasso was about to extend.
+
+Reverses if: a tool palette arrives. With an explicit select/pan mode, the
+modifier gymnastics stop earning their keep and the button follows the mode.
