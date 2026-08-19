@@ -1086,6 +1086,39 @@ its first job can spend a minute fetching 21 MB of weights — compression behin
 it would mean the first image on a fresh browser stays uncompressed until the
 model lands.
 
+### Whether a worker is needed at all
+
+`OffscreenCanvas` is not a threading primitive. It is a canvas that _can_ exist
+where there is no DOM; the off-main-thread part comes from the worker. But how
+much that buys was assumed rather than measured, so: measured, in Chrome, by
+timing each phase separately.
+
+```
+1000x700    decode 2ms    drawImage 0ms    encode  34ms
+3000x2000   decode 10ms   drawImage 2ms    encode 199ms
+6000x4000   decode 43ms   drawImage 15ms   encode 742ms
+```
+
+Only `drawImage` is synchronous. `createImageBitmap` and `convertToBlob` are
+promises that Chrome already services on its own threads — 742ms of encoding on
+a 24-megapixel image costs the calling thread nothing. Running the whole thing
+on the main thread cost a worst frame gap of 26ms against the worker's 18ms.
+
+So the worker buys about 15ms at the extreme and about 2ms in practice, which is
+not the reason to have one. The reasons that survive:
+
+- **Memory.** A 6000x4000 RGBA bitmap is 96 MB, and the canvas backing it is
+  another 96 MB. In a worker that lives and dies away from the main thread's
+  heap, next to neither React nor the OCR overlay.
+- **The other browsers.** Only Chromium was measured, because only Chromium is
+  installed here. Nothing guarantees Safari or Firefox service `convertToBlob`
+  off the calling thread, and the main-thread version has no floor if they do
+  not.
+
+Kept on those grounds, not on the throughput grounds it was written for. Passing
+a `Blob` across the boundary is free either way — structured clone moves a
+handle, not the bytes.
+
 Reverses if: storing both copies becomes the expensive half. The original could
 then be dropped once its WebP exists, at the cost of never being able to prove
 what was pasted.
