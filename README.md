@@ -25,7 +25,7 @@ npm run dev
 | `npm run typecheck`               | `tsc --noEmit`                                       |
 | `npm run lint`                    | oxlint, zero warnings allowed                        |
 | `npm run format` / `format:check` | oxfmt, includes Tailwind class sorting               |
-| `npm run test:e2e`                | Playwright happy-path suite                          |
+| `npm run test:e2e`                | Playwright happy-path suite (local only, not in CI)  |
 | `npm run check`                   | format:check + lint + typecheck + build, in sequence |
 
 ## Documentation

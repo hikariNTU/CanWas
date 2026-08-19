@@ -169,6 +169,11 @@ The core interaction is pointer-driven and clipboard-driven. Unit tests cannot
 tell you that pasting an image put a node under the cursor at the right zoom.
 Scope is deliberately one happy path, not a regression net.
 
+**Run locally, not in CI.** Browser tests in CI add install time and a class of
+flake that costs more attention than it returns on a project this size. CI runs
+`npm run check` and deploys; `npm run test:e2e` is run by hand alongside the work
+that changes behaviour.
+
 ---
 
 ## D13 — OCR state lives on the Asset, not the Node
