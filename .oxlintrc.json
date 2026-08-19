@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc", "unicorn"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    // The automatic JSX runtime ("jsx": "react-jsx") makes this unnecessary.
+    "react/react-in-jsx-scope": "off",
+    // oxlint namespaces these under `react`, not `react-hooks`.
+    "react/exhaustive-deps": "error",
+    "react/rules-of-hooks": "error"
+  },
+  "ignorePatterns": ["dist", "src/routeTree.gen.ts", "test-results"]
+}

@@ -34,9 +34,11 @@ positioned children in world coordinates.
 ```html
 <div class="scene" style="transform: translate(TXpx,TYpx) scale(S)">
   <div class="node" style="left:Xpx; top:Ypx; width:Wpx; height:Hpx">
-    <img src="blob:…">
+    <img src="blob:…" />
     <div class="ocr-layer">
-      <span style="left:…; top:…; font-size:…px; transform:scaleX(…)">word</span>
+      <span style="left:…; top:…; font-size:…px; transform:scaleX(…)"
+        >word</span
+      >
     </div>
   </div>
 </div>
@@ -132,13 +134,13 @@ exact inverse. A mutation without an inverse is a corruption bug, so the two are
 produced in the same place and never separately.
 
 ```ts
-function moveNodes(ids: NodeId[], dx: number, dy: number): Change
+function moveNodes(ids: NodeId[], dx: number, dy: number): Change;
 // apply:  each id += (dx, dy)
 // invert: each id -= (dx, dy)
 ```
 
 Gestures coalesce. A drag mutates node positions live for feedback but pushes a
-single Change at pointer-up, carrying the position from pointer-*down*. Pushing
+single Change at pointer-up, carrying the position from pointer-_down_. Pushing
 per `pointermove` would bury every real action under hundreds of entries.
 
 Deleting a node stores the whole node plus its array index, so undo restores both

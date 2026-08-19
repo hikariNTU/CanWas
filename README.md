@@ -6,7 +6,8 @@ canvas, arrange them freely, and select text out of them.
 Think PureRef's spatial freedom, with the text in your screenshots actually
 selectable.
 
-**Status:** step 1 of 9 — skeleton. OCR is stubbed behind an interface and does not run yet.
+**Status:** step 1 of 9 complete — skeleton boots, routes, and switches language.
+No canvas yet. OCR is designed but not built.
 
 ## Quickstart
 
@@ -17,15 +18,15 @@ npm run dev
 
 ## Commands
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Vite dev server |
-| `npm run build` | Production build to `dist/` |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` | oxlint, zero warnings allowed |
-| `npm run format` / `format:check` | oxfmt, includes Tailwind class sorting |
-| `npm run test:e2e` | Playwright happy-path suite |
-| `npm run check` | format:check + lint + typecheck + build, in sequence |
+| Command                           | What it does                                         |
+| --------------------------------- | ---------------------------------------------------- |
+| `npm run dev`                     | Vite dev server                                      |
+| `npm run build`                   | Production build to `dist/`                          |
+| `npm run typecheck`               | `tsc --noEmit`                                       |
+| `npm run lint`                    | oxlint, zero warnings allowed                        |
+| `npm run format` / `format:check` | oxfmt, includes Tailwind class sorting               |
+| `npm run test:e2e`                | Playwright happy-path suite                          |
+| `npm run check`                   | format:check + lint + typecheck + build, in sequence |
 
 ## Documentation
 

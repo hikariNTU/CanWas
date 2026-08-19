@@ -6,6 +6,7 @@ conversation. If a concept isn't here, it doesn't exist yet.
 ## Nouns
 
 ### Board
+
 An independent document. One infinite canvas, one persistence record, one URL.
 Boards do not nest and do not share content. A user has many boards; the Home
 screen lists them.
@@ -23,6 +24,7 @@ updatedAt number        epoch ms, bumped on CONTENT change only
 but must not bump it, or "last edited" degrades into "last opened".
 
 ### Node
+
 One thing placed on a Board. Today the only kind is an image. The type is a
 discriminated union from day one so notes, arrows, and groups can be added
 without reshaping the store.
@@ -46,6 +48,7 @@ A Node holds no pixels, only a pointer to an Asset. Two Nodes may share one Asse
 that is how duplication works.
 
 ### Asset
+
 Immutable image bytes, their intrinsic dimensions, and their recognition result.
 Lives in IndexedDB as a Blob. Shared freely across Nodes and across Boards.
 
@@ -65,6 +68,7 @@ Assets are **not** reference-counted. See
 [garbage collection](architecture.md#asset-garbage-collection).
 
 ### Viewport
+
 The window onto a Board's infinite plane.
 
 ```
@@ -76,6 +80,7 @@ Stored in the Board record so returning to a board restores where you were.
 Writes are heavily debounced and never touch `updatedAt`.
 
 ### Word
+
 One recognized token with a box, in the Asset's own pixel space — never world or
 screen space. Asset-space boxes survive a Node being moved, resized, or
 duplicated, and let two Nodes share one recognition result.
@@ -87,6 +92,7 @@ confidence  number      0..1
 ```
 
 ### OcrState
+
 An Asset's recognition status. Explicit states, not booleans, so the UI can render
 each one honestly.
 
@@ -99,6 +105,7 @@ each one honestly.
 ```
 
 ### Recognizer
+
 The seam OCR sits behind. The only thing the rest of the app knows about OCR.
 
 ```ts
@@ -112,6 +119,7 @@ fake boxes after a fake delay) and `PaddleRecognizer` (later, real). Nothing
 outside `src/ocr/` may import either one directly.
 
 ### Change
+
 One undoable unit of work: a forward patch and its exact inverse.
 
 ```
@@ -120,10 +128,11 @@ apply     Patch         forward
 invert    Patch         exact inverse
 ```
 
-A Change is pushed at the *end* of a gesture, not during it — one drag produces
+A Change is pushed at the _end_ of a gesture, not during it — one drag produces
 one Change at pointer-up, never one per `pointermove`.
 
 ### History
+
 A per-Board, in-memory stack of Changes. Cleared on reload. Bounded depth.
 
 ```
@@ -143,11 +152,11 @@ they are.
 Three, and mixing them up is the main source of bugs in an app like this. Every
 variable holding a coordinate must make its space obvious in its name.
 
-| Space | Origin | Unit | Used by |
-| --- | --- | --- | --- |
-| **Asset** | image top-left | intrinsic image px | `Word` boxes |
-| **World** | board origin | world units | `Node.x/y/w/h` |
-| **Screen** | viewport top-left | CSS px | pointer events |
+| Space      | Origin            | Unit               | Used by        |
+| ---------- | ----------------- | ------------------ | -------------- |
+| **Asset**  | image top-left    | intrinsic image px | `Word` boxes   |
+| **World**  | board origin      | world units        | `Node.x/y/w/h` |
+| **Screen** | viewport top-left | CSS px             | pointer events |
 
 Conversions, and there are only these two:
 
@@ -165,8 +174,8 @@ Asset to World is per-Node: `world = node.x + (assetX * node.w / asset.width)`.
 - **Recognize** — run an Asset through the Recognizer, filling its `OcrState`.
 - **Sweep** — delete Assets no Board references. Startup only.
 - **Select** (two unrelated meanings, always qualify which):
-  - *node selection* — which Nodes are picked for move/delete. Not undoable.
-  - *text selection* — the browser's native selection over the OCR overlay.
+  - _node selection_ — which Nodes are picked for move/delete. Not undoable.
+  - _text selection_ — the browser's native selection over the OCR overlay.
 
 ## Deliberately absent
 

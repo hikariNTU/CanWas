@@ -17,17 +17,17 @@ spacing scale.
 
 Stock Tailwind classes only. The working set, kept small on purpose:
 
-| Role | Class |
-| --- | --- |
-| Canvas void | `bg-neutral-950` |
-| Panel / chrome surface | `bg-neutral-900` |
-| Raised surface, hover | `bg-neutral-800` |
-| Hairline border | `border-neutral-800` |
-| Primary text | `text-neutral-100` |
-| Secondary text | `text-neutral-400` |
-| Disabled / hint | `text-neutral-600` |
+| Role                     | Class                           |
+| ------------------------ | ------------------------------- |
+| Canvas void              | `bg-neutral-950`                |
+| Panel / chrome surface   | `bg-neutral-900`                |
+| Raised surface, hover    | `bg-neutral-800`                |
+| Hairline border          | `border-neutral-800`            |
+| Primary text             | `text-neutral-100`              |
+| Secondary text           | `text-neutral-400`              |
+| Disabled / hint          | `text-neutral-600`              |
 | Selection / focus accent | `ring-sky-500`, `bg-sky-500/20` |
-| Destructive | `text-red-400` |
+| Destructive              | `text-red-400`                  |
 
 One accent. Introducing a second needs a reason written into
 [decisions](decisions.md).

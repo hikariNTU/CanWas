@@ -6,12 +6,12 @@ see [D3](decisions.md#d3--ocr-deferred-behind-an-interface-mock-ships-first).
 
 ## Candidate engines
 
-| Package | Weekly downloads | Maintainers | License | Note |
-| --- | --- | --- | --- | --- |
-| `onnxruntime-web` 1.27.0 | 3,549,710 | 4 (Microsoft) | MIT | runtime only |
-| `tesseract.js` 7.0.0 | 1,934,559 | 4 | Apache-2.0 | weak zh-TW |
-| `ppu-paddle-ocr` 6.4.0 | 10,036 | 1 | MIT | 274 KB wrapper |
-| `@gutenye/ocr-browser` 1.4.8 | 2,957 | 1 | MIT | 18 KB wrapper |
+| Package                      | Weekly downloads | Maintainers   | License    | Note           |
+| ---------------------------- | ---------------- | ------------- | ---------- | -------------- |
+| `onnxruntime-web` 1.27.0     | 3,549,710        | 4 (Microsoft) | MIT        | runtime only   |
+| `tesseract.js` 7.0.0         | 1,934,559        | 4             | Apache-2.0 | weak zh-TW     |
+| `ppu-paddle-ocr` 6.4.0       | 10,036           | 1             | MIT        | 274 KB wrapper |
+| `@gutenye/ocr-browser` 1.4.8 | 2,957            | 1             | MIT        | 18 KB wrapper  |
 
 ## Paddle.js is dead — do not use it
 
@@ -34,20 +34,20 @@ converter, and op registry. Four years cold with no deprecation notice.
 
 PP-OCRv5, ONNX:
 
-| Variant | det | rec | dict | total |
-| --- | --- | --- | --- | --- |
-| **mobile** | 4.5 MB | 15.8 MB | 72 KB | **20.4 MB** |
-| server | 83.7 MB | 80.3 MB | 72 KB | 164.0 MB |
-| en-only mobile `.ort` | 4.5 MB | 7.6 MB | 4.4 KB | 12.1 MB |
-| en-only int8 `.ort` | 4.5 MB | 6.8 MB | 4.4 KB | 11.3 MB |
+| Variant               | det     | rec     | dict   | total       |
+| --------------------- | ------- | ------- | ------ | ----------- |
+| **mobile**            | 4.5 MB  | 15.8 MB | 72 KB  | **20.4 MB** |
+| server                | 83.7 MB | 80.3 MB | 72 KB  | 164.0 MB    |
+| en-only mobile `.ort` | 4.5 MB  | 7.6 MB  | 4.4 KB | 12.1 MB     |
+| en-only int8 `.ort`   | 4.5 MB  | 6.8 MB  | 4.4 KB | 11.3 MB     |
 
 PP-OCRv6 also exists (`.ort` only, accuracy unverified):
 
-| Variant | det | rec | total |
-| --- | --- | --- | --- |
-| tiny | 1.8 MB | 4.3 MB | 6.1 MB |
-| small | 9.5 MB | 20.3 MB | 29.8 MB |
-| medium | 59.3 MB | 73.1 MB | 132.4 MB |
+| Variant | det     | rec     | total    |
+| ------- | ------- | ------- | -------- |
+| tiny    | 1.8 MB  | 4.3 MB  | 6.1 MB   |
+| small   | 9.5 MB  | 20.3 MB | 29.8 MB  |
+| medium  | 59.3 MB | 73.1 MB | 132.4 MB |
 
 For comparison, Tesseract's `chi_tra` traineddata alone is ~20 MB for worse CJK.
 Going PaddleOCR costs nothing in bytes.
@@ -60,11 +60,11 @@ but version-locked to the runtime build. Prefer `.onnx` unless load time bites.
 Converted ONNX from the `ppu-paddle-ocr-models` repo, compared against official
 `PaddlePaddle/*` Hugging Face `.pdiparams`:
 
-| Model | ppu ONNX | official HF | delta |
-| --- | --- | --- | --- |
-| v5 mobile det | 4637 KB | 4582 KB | +1.2% |
-| v5 mobile rec | 16171 KB | 16072 KB | +0.6% |
-| v5 server rec | 82203 KB | 82412 KB | −0.3% |
+| Model         | ppu ONNX | official HF | delta |
+| ------------- | -------- | ----------- | ----- |
+| v5 mobile det | 4637 KB  | 4582 KB     | +1.2% |
+| v5 mobile rec | 16171 KB | 16072 KB    | +0.6% |
+| v5 server rec | 82203 KB | 82412 KB    | −0.3% |
 
 Straight `paddle2onnx` conversions of Baidu's official weights, not retrained.
 The weights are trustworthy independently of the wrapper package. They can also

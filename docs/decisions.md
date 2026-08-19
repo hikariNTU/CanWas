@@ -6,6 +6,7 @@ reasoning is visible.
 ---
 
 ## D1 — Separate repo from `homepage`
+
 **2026-08-19 · settled**
 
 CanWas is its own repo rather than another route on `homepage`.
@@ -22,18 +23,20 @@ homepage links out to it.
 ---
 
 ## D2 — DOM rendering, not a canvas library
+
 **2026-08-19 · settled**
 
 See [architecture](architecture.md#rendering-dom-not-canvas) for the full
 argument. Short version: text selection is the product, canvas has none, so a
 canvas build re-adds DOM text on top and maintains two coordinate systems forever.
 
-**Reverses if:** node counts pass a few thousand *and* viewport culling isn't
+**Reverses if:** node counts pass a few thousand _and_ viewport culling isn't
 enough. Not expected.
 
 ---
 
 ## D3 — OCR deferred behind an interface, mock ships first
+
 **2026-08-19 · settled**
 
 No real engine in the skeleton. `Recognizer` is defined now and `MockRecognizer`
@@ -48,6 +51,7 @@ one-line change.
 ---
 
 ## D4 — PaddleOCR PP-OCRv5 as the eventual engine, hand-rolled pipeline
+
 **2026-08-19 · provisional**
 
 When OCR lands: `onnxruntime-web` plus official PP-OCRv5 weights, with
@@ -66,6 +70,7 @@ is Tesseract.js behind the same `Recognizer` interface, accepting worse CJK.
 ---
 
 ## D5 — Multiple separate Boards, not pages within one board
+
 **2026-08-19 · settled**
 
 Each Board is an independent document with its own canvas and IndexedDB record.
@@ -78,16 +83,18 @@ board→page hierarchy can be added later; unwinding one is harder.
 ---
 
 ## D6 — Hash router
+
 **2026-08-19 · settled**
 
 GitHub Pages serves a project site under a subpath and 404s on deep-link refresh
 for non-hash routes unless a `404.html` redirect shim is added. Hash history has
-no such problem. `homepage` moved *away* from hash because it wants clean URLs
+no such problem. `homepage` moved _away_ from hash because it wants clean URLs
 for a public CV; CanWas is a tool and does not care.
 
 ---
 
 ## D7 — Dark theme only
+
 **2026-08-19 · settled**
 
 One theme, no toggle, no light-mode tokens. A reference board is looked at for
@@ -100,17 +107,21 @@ could be added in one place.
 ---
 
 ## D8 — Base UI over Radix
-**2026-08-19 · provisional**
 
-`@base-ui-components/react`, currently `1.0.0-rc.0`.
+**2026-08-19 · settled**
 
-Chosen on request. Note it is pre-stable and its API may shift before 1.0, unlike
-`radix-ui@1.6.7` used on homepage. Usage is deliberately shallow — dialog, popover,
-tooltip, menu — so a swap stays cheap.
+`@base-ui/react`, version 1.7.0.
 
----
+Chosen on request. Originally recorded as _provisional_ on the belief that Base UI
+was pre-stable: `@base-ui-components/react` sits at `1.0.0-rc.0` on npm and
+installing it emits a deprecation warning. That package was **renamed** — the
+maintained package is `@base-ui/react`, now at 1.7.0, well past a stable 1.0. The
+pre-stable caveat does not apply and the decision is settled.
+
+Used so far: `Menu` with `RadioGroup` / `RadioItem` for the language switcher.
 
 ## D9 — No `tailwind-merge`
+
 **2026-08-19 · provisional**
 
 `clsx` only.
@@ -125,6 +136,7 @@ maintain.
 ---
 
 ## D10 — No Tailwind theme extension
+
 **2026-08-19 · settled**
 
 No custom colors or variables registered in Tailwind config. Stock palette and
@@ -136,6 +148,7 @@ and stops a bespoke token vocabulary from growing.
 ---
 
 ## D11 — i18n from day one, homepage's pattern minus the scramble
+
 **2026-08-19 · settled**
 
 A `translations` dictionary keyed by translation key, each with `zh-TW` / `en-US`
@@ -149,6 +162,7 @@ goes in before there are strings to scatter.
 ---
 
 ## D12 — Playwright for happy-path E2E, with screenshots
+
 **2026-08-19 · settled**
 
 The core interaction is pointer-driven and clipboard-driven. Unit tests cannot
@@ -158,6 +172,7 @@ Scope is deliberately one happy path, not a regression net.
 ---
 
 ## D13 — OCR state lives on the Asset, not the Node
+
 **2026-08-19 · settled · supersedes part of the original domain model**
 
 `OcrState` is a field of `Asset`. `Node` has no `ocr` field and reads recognition
@@ -177,6 +192,7 @@ options, and only the key moves to the Node.
 ---
 
 ## D14 — Assets are garbage collected by mark-and-sweep, not refcounting
+
 **2026-08-19 · settled · supersedes "reference-counted" in the original model**
 
 At startup, walk every Board's nodes, union their `assetId`s, delete every Asset
@@ -195,6 +211,7 @@ empty then. Board deletion is not undoable, so its orphans simply wait.
 ---
 
 ## D15 — Undo/redo is an inverse-patch log
+
 **2026-08-19 · settled**
 
 Each mutation produces a `Change` carrying a forward patch and its exact inverse.
@@ -209,6 +226,7 @@ produced by the same function and never written separately.
 ---
 
 ## D16 — Undo history is in-memory and per-session
+
 **2026-08-19 · settled**
 
 The stack lives in a jotai atom and is cleared on reload.
@@ -224,6 +242,7 @@ Matches user expectation — Figma and Excalidraw both drop undo on reload.
 ---
 
 ## D17 — Undo covers content only, on a per-board stack
+
 **2026-08-19 · settled**
 
 In: node add, move, resize, delete, reorder, paste. Out: pan, zoom, node
@@ -242,12 +261,13 @@ dialog.
 ---
 
 ## D18 — Paint order is array order; `Node.z` does not exist
+
 **2026-08-19 · settled · supersedes `z` in the original model**
 
 Position in `Board.nodes` is the paint order and the only representation of it.
 DOM render order follows it, so no `z-index` is used anywhere.
 
-The original doc defined paint order twice — a `z` field *and* an ordered array —
+The original doc defined paint order twice — a `z` field _and_ an ordered array —
 which would have drifted and surfaced as z-fighting after an undo. Array order
 also composes with [D15](#d15--undoredo-is-an-inverse-patch-log): the delete
 inverse already stores `{ insert: node, at: index }`, so restoring stacking order
@@ -256,6 +276,7 @@ is free.
 ---
 
 ## D19 — Paste sizes nodes to fit the viewport
+
 **2026-08-19 · settled**
 
 A pasted image is scaled to occupy at most ~40% of the current viewport, and is
@@ -271,6 +292,7 @@ zoom gives inconsistent scales.
 ---
 
 ## D20 — Durability: request persistent storage, design for export, build it later
+
 **2026-08-19 · settled**
 
 `navigator.storage.persist()` is called at startup. The board document stays plain
@@ -285,6 +307,7 @@ and does not belong in the skeleton.
 ---
 
 ## D21 — Ingest reads `clipboardData`, never the async Clipboard API
+
 **2026-08-19 · settled**
 
 Paste handling reads `event.clipboardData.files`. `navigator.clipboard.read()` is

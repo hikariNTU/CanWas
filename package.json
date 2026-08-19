@@ -1,0 +1,42 @@
+{
+  "name": "canwas",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "rm -rf dist && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --type-aware --report-unused-disable-directives --max-warnings 0 .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "test:e2e": "playwright test",
+    "check": "rc=0; failed=''; for s in format:check lint typecheck build; do npm run $s || { rc=1; failed=\"$failed $s\"; }; done; [ $rc -eq 0 ] && echo 'all checks passed' || echo \"FAILED:$failed\"; exit $rc",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.7.0",
+    "@tanstack/react-router": "^1.170.16",
+    "clsx": "^2.1.1",
+    "jotai": "^2.20.1",
+    "lodash": "^4.17.21",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/vite": "^4.3.1",
+    "@tanstack/router-plugin": "^1.168.18",
+    "@types/lodash": "^4.17.24",
+    "@types/node": "^26.0.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.0.16"
+  }
+}
