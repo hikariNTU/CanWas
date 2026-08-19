@@ -12,7 +12,7 @@ import {
 import { readIntrinsicSize } from "@/board/ingest";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import { getSyncBase, putAsset, putSyncBase } from "@/storage/db";
-import { authAtom } from "@/sync/auth";
+import { authAtom, isLive, renewToken } from "@/sync/auth";
 import { createDriveTransport } from "@/sync/drive-transport";
 import { fakeRemote } from "@/sync/fake-remote";
 import type { SyncBoard } from "@/sync/merge";
@@ -56,13 +56,39 @@ export function useSync(boardId: string): {
     if (selectedTransport() === "fake") {
       return fakeRemote;
     }
-    // Drive needs a live token, and the token is read at call time rather than
-    // captured: it is refreshed silently every hour, and a captured one would
-    // start failing exactly one hour into a session.
+    // Drive needs a live token, and the token is fetched at call time rather
+    // than captured: it lasts an hour, and a captured one would start failing
+    // exactly one hour into a session.
     return auth.status === "signedIn"
-      ? createDriveTransport(() => {
+      ? createDriveTransport(async (renew) => {
           const current = store.get(authAtom);
-          return current.status === "signedIn" ? current.session : null;
+          if (current.status !== "signedIn") {
+            // Not an expected state: the loop only runs while signed in.
+            // Throwing beats a silent no-op that looks like a board with
+            // nothing to sync.
+            throw new Error("Drive transport used while signed out");
+          }
+          if (!renew && isLive(current.session)) {
+            return current.session;
+          }
+          try {
+            // Only the token and its expiry come back. The email and the quota
+            // were fetched once at sign-in and are still true.
+            const fresh = await renewToken();
+            const session = { ...current.session, ...fresh };
+            store.set(authAtom, { status: "signedIn", session });
+            return session;
+          } catch (error) {
+            // A renewal that fails means the grant is gone — revoked, or a
+            // password change, or another device signing out. Dropping back to
+            // signed out puts the button back to "connect", which is the one
+            // thing that can fix it. Staying signed in would retry forever.
+            store.set(authAtom, {
+              status: "failed",
+              error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+          }
         })
       : null;
   }, [auth.status, store]);

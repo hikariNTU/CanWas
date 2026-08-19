@@ -57,7 +57,19 @@ http://localhost:5173
 The client ID is not a secret and can live in the repo.
 
 Access tokens last an hour. There is no refresh token in a browser flow, so the
-app re-requests silently and only prompts if consent has actually lapsed.
+app re-requests silently with `prompt: ""`, which Google answers from the
+existing grant without showing anything.
+
+Renewal is driven from two places, and both are needed. The transport checks the
+recorded expiry before each call, which catches the ordinary case without a
+wasted round trip; and it retries once on a 401, which catches everything the
+clock cannot see — a revoked grant, a token rotated on Google's side, a device
+whose clock is wrong. Renewals are de-duplicated, or one lapsed hour would fire
+a token request per Drive call in the round that discovered it.
+
+A renewal that fails means the grant is gone. The app drops to signed out rather
+than retrying: the button goes back to offering a connection, which is the only
+thing that can actually fix it.
 
 ## What is stored, and where
 

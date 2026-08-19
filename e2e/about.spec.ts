@@ -47,7 +47,7 @@ test("the info panel reports the build and what is on disk", async ({
 test("an unconfigured build says so instead of offering a dead button", async ({
   page,
 }) => {
-  await page.getByTestId("about-open").click();
+  await page.getByTestId("sync-button").click();
 
   // No VITE_GOOGLE_CLIENT_ID in a test build. A sign-in button that cannot
   // work is worse than none, and a silently missing one is a mystery to

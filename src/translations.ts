@@ -146,9 +146,9 @@ const translations = {
     "zh-TW": "Google 雲端硬碟",
     "en-US": "Google Drive",
   },
-  "sync.signIn": {
-    "zh-TW": "登入 Google",
-    "en-US": "Sign in with Google",
+  "sync.now": {
+    "zh-TW": "立即同步",
+    "en-US": "Sync now",
   },
   "sync.signOut": {
     "zh-TW": "登出",

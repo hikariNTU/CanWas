@@ -16,6 +16,7 @@ import type { Session } from "@/sync/auth";
 import {
   ensureFolder,
   getFileContent,
+  isExpired,
   listChildren,
   putFile,
   ROOT_FOLDER_NAME,
@@ -43,42 +44,69 @@ interface Directory {
   assets: Map<string, DriveFile>;
 }
 
-export function createDriveTransport(
-  getSession: () => Session | null,
-): SyncTransport {
+/**
+ * Hands out a live access token, renewing it when asked.
+ *
+ * `renew` is the caller saying "the one you gave me did not work" — the
+ * provider is free to answer a plain call from cache, but a renewing call has
+ * to come back with a token it has not handed out before.
+ */
+export type SessionSource = (renew?: boolean) => Promise<Session>;
+
+export function createDriveTransport(getSession: SessionSource): SyncTransport {
   let directory: Promise<Directory> | null = null;
 
-  function session(): Session {
-    const current = getSession();
-    if (!current) {
-      // Not an expected state: the loop only runs while signed in. Throwing
-      // beats a silent no-op that looks like a board with nothing to sync.
-      throw new Error("Drive transport used while signed out");
+  /**
+   * Runs one Drive call with a token, and once more with a new token if Drive
+   * says the old one is finished.
+   *
+   * Both halves are needed. The clock check in the provider catches the common
+   * case without a wasted round trip, but it trusts this device's clock and
+   * Google's stated lifetime; a revoked grant, a rotated token or a skewed
+   * clock all show up only as a 401 from the server. Retrying once on that is
+   * the difference between a session that lasts and one that turns amber an
+   * hour in.
+   */
+  async function authed<T>(run: (session: Session) => Promise<T>): Promise<T> {
+    try {
+      return await run(await getSession());
+    } catch (error) {
+      if (!isExpired(error)) {
+        throw error;
+      }
+      return run(await getSession(true));
     }
-    return current;
   }
 
-  async function load(): Promise<Directory> {
-    const active = session();
-    const rootId = await ensureFolder(active, ROOT_FOLDER_NAME);
-    const [boardsFolderId, assetsFolderId] = await Promise.all([
-      ensureFolder(active, BOARDS_FOLDER, rootId),
-      ensureFolder(active, ASSETS_FOLDER, rootId),
-    ]);
-    const [boards, assets] = await Promise.all([
-      listChildren(active, boardsFolderId),
-      listChildren(active, assetsFolderId),
-    ]);
-    return {
-      boardsFolderId,
-      assetsFolderId,
-      boards: new Map(boards.map((file) => [file.name, file])),
-      assets: new Map(assets.map((file) => [file.name, file])),
-    };
-  }
+  // Retried as a whole rather than per call: every step of the walk is a
+  // lookup-or-create, so running it twice finds what the first attempt made.
+  const load = (): Promise<Directory> =>
+    authed(async (active) => {
+      const rootId = await ensureFolder(active, ROOT_FOLDER_NAME);
+      const [boardsFolderId, assetsFolderId] = await Promise.all([
+        ensureFolder(active, BOARDS_FOLDER, rootId),
+        ensureFolder(active, ASSETS_FOLDER, rootId),
+      ]);
+      const [boards, assets] = await Promise.all([
+        listChildren(active, boardsFolderId),
+        listChildren(active, assetsFolderId),
+      ]);
+      return {
+        boardsFolderId,
+        assetsFolderId,
+        boards: new Map(boards.map((file) => [file.name, file])),
+        assets: new Map(assets.map((file) => [file.name, file])),
+      };
+    });
 
   function open(): Promise<Directory> {
-    directory ??= load();
+    // A rejected promise left in the cache would be handed to every later
+    // round, so a single failed walk would make the transport permanently
+    // broken for the life of the session.
+    directory ??= load().catch((error: unknown) => {
+      directory = null;
+      throw error;
+    });
     return directory;
   }
 
@@ -98,19 +126,21 @@ export function createDriveTransport(
       if (!file) {
         return null;
       }
-      const blob = await getFileContent(session(), file.id);
+      const blob = await authed((active) => getFileContent(active, file.id));
       return JSON.parse(await blob.text()) as SyncBoard;
     },
 
     async putBoard(board) {
       const state = await open();
       const name = `${board.id}.json`;
-      const written = await putFile(session(), {
-        name,
-        parentId: state.boardsFolderId,
-        fileId: state.boards.get(name)?.id,
-        body: new Blob([JSON.stringify(board)], { type: "application/json" }),
-      });
+      const written = await authed((active) =>
+        putFile(active, {
+          name,
+          parentId: state.boardsFolderId,
+          fileId: state.boards.get(name)?.id,
+          body: new Blob([JSON.stringify(board)], { type: "application/json" }),
+        }),
+      );
       state.boards.set(name, { ...written, name });
     },
 
@@ -129,7 +159,7 @@ export function createDriveTransport(
         return null;
       }
       return {
-        blob: await getFileContent(session(), file.id),
+        blob: await authed((active) => getFileContent(active, file.id)),
         extension: name.slice(name.lastIndexOf(".") + 1),
       };
     },
@@ -137,12 +167,14 @@ export function createDriveTransport(
     async putAsset(id, asset) {
       const state = await open();
       const name = `${id}.${asset.extension}`;
-      const written = await putFile(session(), {
-        name,
-        parentId: state.assetsFolderId,
-        fileId: state.assets.get(name)?.id,
-        body: asset.blob,
-      });
+      const written = await authed((active) =>
+        putFile(active, {
+          name,
+          parentId: state.assetsFolderId,
+          fileId: state.assets.get(name)?.id,
+          body: asset.blob,
+        }),
+      );
       state.assets.set(name, { ...written, name });
     },
   };

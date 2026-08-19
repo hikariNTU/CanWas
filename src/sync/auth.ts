@@ -105,6 +105,27 @@ export async function requestToken(
   };
 }
 
+let renewal: Promise<Session> | null = null;
+
+/**
+ * A fresh token for an account that has already consented.
+ *
+ * De-duplicated, because a sync round makes many Drive calls and they can all
+ * discover the expiry at once — without this, one lapsed hour would fire a
+ * dozen simultaneous token requests and Google would rate-limit the lot.
+ *
+ * `prompt: ""` means Google answers from the existing grant without showing
+ * anything. If the grant is gone this rejects rather than opening a popup the
+ * browser would block anyway: renewal is not a user gesture, so it cannot be
+ * allowed to turn into a dialog.
+ */
+export function renewToken(): Promise<Session> {
+  renewal ??= requestToken("").finally(() => {
+    renewal = null;
+  });
+  return renewal;
+}
+
 export function revoke(session: Session): Promise<void> {
   return loadGoogleOAuth().then(
     (oauth2) =>

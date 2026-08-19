@@ -79,9 +79,15 @@ the info panel. It is the only chrome that answers "is my work anywhere but
 here", and a state you have to open a panel to read is a state nobody reads.
 
 It is never hidden. The resting state says _not syncing_ rather than showing
-nothing, because nothing is indistinguishable from working. Off invites a
-connection; anything else syncs on demand, which is the thing you press before
-closing a laptop. Only a failure gets colour.
+nothing, because nothing is indistinguishable from working. Only a failure gets
+colour.
+
+The icon carries the state; the words live behind it. Opening it gives the
+account, how full that Drive is, what the last round did or why it failed, and
+sign in or sign out — everything the info panel used to say about Drive. The
+split is by cost: the one-glance answer is free to look at, and the detail costs
+a click, which is right because it is only wanted when something needs deciding.
+_Sync now_ is in there too, for the round you want before closing a laptop.
 
 ## Selecting
 
@@ -116,6 +122,7 @@ neither.
 Top right, opposite the menu. It states what this build is — commit, date,
 recognizer, runtime version — and what the app has put on the user's disk:
 images, cached weights, boards, and the browser's own figure for the origin.
+Sync is not in here — it has its own button, above.
 
 It exists because the app quietly downloads 21 MB and keeps it. The browser's
 own estimate is shown alongside the counts rather than instead of them: it

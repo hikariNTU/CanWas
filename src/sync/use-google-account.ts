@@ -13,9 +13,10 @@ import { fetchAccount } from "@/sync/drive";
 /**
  * Signing in and out, and nothing else.
  *
- * No board or image is uploaded yet: what syncing means when two devices
- * disagree is not settled (docs/sync.md), and a half-built sync is worse than
- * none because it looks like it worked.
+ * What to do with the token afterwards belongs to `useSync`; keeping the two
+ * apart is what lets sync be tested against a fake remote with no Google in
+ * sight. Renewal is not here either — it happens under the transport, where a
+ * 401 is visible (`renewToken`).
  */
 export function useGoogleAccount() {
   const [state, setState] = useAtom(authAtom);

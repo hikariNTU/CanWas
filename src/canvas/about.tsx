@@ -11,7 +11,6 @@ import {
   storageBreakdown,
   type StorageBreakdown,
 } from "@/storage/db";
-import { GoogleAccount } from "@/sync/google-account";
 import { useTranslation, type TranslationsKey } from "@/translations";
 import { Icon } from "@/ui/icon";
 
@@ -177,11 +176,6 @@ export function About() {
                 {t("about.clearModels")}
               </button>
             )}
-
-            <div className="mt-2 mb-1 border-t border-neutral-800 pt-2 font-bold text-neutral-100">
-              {t("sync.title")}
-            </div>
-            <GoogleAccount />
 
             <p className="mt-2 text-xs text-neutral-600">
               {DETECTION_MODEL.id} + {RECOGNITION_MODEL.id}
