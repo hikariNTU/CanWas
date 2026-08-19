@@ -1,8 +1,13 @@
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 
-import { withOrderKeys } from "@/board/order";
-import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
+import { normalizeNodes } from "@/board/order";
+import {
+  assetsAtom,
+  boardNodesAtom,
+  readNodes,
+  tombstonesAtom,
+} from "@/board/store";
 import { assetIdsOf, type Asset } from "@/board/types";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { readViewport, viewportsAtom } from "@/canvas/viewport-atom";
@@ -25,6 +30,7 @@ export function useBoardPersistence(boardId: string) {
   const store = useStore();
   const setAssets = useSetAtom(assetsAtom);
   const setNodesByBoard = useSetAtom(boardNodesAtom);
+  const setTombstones = useSetAtom(tombstonesAtom);
   const setViewports = useSetAtom(viewportsAtom);
   const setBoardsMeta = useSetAtom(boardsMetaAtom);
 
@@ -55,6 +61,7 @@ export function useBoardPersistence(boardId: string) {
       const record: StoredBoard = {
         ...meta,
         nodes: store.get(boardNodesAtom)[boardId] ?? [],
+        tombstones: store.get(tombstonesAtom)[boardId] ?? [],
         viewport: store.get(viewportsAtom)[boardId] ?? IDENTITY_VIEWPORT,
       };
       if (options.bumpUpdatedAt) {
@@ -78,6 +85,7 @@ export function useBoardPersistence(boardId: string) {
         id: boardId,
         name: boardId,
         nodes: [],
+        tombstones: [],
         viewport: IDENTITY_VIEWPORT,
         createdAt: now,
         updatedAt: now,
@@ -108,12 +116,16 @@ export function useBoardPersistence(boardId: string) {
       if (Object.keys(restored).length > 0) {
         setAssets((previous) => ({ ...restored, ...previous }));
       }
-      // Boards written before order keys existed carry none, and their array
-      // order is what the paint order was. Filling them in on the way out of
-      // storage is the only place that knows both (D55).
+      // Boards written before order keys and per-node stamps existed carry
+      // neither. Filling them in on the way out of storage is the only place
+      // that knows both the array order and the board's own stamp (D55, D56).
       setNodesByBoard((previous) => ({
         ...previous,
-        [boardId]: withOrderKeys(stored.nodes),
+        [boardId]: normalizeNodes(stored.nodes, stored.updatedAt),
+      }));
+      setTombstones((previous) => ({
+        ...previous,
+        [boardId]: stored.tombstones ?? [],
       }));
       setViewports((previous) => ({ ...previous, [boardId]: stored.viewport }));
       // The menu lists every board (D31), so all metadata is loaded here
@@ -138,7 +150,15 @@ export function useBoardPersistence(boardId: string) {
     return () => {
       cancelled = true;
     };
-  }, [boardId, setAssets, setBoardsMeta, setNodesByBoard, setViewports, store]);
+  }, [
+    boardId,
+    setAssets,
+    setBoardsMeta,
+    setNodesByBoard,
+    setTombstones,
+    setViewports,
+    store,
+  ]);
 
   // Content changes bump `updatedAt`.
   useEffect(() => {

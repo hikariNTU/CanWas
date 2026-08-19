@@ -62,6 +62,14 @@ export interface ImageNode {
   id: NodeId;
   kind: "image";
   /**
+   * When this node last changed, as an epoch millisecond stamp (D56).
+   *
+   * Per node rather than per board, because a merge is per node: two devices
+   * that each edit a different node have not conflicted, and a board-level
+   * stamp cannot tell you that.
+   */
+  updatedAt: number;
+  /**
    * Paint order, as a fractional index (D55). Lowest sorts to the back.
    *
    * A string rather than a number because there is always room for another key
@@ -82,6 +90,8 @@ export interface ImageNode {
 export interface TextNode {
   id: NodeId;
   kind: "text";
+  /** See `ImageNode.updatedAt`. */
+  updatedAt: number;
   /** See `ImageNode.order`. */
   order: string;
   /** World coordinates of the top-left corner. */
@@ -122,11 +132,23 @@ export function assetIdsOf(nodes: readonly BoardNode[]): AssetId[] {
 }
 
 /**
- * A node that does not have its place yet.
+ * A node that does not have its place or its stamp yet.
  *
- * Order keys are handed out by `insertNodes`, which is the only code that can
- * see where the new node is going relative to everything already there.
+ * Both are handed out by `insertNodes` and `applyPatch` — the code that can see
+ * where the node is going, and the moment it got there.
  */
 export type NewNode<T extends BoardNode = BoardNode> = T extends unknown
-  ? Omit<T, "order">
+  ? Omit<T, "order" | "updatedAt">
   : never;
+
+/**
+ * A record that a node was deleted, kept in place of the node.
+ *
+ * Without one, a device still holding the node pushes it back at the next sync
+ * and the deletion undoes itself — from the user's side, an image they threw
+ * away reappears (D56).
+ */
+export interface Tombstone {
+  id: NodeId;
+  deletedAt: number;
+}

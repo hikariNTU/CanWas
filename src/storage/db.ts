@@ -1,4 +1,9 @@
-import { assetIdsOf, type BoardNode, type OcrState } from "@/board/types";
+import {
+  assetIdsOf,
+  type BoardNode,
+  type OcrState,
+  type Tombstone,
+} from "@/board/types";
 import type { Viewport } from "@/canvas/coords";
 
 const DB_NAME = "canwas";
@@ -24,6 +29,12 @@ export interface StoredBoard {
   id: string;
   name: string;
   nodes: BoardNode[];
+  /**
+   * Ids of nodes deleted from this board (D56). Optional because boards written
+   * before tombstones existed have none — and a board with no record of a
+   * deletion is a board that never deleted anything, as far as a merge can tell.
+   */
+  tombstones?: Tombstone[];
   viewport: Viewport;
   createdAt: number;
   updatedAt: number;

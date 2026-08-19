@@ -23,8 +23,12 @@ export function insertNodes(
   label: string,
 ): Change {
   const keys = orderKeysBetween(keyAbove(nodes), null, added.length);
+  // `updatedAt` is a placeholder: `applyPatch` stamps every node it touches
+  // with the instant the patch actually landed, which is the only clock the
+  // merge can trust.
   const placed = added.map(
-    (node, offset) => ({ ...node, order: keys[offset]! }) as BoardNode,
+    (node, offset) =>
+      ({ ...node, order: keys[offset]!, updatedAt: 0 }) as BoardNode,
   );
 
   const apply: Patch = placed.map((node) => ({ kind: "insert", node }));

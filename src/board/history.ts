@@ -1,9 +1,9 @@
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback } from "react";
 
-import { applyPatch, type Change } from "@/board/patch";
-import { boardNodesAtom } from "@/board/store";
-import type { BoardNode, NodeId } from "@/board/types";
+import { applyPatch, tombstonesAfter, type Change } from "@/board/patch";
+import { boardNodesAtom, tombstonesAtom } from "@/board/store";
+import type { BoardNode, NodeId, Tombstone } from "@/board/types";
 
 const MAX_DEPTH = 200;
 
@@ -45,10 +45,14 @@ export const commitAtom = atom(
       return;
     }
 
+    // One clock reading for the whole change, so every node it touches carries
+    // the same stamp and a merge cannot split a single action in half.
+    const now = Date.now();
     set(boardNodesAtom, {
       ...nodesByBoard,
-      [boardId]: applyPatch(nodes, change.apply),
+      [boardId]: applyPatch(nodes, change.apply, now),
     });
+    recordTombstones(get, set, boardId, change.apply, now);
 
     const history = get(historyAtom);
     const current = history[boardId] ?? EMPTY;
@@ -71,10 +75,12 @@ export const undoAtom = atom(null, (get, set, boardId: string) => {
     return;
   }
   const nodesByBoard = get(boardNodesAtom);
+  const now = Date.now();
   set(boardNodesAtom, {
     ...nodesByBoard,
-    [boardId]: applyPatch(nodesByBoard[boardId] ?? [], change.invert),
+    [boardId]: applyPatch(nodesByBoard[boardId] ?? [], change.invert, now),
   });
+  recordTombstones(get, set, boardId, change.invert, now);
   set(historyAtom, {
     ...history,
     [boardId]: {
@@ -92,15 +98,42 @@ export const redoAtom = atom(null, (get, set, boardId: string) => {
     return;
   }
   const nodesByBoard = get(boardNodesAtom);
+  const now = Date.now();
   set(boardNodesAtom, {
     ...nodesByBoard,
-    [boardId]: applyPatch(nodesByBoard[boardId] ?? [], change.apply),
+    [boardId]: applyPatch(nodesByBoard[boardId] ?? [], change.apply, now),
   });
+  recordTombstones(get, set, boardId, change.apply, now);
   set(historyAtom, {
     ...history,
     [boardId]: { past: [...current.past, change], future: rest },
   });
 });
+
+/**
+ * Folds a patch's deletions into the board's tombstones.
+ *
+ * Every path that applies a patch goes through here — commit, undo and redo
+ * alike. An undo that put a node back without clearing its tombstone would see
+ * the node deleted again by the next sync, which is a bug nobody could
+ * reproduce locally.
+ */
+function recordTombstones(
+  get: (atom: typeof tombstonesAtom) => Record<string, Tombstone[]>,
+  set: (
+    atom: typeof tombstonesAtom,
+    value: Record<string, Tombstone[]>,
+  ) => void,
+  boardId: string,
+  patch: Change["apply"],
+  now: number,
+): void {
+  const all = get(tombstonesAtom);
+  const next = tombstonesAfter(all[boardId] ?? [], patch, now);
+  if (next !== (all[boardId] ?? [])) {
+    set(tombstonesAtom, { ...all, [boardId]: next });
+  }
+}
 
 export function useSelection(boardId: string) {
   const [all, setAll] = useAtom(selectionAtom);

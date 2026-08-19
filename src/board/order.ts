@@ -274,18 +274,32 @@ export function keyAbove(nodes: readonly BoardNode[]): string | null {
 }
 
 /**
- * Fills in keys for nodes stored before this existed, using the array order
- * they were saved in — which was the paint order (D18).
+ * Fills in what a stored board may predate — order keys (D55) and per-node
+ * stamps (D56) — and returns the list sorted.
  *
- * Runs on every hydration rather than as a one-shot migration step: a board
- * can arrive from IndexedDB or, later, from Drive, and a board written by an
- * older build of the app on another device is not a case that ever stops
- * happening.
+ * Order keys come from the array order the board was saved in, which *was* the
+ * paint order. Stamps fall back to the board's own `updatedAt`: it is the
+ * newest thing known to be true about those nodes, and guessing `now` instead
+ * would make an untouched old board win every merge against a device that has
+ * genuinely edited it.
+ *
+ * Runs on every hydration rather than as a one-shot migration: a board can
+ * arrive from IndexedDB or, later, from Drive, and one written by an older
+ * build on another device is not a case that ever stops happening.
  */
-export function withOrderKeys(nodes: readonly BoardNode[]): BoardNode[] {
-  if (nodes.every((node) => typeof node.order === "string")) {
-    return sortNodes(nodes);
-  }
-  const keys = orderKeysBetween(null, null, nodes.length);
-  return nodes.map((node, index) => ({ ...node, order: keys[index]! }));
+export function normalizeNodes(
+  nodes: readonly BoardNode[],
+  boardUpdatedAt: number,
+): BoardNode[] {
+  const keys = nodes.every((node) => typeof node.order === "string")
+    ? null
+    : orderKeysBetween(null, null, nodes.length);
+  return sortNodes(
+    nodes.map((node, index) => ({
+      ...node,
+      order: keys === null ? node.order : keys[index]!,
+      updatedAt:
+        typeof node.updatedAt === "number" ? node.updatedAt : boardUpdatedAt,
+    })),
+  );
 }

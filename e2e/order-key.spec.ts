@@ -6,7 +6,7 @@ import {
   orderKeyBetween,
   orderKeysBetween,
   sortNodes,
-  withOrderKeys,
+  normalizeNodes,
 } from "../src/board/order";
 import type { BoardNode } from "../src/board/types";
 
@@ -21,6 +21,7 @@ function textNode(id: string, order: string): BoardNode {
     id,
     kind: "text",
     order,
+    updatedAt: 0,
     x: 0,
     y: 0,
     w: 10,
@@ -134,13 +135,24 @@ test("nodes stored before order keys existed keep their painted order", () => {
     textNode("middle", undefined as unknown as string),
     textNode("front", undefined as unknown as string),
   ];
-  const migrated = withOrderKeys(stored);
+  const migrated = normalizeNodes(stored, 1700);
   expect(migrated.map((node) => node.id)).toEqual(["back", "middle", "front"]);
   expect([...migrated].sort(compareNodes)).toEqual(migrated);
 
   // A board that already has keys is left alone apart from being sorted.
   const keyed = [textNode("b", "a2"), textNode("a", "a1")];
-  expect(withOrderKeys(keyed).map((node) => node.id)).toEqual(["a", "b"]);
+  expect(normalizeNodes(keyed, 1700).map((node) => node.id)).toEqual([
+    "a",
+    "b",
+  ]);
+});
+
+test("nodes stored before stamps existed inherit the board's", () => {
+  const stored = [textNode("only", "a0")];
+  stored[0]!.updatedAt = undefined as unknown as number;
+  // The board's own stamp, not `now`: an untouched old board must not win a
+  // merge against a device that has actually edited it since.
+  expect(normalizeNodes(stored, 1700)[0]!.updatedAt).toBe(1700);
 });
 
 test("malformed keys are rejected rather than silently reordered", () => {
