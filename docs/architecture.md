@@ -87,6 +87,9 @@ two images yields scrambled text. Only one Node's overlay is selectable at a tim
 | `⌘0`                                           | Reset viewport                    |
 | `⌘=` / `⌘-`                                    | Zoom, anchored at viewport centre |
 
+Chrome floats over the canvas and reserves no layout space (D24), so a press
+near a corner can land on a control rather than the board.
+
 Wheel and pointer listeners are attached natively rather than via React props,
 because the wheel handler must `preventDefault` and React's synthetic listener
 cannot be made non-passive.
@@ -259,8 +262,9 @@ Hash avoids the GitHub Pages deep-link 404 with no `404.html` redirect trick.
    result.
 2. `createImageBitmap` for intrinsic dimensions, then close the bitmap.
 3. Size the node to at most 40% of the visible canvas, never enlarging (D19).
-4. Centre it on the drop point, or on the viewport centre for a paste, which has
-   no coordinates of its own.
+4. Centre it on the drop point. A paste carries no coordinates, so the last
+   pointer position over the canvas stands in, falling back to the viewport
+   centre if the pointer has never been over it (D23).
 5. Cascade off any node already at that origin.
 
 **Cascade must consult the board, not the batch.** Offsetting by index within one

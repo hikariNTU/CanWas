@@ -11,6 +11,7 @@ import {
 } from "@/storage/db";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { boardsMetaAtom, type BoardMeta } from "@/storage/boards-atom";
+import { LanguageMenu } from "@/components/language-menu";
 import { useTranslation } from "@/translations";
 
 export const Route = createFileRoute("/")({
@@ -80,14 +81,17 @@ function Home() {
           </h1>
           <p className="mt-2 text-sm text-neutral-400">{t("app.tagline")}</p>
         </div>
-        <button
-          type="button"
-          data-testid="create-board"
-          onClick={() => void createBoard()}
-          className="shrink-0 rounded-md border border-neutral-800 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 transition-colors duration-150 hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
-        >
-          {t("home.create")}
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <LanguageMenu />
+          <button
+            type="button"
+            data-testid="create-board"
+            onClick={() => void createBoard()}
+            className="rounded-md border border-neutral-800 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 transition-colors duration-150 hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+          >
+            {t("home.create")}
+          </button>
+        </div>
       </div>
 
       {loaded && boards.length === 0 && (

@@ -12,7 +12,8 @@ test("home renders, creates a board, and routes into it", async ({ page }) => {
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await page.screenshot({ path: "e2e/screenshots/board.png", fullPage: true });
 
-  await page.getByRole("link", { name: "Back to boards" }).click();
+  await page.getByTestId("board-menu").click();
+  await page.getByTestId("menu-back").click();
   await expect(page.getByTestId("board-row")).toHaveCount(1);
 });
 

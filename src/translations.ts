@@ -46,6 +46,10 @@ const translations = {
     "zh-TW": "貼上截圖，選取其中的文字。",
     "en-US": "Paste screenshots. Select the text inside them.",
   },
+  "menu.open": {
+    "zh-TW": "選單",
+    "en-US": "Menu",
+  },
   "lang.label": {
     "zh-TW": "語言",
     "en-US": "Language",

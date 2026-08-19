@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { useCallback, useEffect, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 
 import {
   cascadeFreeOrigin,
@@ -36,6 +36,10 @@ export function useIngest({
   surfaceRef,
   nodes,
 }: IngestOptions) {
+  // A paste event carries no coordinates, so the last pointer position over the
+  // canvas stands in for the cursor. Null until the pointer has been over it,
+  // in which case placement falls back to the viewport centre.
+  const pointerRef = useRef<Point | null>(null);
   const [assets, setAssets] = useAtom(assetsAtom);
   const { commit } = useBoardHistory(boardId);
 
@@ -120,10 +124,35 @@ export function useIngest({
 
       // Paste is undoable (D17), so it goes through the history stack like any
       // other mutation rather than writing to the store directly.
-      commit(insertNodes(nodes, added, `paste ${added.length} image(s)`));
+      commit((current) =>
+        insertNodes(current, added, `paste ${added.length} image(s)`),
+      );
     },
     [assets, commit, nodes, setAssets, surfaceRef, viewport],
   );
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) {
+      return;
+    }
+    function trackPointer(event: PointerEvent) {
+      const rect = surface!.getBoundingClientRect();
+      pointerRef.current = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      };
+    }
+    function forgetPointer() {
+      pointerRef.current = null;
+    }
+    surface.addEventListener("pointermove", trackPointer);
+    surface.addEventListener("pointerleave", forgetPointer);
+    return () => {
+      surface.removeEventListener("pointermove", trackPointer);
+      surface.removeEventListener("pointerleave", forgetPointer);
+    };
+  }, [surfaceRef]);
 
   useEffect(() => {
     function handlePaste(event: ClipboardEvent) {
@@ -132,9 +161,7 @@ export function useIngest({
         return;
       }
       event.preventDefault();
-      // Paste has no coordinates of its own, so it lands at the viewport
-      // centre rather than wherever the pointer happens to rest.
-      void ingestFiles(files, null);
+      void ingestFiles(files, pointerRef.current);
     }
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);

@@ -3,7 +3,7 @@ import { useCallback } from "react";
 
 import { applyPatch, type Change } from "@/board/patch";
 import { boardNodesAtom } from "@/board/store";
-import type { NodeId } from "@/board/types";
+import type { BoardNode, NodeId } from "@/board/types";
 
 const MAX_DEPTH = 200;
 
@@ -16,13 +16,91 @@ const EMPTY: HistoryStack = { past: [], future: [] };
 
 /**
  * Per-board, in-memory, cleared on reload (D16). Being empty at startup is what
- * makes the asset mark-and-sweep provably safe rather than carefully safe: the
- * sweep can never reclaim bytes an undo entry still needs.
+ * makes the asset mark-and-sweep provably safe rather than carefully safe.
  */
 const historyAtom = atom<Record<string, HistoryStack>>({});
 
 /** Node selection is not undoable (D17) and lives outside the history stack. */
 export const selectionAtom = atom<Record<string, NodeId[]>>({});
+
+/** Builds a Change from whatever the node list is *at commit time*. */
+export type ChangeBuilder = (nodes: readonly BoardNode[]) => Change;
+
+/**
+ * Commit, undo and redo are write atoms rather than callbacks over React state.
+ *
+ * A write atom reads the store synchronously through `get`, so a mutation is
+ * always built against current nodes. Building from a render-time snapshot
+ * meant that starting a second gesture before React had re-rendered produced a
+ * Change — and an inverse — derived from stale geometry, which showed up as
+ * nodes jumping when a drag and a resize followed each other quickly.
+ */
+export const commitAtom = atom(
+  null,
+  (get, set, boardId: string, build: ChangeBuilder) => {
+    const nodesByBoard = get(boardNodesAtom);
+    const nodes = nodesByBoard[boardId] ?? [];
+    const change = build(nodes);
+    if (change.apply.length === 0) {
+      return;
+    }
+
+    set(boardNodesAtom, {
+      ...nodesByBoard,
+      [boardId]: applyPatch(nodes, change.apply),
+    });
+
+    const history = get(historyAtom);
+    const current = history[boardId] ?? EMPTY;
+    set(historyAtom, {
+      ...history,
+      [boardId]: {
+        past: [...current.past, change].slice(-MAX_DEPTH),
+        // A new action makes the redo branch unreachable.
+        future: [],
+      },
+    });
+  },
+);
+
+export const undoAtom = atom(null, (get, set, boardId: string) => {
+  const history = get(historyAtom);
+  const current = history[boardId] ?? EMPTY;
+  const change = current.past.at(-1);
+  if (!change) {
+    return;
+  }
+  const nodesByBoard = get(boardNodesAtom);
+  set(boardNodesAtom, {
+    ...nodesByBoard,
+    [boardId]: applyPatch(nodesByBoard[boardId] ?? [], change.invert),
+  });
+  set(historyAtom, {
+    ...history,
+    [boardId]: {
+      past: current.past.slice(0, -1),
+      future: [change, ...current.future],
+    },
+  });
+});
+
+export const redoAtom = atom(null, (get, set, boardId: string) => {
+  const history = get(historyAtom);
+  const current = history[boardId] ?? EMPTY;
+  const [change, ...rest] = current.future;
+  if (!change) {
+    return;
+  }
+  const nodesByBoard = get(boardNodesAtom);
+  set(boardNodesAtom, {
+    ...nodesByBoard,
+    [boardId]: applyPatch(nodesByBoard[boardId] ?? [], change.apply),
+  });
+  set(historyAtom, {
+    ...history,
+    [boardId]: { past: [...current.past, change], future: rest },
+  });
+});
 
 export function useSelection(boardId: string) {
   const [all, setAll] = useAtom(selectionAtom);
@@ -52,84 +130,25 @@ export function useSelection(boardId: string) {
 }
 
 export function useBoardHistory(boardId: string) {
-  const setNodesByBoard = useSetAtom(boardNodesAtom);
-  const [history, setHistory] = useAtom(historyAtom);
-  const stack = history[boardId] ?? EMPTY;
+  const commitChange = useSetAtom(commitAtom);
+  const undoChange = useSetAtom(undoAtom);
+  const redoChange = useSetAtom(redoAtom);
+  const stack = useAtomValue(historyAtom)[boardId] ?? EMPTY;
 
   /**
-   * Applies a change and records it. A gesture must call this exactly once, at
-   * its end — a drag that committed per pointermove would bury every real
-   * action under hundreds of entries (D17).
+   * A gesture must call this exactly once, at its end — committing per
+   * pointermove would bury every real action under hundreds of entries (D17).
    */
   const commit = useCallback(
-    (change: Change) => {
-      if (change.apply.length === 0) {
-        return;
-      }
-      setNodesByBoard((previous) => ({
-        ...previous,
-        [boardId]: applyPatch(previous[boardId] ?? [], change.apply),
-      }));
-      setHistory((previous) => {
-        const current = previous[boardId] ?? EMPTY;
-        const past = [...current.past, change].slice(-MAX_DEPTH);
-        // A new action makes the redo branch unreachable.
-        return { ...previous, [boardId]: { past, future: [] } };
-      });
-    },
-    [boardId, setHistory, setNodesByBoard],
+    (build: ChangeBuilder) => commitChange(boardId, build),
+    [boardId, commitChange],
   );
-
-  const undo = useCallback(() => {
-    setHistory((previous) => {
-      const current = previous[boardId] ?? EMPTY;
-      const change = current.past.at(-1);
-      if (!change) {
-        return previous;
-      }
-      setNodesByBoard((nodes) => ({
-        ...nodes,
-        [boardId]: applyPatch(nodes[boardId] ?? [], change.invert),
-      }));
-      return {
-        ...previous,
-        [boardId]: {
-          past: current.past.slice(0, -1),
-          future: [change, ...current.future],
-        },
-      };
-    });
-  }, [boardId, setHistory, setNodesByBoard]);
-
-  const redo = useCallback(() => {
-    setHistory((previous) => {
-      const current = previous[boardId] ?? EMPTY;
-      const [change, ...rest] = current.future;
-      if (!change) {
-        return previous;
-      }
-      setNodesByBoard((nodes) => ({
-        ...nodes,
-        [boardId]: applyPatch(nodes[boardId] ?? [], change.apply),
-      }));
-      return {
-        ...previous,
-        [boardId]: { past: [...current.past, change], future: rest },
-      };
-    });
-  }, [boardId, setHistory, setNodesByBoard]);
 
   return {
     commit,
-    undo,
-    redo,
+    undo: useCallback(() => undoChange(boardId), [boardId, undoChange]),
+    redo: useCallback(() => redoChange(boardId), [boardId, redoChange]),
     canUndo: stack.past.length > 0,
     canRedo: stack.future.length > 0,
   };
-}
-
-export function useHistoryDepth(boardId: string) {
-  const history = useAtomValue(historyAtom);
-  const stack = history[boardId] ?? EMPTY;
-  return { past: stack.past.length, future: stack.future.length };
 }

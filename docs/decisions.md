@@ -324,3 +324,77 @@ reliably automatable across browsers; the workable path is dispatching a synthet
 the async Clipboard API cannot be driven that way, which would make the required
 happy-path E2E ([D12](#d12--playwright-for-happy-path-e2e-with-screenshots))
 impossible to write.
+
+---
+
+## D22 — Mutations are built at commit time, from the store
+
+**2026-08-19 · settled · amends [D15](#d15--undoredo-is-an-inverse-patch-log)**
+
+`commit` takes a _builder_ — `(nodes) => Change` — and history is implemented as
+jotai write atoms, which read current state synchronously through `get`.
+
+Originally a Change was built from the node list captured in the component's
+render closure. That snapshot goes stale in two ordinary situations:
+
+- Two gestures in quick succession. A resize starting before React re-rendered
+  from the preceding drag anchored to old geometry, so the node jumped and its
+  inverse undid to the wrong place.
+- An async paste. `Select All` selected only the nodes that existed when the
+  key listener last registered, silently missing the newest one.
+
+Gesture handlers read the store directly for their base geometry too. The rule
+is now: **no mutation, and no inverse, is ever derived from a render snapshot.**
+
+---
+
+## D23 — Paste lands under the cursor
+
+**2026-08-19 · settled · amends [D19](#d19--paste-sizes-nodes-to-fit-the-viewport)**
+
+A paste event carries no coordinates, so the last pointer position over the
+canvas stands in for the cursor. If the pointer has never been over the canvas —
+straight after load, or after leaving it — placement falls back to the viewport
+centre.
+
+Sizing is unchanged: at most 40% of the visible canvas, never enlarged.
+
+---
+
+## D24 — Immersive canvas, chrome floats
+
+**2026-08-19 · settled**
+
+The board screen has no header and no toolbar strip. The canvas reaches every
+edge of the window and all controls float over it in rounded "islands", the
+Excalidraw arrangement: menu top-left, zoom and history bottom-left.
+
+Consequence worth remembering: chrome now overlaps the canvas corners, so a
+press near a corner may hit a control rather than the board. Tests that pan or
+click "empty" canvas must aim at clear space.
+
+The shared root layout renders no chrome at all — a header there would have to
+be hidden on the one screen that matters. Home renders its own.
+
+---
+
+## D25 — The Pages base path is case-sensitive
+
+**2026-08-19 · settled**
+
+`base` is `/CanWas/`, matching the repository name exactly.
+
+Measured:
+
+```
+200  https://hikarintu.github.io/CanWas/
+404  https://hikarintu.github.io/canwas/
+200  https://hikariNTU.github.io/CanWas/
+```
+
+The **host** is case-insensitive and normalised to lowercase; the **path**
+preserves the repository's case and does not redirect. Lower-casing `base`, or
+linking to `/canwas/`, produces a hard 404.
+
+Renaming the repository to `canwas` would remove the trap. Not done, since it
+would break the existing URL.

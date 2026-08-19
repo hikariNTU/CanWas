@@ -150,7 +150,8 @@ test("deleting a board leaves its assets to the startup sweep", async ({
   await pasteImage(page);
   await expect.poll(() => countStore(page, "assets")).toBe(1);
 
-  await page.getByRole("link", { name: "Back to boards" }).click();
+  await page.getByTestId("board-menu").click();
+  await page.getByTestId("menu-back").click();
   await page.getByTestId("delete-board").click();
   await page.getByTestId("confirm-delete").click();
   await expect(page.getByTestId("board-row")).toHaveCount(0);

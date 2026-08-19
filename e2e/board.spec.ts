@@ -68,7 +68,7 @@ test("click selects, escape and empty-canvas click deselect", async ({
   await node.click();
   await expect(node).toHaveAttribute("data-selected", "true");
   const surface = (await page.getByTestId("canvas-surface").boundingBox())!;
-  await page.mouse.click(surface.x + 30, surface.y + 30);
+  await page.mouse.click(surface.x + surface.width - 40, surface.y + 40);
   await expect(node).not.toHaveAttribute("data-selected", "true");
 });
 
@@ -181,6 +181,7 @@ test("select all and multi-node move", async ({ page }) => {
   await pasteImage(page, 250, 250, 100);
   await pasteImage(page, 250, 250, 110);
   const nodes = page.getByTestId("board-node");
+  await expect(nodes).toHaveCount(2);
 
   await page.keyboard.press("ControlOrMeta+a");
   await expect(nodes.first()).toHaveAttribute("data-selected", "true");

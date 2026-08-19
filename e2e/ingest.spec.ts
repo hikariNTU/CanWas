@@ -110,9 +110,14 @@ test("pasted node keeps its world position while panning and zooming", async ({
   const before = (await page.getByTestId("board-node").boundingBox())!;
 
   const surface = await surfaceBox(page);
-  await page.mouse.move(surface.x + 40, surface.y + 40);
+  // Away from the floating chrome in the corners.
+  await page.mouse.move(surface.x + surface.width * 0.5, surface.y + 80);
   await page.mouse.down();
-  await page.mouse.move(surface.x + 140, surface.y + 110, { steps: 5 });
+  await page.mouse.move(
+    surface.x + surface.width * 0.5 + 100,
+    surface.y + 150,
+    { steps: 5 },
+  );
   await page.mouse.up();
 
   const after = (await page.getByTestId("board-node").boundingBox())!;
@@ -120,4 +125,34 @@ test("pasted node keeps its world position while panning and zooming", async ({
   expect(after.y - before.y).toBeCloseTo(70, 0);
   // Panning must not resize anything.
   expect(after.width).toBeCloseTo(before.width, 0);
+});
+
+test("paste lands centred on the cursor, not the viewport centre", async ({
+  page,
+}) => {
+  const surface = await surfaceBox(page);
+  // Somewhere clearly off-centre, and clear of the floating chrome.
+  const cursor = {
+    x: surface.x + surface.width * 0.72,
+    y: surface.y + surface.height * 0.34,
+  };
+  await page.mouse.move(cursor.x, cursor.y);
+  await pasteImage(page, 400, 300);
+
+  const box = (await page.getByTestId("board-node").boundingBox())!;
+  expect(box.x + box.width / 2).toBeCloseTo(cursor.x, 0);
+  expect(box.y + box.height / 2).toBeCloseTo(cursor.y, 0);
+
+  await page.screenshot({ path: "e2e/screenshots/paste-at-cursor.png" });
+});
+
+test("paste falls back to the viewport centre when the pointer never entered", async ({
+  page,
+}) => {
+  const surface = await surfaceBox(page);
+  await pasteImage(page, 400, 300);
+
+  const box = (await page.getByTestId("board-node").boundingBox())!;
+  expect(box.x + box.width / 2).toBeCloseTo(surface.x + surface.width / 2, 0);
+  expect(box.y + box.height / 2).toBeCloseTo(surface.y + surface.height / 2, 0);
 });

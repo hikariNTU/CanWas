@@ -5,6 +5,7 @@ import { useBoardHistory } from "@/board/history";
 import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
 import { useBoardShortcuts } from "@/board/use-board-shortcuts";
 import { useIngest } from "@/board/use-ingest";
+import { BoardMenu } from "@/canvas/board-menu";
 import { useNodeGestures } from "@/canvas/use-node-gestures";
 import { useViewportControls } from "@/canvas/use-viewport-controls";
 import { useTranslation } from "@/translations";
@@ -23,10 +24,10 @@ export function Canvas({ boardId }: { boardId: string }) {
   const assets = useAtomValue(assetsAtom);
   const { undo, redo, canUndo, canRedo } = useBoardHistory(boardId);
   const { selection, setSelection, startMove, startResize, rectFor } =
-    useNodeGestures(boardId, nodes, viewport);
+    useNodeGestures(boardId, viewport);
 
   useIngest({ boardId, viewport, surfaceRef, nodes });
-  useBoardShortcuts(boardId, nodes);
+  useBoardShortcuts(boardId);
 
   // A press on empty canvas clears the selection. Registered natively so it
   // runs before the pan handler claims the pointer.
@@ -36,10 +37,7 @@ export function Canvas({ boardId }: { boardId: string }) {
       return;
     }
     function handlePointerDown(event: PointerEvent) {
-      if (
-        event.target === surface ||
-        event.target === surface?.firstElementChild
-      ) {
+      if (!(event.target as Element | null)?.closest?.("[data-node-id]")) {
         setSelection([]);
       }
     }
@@ -48,8 +46,8 @@ export function Canvas({ boardId }: { boardId: string }) {
   }, [setSelection]);
 
   const gridSize = GRID_SPACING * viewport.scale;
-  // Selection chrome is drawn in world space, so it must be divided by the
-  // zoom to keep a constant thickness on screen.
+  // Selection chrome is drawn in world space, so it is divided by the zoom to
+  // keep a constant thickness on screen.
   const hairline = 2 / viewport.scale;
 
   return (
@@ -76,7 +74,7 @@ export function Canvas({ boardId }: { boardId: string }) {
           <div
             aria-hidden
             data-testid="world-origin"
-            className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-neutral-700"
+            className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-neutral-800"
           />
           {nodes.map((node) => {
             const asset = assets[node.assetId];
@@ -91,7 +89,7 @@ export function Canvas({ boardId }: { boardId: string }) {
                 data-testid="board-node"
                 data-node-id={node.id}
                 data-selected={isSelected || undefined}
-                onPointerDown={(event) => startMove(event, node)}
+                onPointerDown={(event) => startMove(event, node.id)}
                 className="absolute cursor-move"
                 style={{
                   left: rect.x,
@@ -112,7 +110,7 @@ export function Canvas({ boardId }: { boardId: string }) {
                 {isSelected && selection.length === 1 && (
                   <div
                     data-testid="resize-handle"
-                    onPointerDown={(event) => startResize(event, node)}
+                    onPointerDown={(event) => startResize(event, node.id)}
                     className="absolute cursor-nwse-resize bg-sky-500"
                     style={{
                       width: hairline * 5,
@@ -128,56 +126,75 @@ export function Canvas({ boardId }: { boardId: string }) {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 p-3">
-        <p className="text-xs text-neutral-600">
-          {nodes.length === 0 ? t("canvas.empty") : t("canvas.hint")}
+      {/* Chrome floats over the canvas and never reserves layout space, so the
+          board reaches every edge of the window. */}
+      <div className="pointer-events-none absolute top-3 left-3">
+        <BoardMenu boardId={boardId} onResetView={resetViewport} />
+      </div>
+
+      {nodes.length === 0 && (
+        <p className="pointer-events-none absolute inset-x-0 top-1/2 text-center text-sm text-neutral-600">
+          {t("canvas.empty")}
         </p>
-        <div className="pointer-events-auto flex items-center gap-1 rounded-lg border border-neutral-800 bg-neutral-900/90 p-1 backdrop-blur">
-          <ToolButton
+      )}
+
+      <div className="pointer-events-none absolute bottom-3 left-3 flex gap-2">
+        <Island>
+          <IconButton
+            label={t("canvas.zoomOut")}
+            onClick={() => zoomFromCenter(1 / 1.2)}
+          >
+            −
+          </IconButton>
+          <button
+            type="button"
+            data-testid="zoom-reset"
+            aria-label={t("canvas.resetView")}
+            onClick={resetViewport}
+            className="h-8 min-w-14 rounded-md px-2 font-mono text-xs text-neutral-300 tabular-nums transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+          >
+            {Math.round(viewport.scale * 100)}%
+          </button>
+          <IconButton
+            label={t("canvas.zoomIn")}
+            onClick={() => zoomFromCenter(1.2)}
+          >
+            +
+          </IconButton>
+        </Island>
+        <Island>
+          <IconButton
             label={t("canvas.undo")}
             testId="undo"
             onClick={undo}
             disabled={!canUndo}
           >
             ↺
-          </ToolButton>
-          <ToolButton
+          </IconButton>
+          <IconButton
             label={t("canvas.redo")}
             testId="redo"
             onClick={redo}
             disabled={!canRedo}
           >
             ↻
-          </ToolButton>
-          <span className="mx-1 h-5 w-px bg-neutral-800" />
-          <ToolButton
-            label={t("canvas.zoomOut")}
-            onClick={() => zoomFromCenter(1 / 1.2)}
-          >
-            −
-          </ToolButton>
-          <button
-            type="button"
-            data-testid="zoom-reset"
-            aria-label={t("canvas.resetView")}
-            onClick={resetViewport}
-            className="h-8 min-w-16 rounded-md px-2 font-mono text-xs text-neutral-300 tabular-nums transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
-          >
-            {Math.round(viewport.scale * 100)}%
-          </button>
-          <ToolButton
-            label={t("canvas.zoomIn")}
-            onClick={() => zoomFromCenter(1.2)}
-          >
-            +
-          </ToolButton>
-        </div>
+          </IconButton>
+        </Island>
       </div>
     </div>
   );
 }
 
-function ToolButton({
+/** A floating chrome group. Excalidraw calls these islands; so do we. */
+export function Island({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="pointer-events-auto flex items-center gap-0.5 rounded-lg border border-neutral-800 bg-neutral-900/90 p-1 shadow-lg backdrop-blur">
+      {children}
+    </div>
+  );
+}
+
+function IconButton({
   label,
   testId,
   onClick,
