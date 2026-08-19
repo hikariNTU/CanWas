@@ -1,6 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 5173;
+/**
+ * Overridable so a run can avoid a dev server that is already up — for example
+ * one whose Vite dependency cache went stale after an install or uninstall.
+ * Playwright starts its own server on any port it does not find one on.
+ */
+const PORT = Number(process.env.E2E_PORT ?? 5173);
 const BASE_URL = `http://localhost:${PORT}/CanWas/`;
 
 export default defineConfig({

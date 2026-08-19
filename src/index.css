@@ -27,3 +27,33 @@ body {
     -apple-system,
     sans-serif;
 }
+
+/* Material Symbols renders a glyph from the element's text via a ligature, so
+   the text must survive untouched: no capitalisation, no letter-spacing, and
+   `translate="no"` on the element itself. */
+.material-symbol {
+  /* Block, not inline-block: an inline box is positioned against the text
+     baseline, which lifts the glyph above the label beside it. `vertical-align:
+     middle` only trades that for a smaller offset in the other direction, since
+     it centres on the baseline plus half an x-height rather than on the line.
+     As a block the glyph is laid out by its flex or grid parent, which centres
+     it exactly. Every use site is inside such a container. */
+  display: block;
+  font-family: "Material Symbols Rounded";
+  font-style: normal;
+  font-weight: 700;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 700,
+    "GRAD" 0,
+    "opsz" 24;
+  font-feature-settings: "liga";
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}

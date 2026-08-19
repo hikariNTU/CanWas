@@ -165,3 +165,56 @@ test("text nodes and images coexist, and text survives a reload", async ({
   await expect(page.getByTestId("board-node")).toHaveCount(2);
   await expect(page.getByTestId("text-node-body")).toHaveText("Palette notes");
 });
+
+test("text size presets apply and undo", async ({ page }) => {
+  const surface = await surfaceBox(page);
+  await page.mouse.dblclick(surface.x + 400, surface.y + 200);
+  await page.keyboard.type("Sizing");
+  await page.keyboard.press("Escape");
+
+  const node = page.getByTestId("board-node");
+  await node.click();
+
+  const body = page.getByTestId("text-node-body");
+  await expect(body).toHaveCSS("font-size", "16px");
+  await expect(page.getByTestId("font-size-16")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await page.getByTestId("font-size-40").click();
+  await expect(body).toHaveCSS("font-size", "40px");
+  // The control must show which size is active, not just apply it.
+  await expect(page.getByTestId("font-size-40")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByTestId("font-size-16")).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await page.screenshot({ path: "e2e/screenshots/text-size.png" });
+
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(body).toHaveCSS("font-size", "16px");
+});
+
+test("the size control appears only for a single selected text node", async ({
+  page,
+}) => {
+  const surface = await surfaceBox(page);
+  await expect(page.getByTestId("font-size-16")).toHaveCount(0);
+
+  await page.mouse.dblclick(surface.x + 400, surface.y + 200);
+  await page.keyboard.type("one");
+  await page.keyboard.press("Escape");
+  await page.getByTestId("board-node").click();
+  await expect(page.getByTestId("font-size-16")).toBeVisible();
+
+  // A second selected node makes the target ambiguous, so it hides.
+  await page.mouse.dblclick(surface.x + 700, surface.y + 400);
+  await page.keyboard.type("two");
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("ControlOrMeta+a");
+  await expect(page.getByTestId("font-size-16")).toHaveCount(0);
+});

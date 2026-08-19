@@ -159,3 +159,19 @@ export function setTextContent(
     ],
   };
 }
+
+export function setFontSize(
+  nodes: readonly BoardNode[],
+  id: NodeId,
+  fontSize: number,
+): Change {
+  const node = nodes.find((candidate) => candidate.id === id);
+  if (!node || node.kind !== "text" || node.fontSize === fontSize) {
+    return { label: "text size", apply: [], invert: [] };
+  }
+  return {
+    label: "text size",
+    apply: [{ kind: "fontSize", id, fontSize }],
+    invert: [{ kind: "fontSize", id, fontSize: node.fontSize }],
+  };
+}

@@ -19,7 +19,6 @@
     "@tanstack/react-router": "^1.170.16",
     "clsx": "^2.1.1",
     "jotai": "^2.20.1",
-    "lucide-react": "^1.32.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

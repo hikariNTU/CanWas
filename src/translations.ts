@@ -115,6 +115,10 @@ const translations = {
     "zh-TW": "貼上或拖曳圖片到這裡",
     "en-US": "Paste or drop an image here",
   },
+  "text.size": {
+    "zh-TW": "文字大小",
+    "en-US": "Text size",
+  },
   "canvas.undo": {
     "zh-TW": "復原",
     "en-US": "Undo",

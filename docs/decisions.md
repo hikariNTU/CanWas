@@ -629,3 +629,23 @@ font file per script and no weight the design does not use.
 
 Trade-off accepted: an offline or CDN-blocked visitor falls back to the system
 sans stack. Nothing about the layout depends on the webfont loading.
+
+---
+
+## D37 — Text size is four presets
+
+**2026-08-19 · settled**
+
+12, 16, 24 and 40 world units, offered on a floating island when exactly one
+text node is selected.
+
+Presets rather than a free number: a reference board wants a few distinguishable
+levels — heading, body, caption — not arbitrary values that make two notes look
+accidentally different.
+
+The control hides when the selection is empty or holds more than one node, since
+it would otherwise be unclear which node the buttons act on.
+
+Changing size is one undoable Change. The node's cached `h` goes stale until the
+text is next edited, which costs nothing: text renders at automatic height and
+nothing reads `h` for layout.

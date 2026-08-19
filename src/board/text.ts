@@ -14,6 +14,13 @@ export const MAX_TEXT_LENGTH = 2000;
 
 const ELLIPSIS = "…";
 
+/**
+ * Preset sizes rather than a free number. A reference board wants a handful of
+ * distinguishable levels — heading, body, caption — not arbitrary values that
+ * make two notes look accidentally different.
+ */
+export const FONT_SIZES = [12, 16, 24, 40] as const;
+
 export const DEFAULT_FONT_SIZE = 16;
 export const DEFAULT_TEXT_WIDTH = 320;
 /** Enough for one line, before the first measurement replaces it. */

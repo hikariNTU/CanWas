@@ -2,16 +2,10 @@ import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Menu } from "@base-ui/react/menu";
 import { useNavigate } from "@tanstack/react-router";
 import { useAtom } from "jotai";
-import {
-  CheckIcon,
-  CrosshairIcon,
-  MenuIcon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react";
 import { useState } from "react";
 
 import { boardSlug } from "@/lib/slug";
+import { Icon } from "@/ui/icon";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import {
   createBoard,
@@ -93,7 +87,7 @@ export function BoardMenu({
           aria-label={t("menu.open")}
           className="pointer-events-auto grid h-9 w-9 place-items-center rounded-lg border border-neutral-800 bg-neutral-900/90 text-neutral-400 shadow-lg backdrop-blur transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
         >
-          <MenuIcon size={16} />
+          <Icon name="menu" />
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner sideOffset={6} align="start">
@@ -103,12 +97,17 @@ export function BoardMenu({
                 className={itemClass}
                 onClick={() => void openNewBoard()}
               >
-                <PlusIcon size={16} className="shrink-0 text-neutral-500" />
+                <Icon
+                  name="add"
+                  size={18}
+                  className="shrink-0 text-neutral-500"
+                />
                 {t("home.create")}
               </Menu.Item>
               <Menu.Item className={itemClass} onClick={onResetView}>
-                <CrosshairIcon
-                  size={16}
+                <Icon
+                  name="recenter"
+                  size={18}
                   className="shrink-0 text-neutral-500"
                 />
                 {t("canvas.resetView")}
@@ -118,7 +117,11 @@ export function BoardMenu({
                 className={`${itemClass} data-[highlighted]:text-red-400`}
                 onClick={() => setConfirmingDelete(true)}
               >
-                <Trash2Icon size={16} className="shrink-0 text-neutral-500" />
+                <Icon
+                  name="delete"
+                  size={18}
+                  className="shrink-0 text-neutral-500"
+                />
                 {t("board.delete")}
               </Menu.Item>
 
@@ -218,8 +221,8 @@ export function BoardMenu({
 function Indicator() {
   return (
     <span className="grid w-4 shrink-0 place-items-center">
-      <Menu.RadioItemIndicator>
-        <CheckIcon size={16} className="text-sky-400" />
+      <Menu.RadioItemIndicator className="flex">
+        <Icon name="check" size={18} className="text-sky-400" />
       </Menu.RadioItemIndicator>
     </span>
   );

@@ -34,12 +34,29 @@ One accent. Introducing a second needs a reason written into
 
 ## Icons
 
-`lucide-react`, imported by the `*Icon`-suffixed name (`MenuIcon`, `PlusIcon`,
-`Trash2Icon`) — never the bare name. Default size 16 in chrome.
+Material Symbols Rounded, via the `<Icon name="menu" />` wrapper. No icon
+package is installed — the glyphs come from the Google Fonts variable font and
+the wrapper is twenty lines.
 
-No Unicode glyphs standing in for icons. `☰`, `↺`, `⌖` and friends render at
-whatever weight and baseline the system font decides, so they align differently
-per platform and cannot be sized or coloured as a set.
+Weight is 700, from the font's `wght` axis. That is a genuine weight axis, so
+the strokes thicken rather than a thin glyph being scaled up.
+
+Two rules the ligature mechanism imposes:
+
+- `name` must be a real Material Symbols identifier in snake_case. A wrong name
+  renders as the literal word, which is easy to miss in a dense toolbar.
+- The element's text must survive untouched: no capitalisation, no
+  letter-spacing, and `translate="no"` so page translation cannot rewrite it.
+
+The font is loaded with `display=block`, not `swap`: an icon font renders its
+ligature text until it loads, so `swap` would briefly show the chrome reading
+"menu undo redo" in words.
+
+Glyphs are `display: block` and rely on a flex or grid parent to centre them.
+As inline boxes they align to the text baseline, which lifts them above the
+label beside them.
+
+No Unicode glyphs standing in for icons.
 
 ## Layout
 

@@ -21,6 +21,7 @@ export type NodeOp =
   | { kind: "remove"; index: number; node: BoardNode }
   | { kind: "geometry"; id: NodeId; rect: Rect }
   | { kind: "text"; id: NodeId; text: string }
+  | { kind: "fontSize"; id: NodeId; fontSize: number }
   | { kind: "reorder"; from: number; to: number };
 
 export type Patch = NodeOp[];
@@ -68,6 +69,13 @@ function applyOp(nodes: BoardNode[], op: NodeOp): BoardNode[] {
       return nodes.map((node) =>
         node.id === op.id && node.kind === "text"
           ? { ...node, text: op.text }
+          : node,
+      );
+    }
+    case "fontSize": {
+      return nodes.map((node) =>
+        node.id === op.id && node.kind === "text"
+          ? { ...node, fontSize: op.fontSize }
           : node,
       );
     }
