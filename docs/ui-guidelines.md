@@ -84,6 +84,18 @@ Nothing marks a finished image as recognized. The badge is for work in progress
 only — a permanent label on every image would be clutter on a full board, and
 the text answering to a cursor is the affordance.
 
+## The info panel
+
+Top right, opposite the menu. It states what this build is — commit, date,
+recognizer, runtime version — and what the app has put on the user's disk:
+images, cached weights, boards, and the browser's own figure for the origin.
+
+It exists because the app quietly downloads 21 MB and keeps it. The browser's
+own estimate is shown alongside the counts rather than instead of them: it
+covers overhead the app cannot see, so the two never quite agree and only the
+counts explain anything. The cached weights can be cleared from here, since they
+cost nothing but a re-download.
+
 ## Motion
 
 Transitions on hover/focus state only, `duration-150`. Never animate pan, zoom,

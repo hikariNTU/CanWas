@@ -91,7 +91,13 @@ test("click selects, escape and empty-canvas click deselect", async ({
   await node.click();
   await expect(node).toHaveAttribute("data-selected", "true");
   const surface = (await page.getByTestId("canvas-surface").boundingBox())!;
-  await page.mouse.click(surface.x + surface.width - 40, surface.y + 40);
+  // Mid-height on the right edge. Every corner belongs to floating chrome —
+  // menu and board name top left, info top right, zoom and undo bottom left —
+  // and a click that lands on chrome is not a click on empty canvas.
+  await page.mouse.click(
+    surface.x + surface.width - 40,
+    surface.y + surface.height / 2,
+  );
   await expect(node).not.toHaveAttribute("data-selected", "true");
 });
 

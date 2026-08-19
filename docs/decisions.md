@@ -964,3 +964,21 @@ every word boundary.
 
 Reverses if: the overlay learns to distinguish a word break from a character
 break, at which point CJK can be split per character and joined without spaces.
+
+---
+
+## D49 — Build identity is inlined from git, not written down
+
+**2026-08-19 · settled**
+
+`vite.config.ts` inlines the commit, the build time, and the installed
+`onnxruntime-web` version through `define`. Nothing is maintained by hand.
+
+A version constant someone has to remember to bump is a version constant that
+eventually lies, and the whole point of the panel is to answer "what is
+actually running". Git failing — a shallow checkout, a tarball — falls back to
+`"unknown"` rather than throwing, since a build should not fail for want of a
+label. A dirty tree gets a `+`.
+
+Reverses if: the project starts tagging releases, at which point `git describe`
+says more than a bare SHA.

@@ -99,3 +99,26 @@ test("PP-OCRv5 reads small dark-theme UI text", async ({ page }) => {
     expect(text).toContain(word);
   }
 });
+
+test("the info panel accounts for the downloaded weights", async ({ page }) => {
+  test.setTimeout(240_000);
+
+  await page.goto("#/aboutreal");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+  await pasteTextImage(page, ["the quick brown fox"]);
+  await expect(page.getByTestId("board-node").first()).toHaveAttribute(
+    "data-ocr-status",
+    "done",
+    { timeout: 200_000 },
+  );
+
+  await page.getByTestId("about-open").click();
+  await expect(page.getByTestId("about-model-bytes")).toContainText("MB");
+  await page.screenshot({ path: "e2e/screenshots/about-real.png" });
+
+  // Taking the weights back has to actually take them back, or the panel is
+  // just a claim about disk usage with a button next to it.
+  await page.getByTestId("about-clear-models").click();
+  await expect(page.getByTestId("about-model-bytes")).toContainText("0 B");
+  await expect(page.getByTestId("about-clear-models")).toHaveCount(0);
+});

@@ -74,6 +74,66 @@ const translations = {
     "zh-TW": "文字可選取",
     "en-US": "Text is selectable",
   },
+  "about.open": {
+    "zh-TW": "關於這個版本",
+    "en-US": "About this build",
+  },
+  "about.title": {
+    "zh-TW": "關於",
+    "en-US": "About",
+  },
+  "about.build": {
+    "zh-TW": "版本",
+    "en-US": "Build",
+  },
+  "about.engine": {
+    "zh-TW": "辨識引擎",
+    "en-US": "Recognizer",
+  },
+  "about.runtime": {
+    "zh-TW": "執行環境",
+    "en-US": "Runtime",
+  },
+  "about.weights": {
+    "zh-TW": "模型權重",
+    "en-US": "Weights",
+  },
+  "about.storage": {
+    "zh-TW": "本機儲存",
+    "en-US": "On this device",
+  },
+  "about.images": {
+    "zh-TW": "圖片",
+    "en-US": "Images",
+  },
+  "about.boards": {
+    "zh-TW": "畫板",
+    "en-US": "Boards",
+  },
+  "about.total": {
+    "zh-TW": "瀏覽器統計",
+    "en-US": "Browser total",
+  },
+  "about.cached": {
+    "zh-TW": "已快取",
+    "en-US": "cached",
+  },
+  "about.notCached": {
+    "zh-TW": "尚未下載",
+    "en-US": "not downloaded yet",
+  },
+  "about.persisted": {
+    "zh-TW": "已設為持久儲存",
+    "en-US": "Storage is persistent",
+  },
+  "about.evictable": {
+    "zh-TW": "空間不足時可能被清除",
+    "en-US": "Evictable under disk pressure",
+  },
+  "about.clearModels": {
+    "zh-TW": "清除模型快取",
+    "en-US": "Clear the cached weights",
+  },
   "menu.open": {
     "zh-TW": "選單",
     "en-US": "Menu",

@@ -21,6 +21,7 @@ import { useBoardShortcuts } from "@/board/use-board-shortcuts";
 import { useIngest } from "@/board/use-ingest";
 import { BoardMenu } from "@/canvas/board-menu";
 import { BoardName } from "@/canvas/board-name";
+import { About } from "@/canvas/about";
 import { measureHeight, TextNodeView } from "@/canvas/text-node";
 import { OcrBadge } from "@/canvas/ocr-badge";
 import { OcrOverlay } from "@/canvas/ocr-overlay";
@@ -334,6 +335,12 @@ export function Canvas({ boardId }: { boardId: string }) {
       <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1">
         <BoardMenu boardId={boardId} onResetView={resetViewport} />
         <BoardName boardId={boardId} />
+      </div>
+
+      {/* Opposite corner from the menu, so the two never crowd a narrow
+          window, and away from the zoom and undo controls that get used. */}
+      <div className="pointer-events-none absolute top-3 right-3 flex items-center gap-1">
+        <About />
       </div>
 
       {nodes.length === 0 && (

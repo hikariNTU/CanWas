@@ -128,6 +128,61 @@ export function deleteBoard(id: string): Promise<undefined> {
   return run(BOARD_STORE, "readwrite", (store) => store.delete(id));
 }
 
+export interface StorageBreakdown {
+  /** Image bytes, from the blobs themselves. */
+  assetBytes: number;
+  assetCount: number;
+  /** Cached model weights. */
+  modelBytes: number;
+  modelCount: number;
+  boardCount: number;
+  /** What the browser thinks this origin uses, including its own overhead. */
+  quotaUsed?: number;
+  quota?: number;
+  /** Whether the browser has promised not to evict this origin. */
+  persisted?: boolean;
+}
+
+/**
+ * What is actually on disk, counted rather than estimated.
+ *
+ * `navigator.storage.estimate()` alone is not enough to answer "why is this
+ * using 40 MB": it reports one number for the whole origin, and the interesting
+ * split is between images the user pasted and weights that can be re-downloaded
+ * for free. Blob sizes are read from the records without reading their bytes.
+ */
+export async function storageBreakdown(): Promise<StorageBreakdown> {
+  const [assets, models, boards] = await Promise.all([
+    run<StoredAsset[]>(ASSET_STORE, "readonly", (store) => store.getAll()),
+    run<StoredModel[]>(MODEL_STORE, "readonly", (store) => store.getAll()),
+    getAllBoards(),
+  ]);
+
+  const estimate = await navigator.storage?.estimate?.().catch(() => undefined);
+  const persisted = await navigator.storage
+    ?.persisted?.()
+    .catch(() => undefined);
+
+  return {
+    assetBytes: assets.reduce((total, asset) => total + asset.blob.size, 0),
+    assetCount: assets.length,
+    modelBytes: models.reduce(
+      (total, model) => total + model.bytes.byteLength,
+      0,
+    ),
+    modelCount: models.length,
+    boardCount: boards.length,
+    quotaUsed: estimate?.usage,
+    quota: estimate?.quota,
+    persisted,
+  };
+}
+
+/** Drops the cached weights. They cost nothing but a re-download. */
+export async function clearModels(): Promise<void> {
+  await run(MODEL_STORE, "readwrite", (store) => store.clear());
+}
+
 /**
  * Mark-and-sweep, run at startup only (D14).
  *
