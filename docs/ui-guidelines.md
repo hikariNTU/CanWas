@@ -65,6 +65,9 @@ No Unicode glyphs standing in for icons.
 - Radius `rounded-lg` on panels, `rounded-md` on controls. Consistent, not zero —
   this is not homepage's Modernist system.
 - Hit targets at least 32px square.
+- **Conditional controls go at the end of a row.** A control that appears with
+  the selection must never move the permanent ones — undo and redo shifting
+  sideways as you select a node makes them feel unreliable to aim at.
 - **A surface means something.** Chrome that is only read carries no background;
   a background marks a thing as interactive or editable. The board title is bare
   text at rest and gains a field only while being edited.

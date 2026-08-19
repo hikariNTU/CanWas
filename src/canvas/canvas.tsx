@@ -242,6 +242,8 @@ export function Canvas({ boardId }: { boardId: string }) {
         </p>
       )}
 
+      {/* Conditional controls sit at the end of the row: a control that comes
+          and goes must never shift the position of the permanent ones. */}
       <div className="pointer-events-none absolute bottom-3 left-3 flex gap-2">
         <Island>
           <IconButton
@@ -264,6 +266,24 @@ export function Canvas({ boardId }: { boardId: string }) {
             onClick={() => zoomFromCenter(1.2)}
           >
             <Icon name="add" />
+          </IconButton>
+        </Island>
+        <Island>
+          <IconButton
+            label={t("canvas.undo")}
+            testId="undo"
+            onClick={undo}
+            disabled={!canUndo}
+          >
+            <Icon name="undo" />
+          </IconButton>
+          <IconButton
+            label={t("canvas.redo")}
+            testId="redo"
+            onClick={redo}
+            disabled={!canRedo}
+          >
+            <Icon name="redo" />
           </IconButton>
         </Island>
         {selectedText?.kind === "text" && (
@@ -293,24 +313,6 @@ export function Canvas({ boardId }: { boardId: string }) {
             ))}
           </Island>
         )}
-        <Island>
-          <IconButton
-            label={t("canvas.undo")}
-            testId="undo"
-            onClick={undo}
-            disabled={!canUndo}
-          >
-            <Icon name="undo" />
-          </IconButton>
-          <IconButton
-            label={t("canvas.redo")}
-            testId="redo"
-            onClick={redo}
-            disabled={!canRedo}
-          >
-            <Icon name="redo" />
-          </IconButton>
-        </Island>
       </div>
     </div>
   );

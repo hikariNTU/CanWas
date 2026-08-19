@@ -193,7 +193,17 @@ test("text size presets apply and undo", async ({ page }) => {
     "aria-pressed",
     "false",
   );
-  await page.screenshot({ path: "e2e/screenshots/text-size.png" });
+  // Clipped to the control bar: at full-page scale the active button is not
+  // legible. The wait lets the 150ms colour transition finish — aria-pressed
+  // flips instantly, so a screenshot taken straight after a click catches the
+  // old button still fading out and reads as the wrong one being active.
+  await page.waitForTimeout(250);
+  const bar = (await page.getByTestId("font-size-12").boundingBox())!;
+  await page.screenshot({
+    path: "e2e/screenshots/text-size.png",
+    clip: { x: 8, y: bar.y - 10, width: 380, height: 52 },
+    scale: "css",
+  });
 
   await page.keyboard.press("ControlOrMeta+z");
   await expect(body).toHaveCSS("font-size", "16px");
@@ -217,4 +227,79 @@ test("the size control appears only for a single selected text node", async ({
   await page.keyboard.press("Escape");
   await page.keyboard.press("ControlOrMeta+a");
   await expect(page.getByTestId("font-size-16")).toHaveCount(0);
+});
+
+test("cmd+shift+< and > step text size", async ({ page }) => {
+  const surface = await surfaceBox(page);
+  await page.mouse.dblclick(surface.x + 400, surface.y + 200);
+  await page.keyboard.type("Stepping");
+  await page.keyboard.press("Escape");
+  await page.getByTestId("board-node").click();
+
+  const body = page.getByTestId("text-node-body");
+  await expect(body).toHaveCSS("font-size", "16px");
+
+  await page.keyboard.press("ControlOrMeta+Shift+.");
+  await expect(body).toHaveCSS("font-size", "24px");
+  await page.keyboard.press("ControlOrMeta+Shift+.");
+  await expect(body).toHaveCSS("font-size", "40px");
+
+  // Clamped at the top preset rather than wrapping round.
+  await page.keyboard.press("ControlOrMeta+Shift+.");
+  await expect(body).toHaveCSS("font-size", "40px");
+
+  await page.keyboard.press("ControlOrMeta+Shift+,");
+  await expect(body).toHaveCSS("font-size", "24px");
+  await expect(page.getByTestId("font-size-24")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // Each step is its own undo entry.
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(body).toHaveCSS("font-size", "40px");
+});
+
+test("stepping size covers every selected text node in one step", async ({
+  page,
+}) => {
+  const surface = await surfaceBox(page);
+  await page.mouse.dblclick(surface.x + 300, surface.y + 180);
+  await page.keyboard.type("one");
+  await page.keyboard.press("Escape");
+  await page.mouse.dblclick(surface.x + 700, surface.y + 420);
+  await page.keyboard.type("two");
+  await page.keyboard.press("Escape");
+
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.press("ControlOrMeta+Shift+.");
+
+  const bodies = page.getByTestId("text-node-body");
+  await expect(bodies.first()).toHaveCSS("font-size", "24px");
+  await expect(bodies.last()).toHaveCSS("font-size", "24px");
+
+  // Two nodes changed, but it is a single undo step.
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(bodies.first()).toHaveCSS("font-size", "16px");
+  await expect(bodies.last()).toHaveCSS("font-size", "16px");
+});
+
+test("the size island sits after undo/redo so they never shift", async ({
+  page,
+}) => {
+  const surface = await surfaceBox(page);
+  const undoBefore = (await page.getByTestId("undo").boundingBox())!;
+
+  await page.mouse.dblclick(surface.x + 400, surface.y + 200);
+  await page.keyboard.type("Anchored");
+  await page.keyboard.press("Escape");
+  await page.getByTestId("board-node").click();
+
+  await expect(page.getByTestId("font-size-16")).toBeVisible();
+  const undoAfter = (await page.getByTestId("undo").boundingBox())!;
+  expect(undoAfter.x).toBeCloseTo(undoBefore.x, 0);
+
+  // And the conditional control is to the right of them.
+  const size = (await page.getByTestId("font-size-12").boundingBox())!;
+  expect(size.x).toBeGreaterThan(undoAfter.x);
 });

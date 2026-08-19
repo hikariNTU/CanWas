@@ -644,7 +644,14 @@ levels — heading, body, caption — not arbitrary values that make two notes l
 accidentally different.
 
 The control hides when the selection is empty or holds more than one node, since
-it would otherwise be unclear which node the buttons act on.
+it would otherwise be unclear which node the buttons act on. `⌘⇧>` and `⌘⇧<`
+step through the presets and, unlike the buttons, apply to _every_ selected text
+node in a single Change — a keyboard shortcut has no ambiguity about its target.
+Both the shifted spelling (`>`) and the unshifted key (`.`) are accepted, since
+layouts differ in which they report.
+
+It sits at the **end** of the control row. A control that comes and goes must
+never shift the position of the permanent ones.
 
 Changing size is one undoable Change. The node's cached `h` goes stale until the
 text is next edited, which costs nothing: text renders at automatic height and

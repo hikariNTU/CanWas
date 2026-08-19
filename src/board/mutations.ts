@@ -1,5 +1,6 @@
 import { rectOf, type Change, type Patch, type Rect } from "@/board/patch";
-import type { BoardNode, NodeId } from "@/board/types";
+import { FONT_SIZES } from "@/board/text";
+import type { BoardNode, NodeId, TextNode } from "@/board/types";
 
 /**
  * Every mutation is built here, and every one returns its inverse alongside its
@@ -174,4 +175,50 @@ export function setFontSize(
     apply: [{ kind: "fontSize", id, fontSize }],
     invert: [{ kind: "fontSize", id, fontSize: node.fontSize }],
   };
+}
+
+/** Nearest preset to an arbitrary size, so stepping is well defined either way. */
+function nearestPresetIndex(fontSize: number): number {
+  let best = 0;
+  for (let index = 1; index < FONT_SIZES.length; index++) {
+    if (
+      Math.abs(FONT_SIZES[index]! - fontSize) <
+      Math.abs(FONT_SIZES[best]! - fontSize)
+    ) {
+      best = index;
+    }
+  }
+  return best;
+}
+
+/**
+ * Moves every selected text node one preset up or down, clamped at the ends.
+ *
+ * All of them in a single Change, so a multi-node resize is one undo step
+ * rather than one per node.
+ */
+export function stepFontSize(
+  nodes: readonly BoardNode[],
+  ids: readonly NodeId[],
+  direction: 1 | -1,
+): Change {
+  const targets = nodes.filter(
+    (node): node is TextNode => node.kind === "text" && ids.includes(node.id),
+  );
+
+  const apply: Patch = [];
+  const invert: Patch = [];
+  for (const node of targets) {
+    const index = nearestPresetIndex(node.fontSize);
+    const next =
+      FONT_SIZES[
+        Math.min(FONT_SIZES.length - 1, Math.max(0, index + direction))
+      ]!;
+    if (next === node.fontSize) {
+      continue;
+    }
+    apply.push({ kind: "fontSize", id: node.id, fontSize: next });
+    invert.push({ kind: "fontSize", id: node.id, fontSize: node.fontSize });
+  }
+  return { label: "text size", apply, invert };
 }

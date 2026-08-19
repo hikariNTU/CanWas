@@ -2,7 +2,7 @@ import { useStore } from "jotai";
 import { useEffect } from "react";
 
 import { useBoardHistory, useSelection } from "@/board/history";
-import { deleteNodes, reorderNodes } from "@/board/mutations";
+import { deleteNodes, reorderNodes, stepFontSize } from "@/board/mutations";
 import { boardNodesAtom } from "@/board/store";
 
 /**
@@ -41,6 +41,25 @@ export function useBoardShortcuts(boardId: string) {
           undo();
         }
         return;
+      }
+
+      // Cmd/Ctrl+Shift+< and > step text size, as in most editors. The key
+      // value is "<" on layouts that produce it with Shift, but some report
+      // the unshifted "," instead, so both spellings are accepted.
+      if (accel && event.shiftKey) {
+        const direction =
+          event.key === ">" || event.key === "."
+            ? 1
+            : event.key === "<" || event.key === ","
+              ? -1
+              : 0;
+        if (direction !== 0 && selection.length > 0) {
+          event.preventDefault();
+          commit((current) =>
+            stepFontSize(current, selection, direction === 1 ? 1 : -1),
+          );
+          return;
+        }
       }
 
       if (accel && event.key.toLowerCase() === "a") {
