@@ -295,9 +295,26 @@ export function Canvas({ boardId }: { boardId: string }) {
                   // An outline follows the element's own `border-radius`, so
                   // rounding the node rounds the selection with it and the two
                   // can never drift apart.
+                  //
+                  // White while reading, accent otherwise. Inside this mode the
+                  // accent belongs to the text selection itself, and a node
+                  // outlined in the same colour as the words being dragged
+                  // through reads as one more highlight. White also says the
+                  // node is in a different mode, which is the thing a
+                  // double-click just changed.
                   outline: isSelected
-                    ? `${hairline}px solid var(--color-sky-500)`
+                    ? `${hairline}px solid ${
+                        isReading
+                          ? "var(--color-neutral-100)"
+                          : "var(--color-sky-500)"
+                      }`
                     : undefined,
+                  // Held off the content rather than drawn on its edge. A
+                  // screenshot of a white page swallowed a white outline
+                  // completely, and a blue one is no safer against a blue
+                  // screenshot — pushed out by its own width, the line always
+                  // has the board behind it.
+                  outlineOffset: isSelected ? hairline : undefined,
                 }}
               >
                 {node.kind === "image" && asset ? (

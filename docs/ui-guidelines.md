@@ -146,7 +146,16 @@ That radius is in **world** units and scales with the zoom, unlike every other
 measurement in the chrome. It belongs to the picture the way its size does, and
 a corner that sharpened as you zoomed in would read as chrome painted on top.
 The selection outline needs no radius of its own: an outline follows the
-element's `border-radius`, so the two can never drift apart.
+element's `border-radius`, so the two can never drift apart. It is held one
+width off the content rather than drawn on its edge — a screenshot of a white
+page swallows a white outline whole, and a blue one is no safer against a blue
+screenshot, so the line always keeps the board behind it.
+
+Reading a node — double-click, and the text inside becomes selectable — outlines
+it in white rather than the accent. Inside that mode the accent belongs to the
+text selection itself, so a node wearing it too reads as one more highlight;
+white says instead that the node is in a different mode, which is the thing the
+double-click just changed.
 
 Text is bare on the board and gains a `.glass` field only while it is being
 edited, the same as the board title. The resting and editing styles share a
