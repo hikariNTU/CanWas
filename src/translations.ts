@@ -138,6 +138,10 @@ const translations = {
     "zh-TW": "加入圖片",
     "en-US": "Add an image",
   },
+  "about.compressed": {
+    "zh-TW": "壓縮後（同步用）",
+    "en-US": "WebP for sync",
+  },
   "menu.open": {
     "zh-TW": "選單",
     "en-US": "Menu",

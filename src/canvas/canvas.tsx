@@ -27,6 +27,7 @@ import { measureHeight, TextNodeView } from "@/canvas/text-node";
 import { OcrBadge } from "@/canvas/ocr-badge";
 import { OcrOverlay } from "@/canvas/ocr-overlay";
 import { useOcr } from "@/ocr/use-ocr";
+import { useCompression } from "@/image/use-compression";
 import { Icon } from "@/ui/icon";
 import { screenToWorld } from "@/canvas/coords";
 import { useNodeGestures } from "@/canvas/use-node-gestures";
@@ -116,6 +117,9 @@ export function Canvas({ boardId }: { boardId: string }) {
   // than off any user action: an image that arrives by paste, by drop, or by
   // being restored from disk is read the same way.
   useOcr(nodes);
+  // Runs alongside recognition rather than after it: neither waits on the
+  // other, and the picture on screen waits on neither.
+  useCompression(nodes);
   useBoardShortcuts(boardId, readingId === null);
 
   // A press on empty canvas clears the selection. Registered natively so it

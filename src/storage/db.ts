@@ -16,6 +16,8 @@ export interface StoredAsset {
   height: number;
   hash: string;
   ocr: OcrState;
+  /** The synced copy. See `Asset` in board/types.ts. */
+  webp?: Blob;
 }
 
 export interface StoredBoard {
@@ -132,6 +134,8 @@ export interface StorageBreakdown {
   /** Image bytes, from the blobs themselves. */
   assetBytes: number;
   assetCount: number;
+  /** The WebP re-encodes, which is what a sync would upload. */
+  webpBytes: number;
   /** Cached model weights. */
   modelBytes: number;
   modelCount: number;
@@ -166,6 +170,10 @@ export async function storageBreakdown(): Promise<StorageBreakdown> {
   return {
     assetBytes: assets.reduce((total, asset) => total + asset.blob.size, 0),
     assetCount: assets.length,
+    webpBytes: assets.reduce(
+      (total, asset) => total + (asset.webp?.size ?? 0),
+      0,
+    ),
     modelBytes: models.reduce(
       (total, model) => total + model.bytes.byteLength,
       0,

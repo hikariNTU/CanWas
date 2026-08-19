@@ -1038,3 +1038,54 @@ class of image. The input's value is cleared after each pick, or choosing the
 same file twice in a row fires no change event and the button looks broken.
 
 Reverses if: nothing foreseen. This is the only way in on a phone.
+
+---
+
+## D52 — Images gain a WebP beside them, in the background
+
+**2026-08-19 · settled**
+
+Every pasted image keeps its original bytes and, once a worker has finished,
+gains a WebP re-encode at the same dimensions. The original is what renders and
+what the id was hashed from. The WebP is what sync will send.
+
+Nothing waits for it. The node is on screen from the bytes that arrived, and if
+the encode never happens — an old browser, an encoder that refuses — the app is
+exactly as it was.
+
+**Dimensions are never touched.** A screenshot that has been quietly downscaled
+is a screenshot whose text cannot be read back, which is the one thing this app
+is for.
+
+Measured on a 900x210 dark-theme UI screenshot at 13px, read back with the real
+recognizer:
+
+```
+png        29,364 B   read 18/20
+webp@0.7    8,188 B   read 19/20
+webp@0.8    9,528 B   read 19/20
+webp@0.9   12,278 B   read 19/20
+webp@0.95  14,720 B   read 19/20
+webp@1     37,924 B   read 18/20
+```
+
+Recognition does not care — every WebP read the same, and slightly better than
+the PNG, so the accuracy worry this measurement existed to settle is not the
+constraint. Quality 1 is a trap: lossy WebP at maximum quality is _larger_ than
+lossless PNG on flat UI colour, so the setting that sounds safest costs bytes
+for nothing. 0.9 is 2.4x smaller with no visible artifacts, which matters
+because on a synced device the WebP is what gets displayed.
+
+Three things are skipped: images under 24 KB, where the format's overhead makes
+it a wash; images already in WebP, since re-encoding lossy to lossy compounds
+artifacts and the bytes are already in the format sync wants; and any result
+that came out larger than its input.
+
+Its own worker, not a job on the OCR one. That queue is one deep by design and
+its first job can spend a minute fetching 21 MB of weights — compression behind
+it would mean the first image on a fresh browser stays uncompressed until the
+model lands.
+
+Reverses if: storing both copies becomes the expensive half. The original could
+then be dropped once its WebP exists, at the cost of never being able to prove
+what was pasted.

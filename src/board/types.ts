@@ -33,8 +33,22 @@ export interface Asset {
   /** Intrinsic pixels. */
   width: number;
   height: number;
-  /** Content hash — the same image pasted twice reuses one Asset. */
+  /**
+   * Content hash of the *original* bytes, always, even on a device that only
+   * ever received the WebP. The id is the hash, so hashing anything else would
+   * make the same picture two different assets depending on which device saw
+   * it first.
+   */
   hash: string;
+  /**
+   * A WebP re-encode of `blob`, at the same dimensions.
+   *
+   * Absent until the background conversion finishes, and absent forever if the
+   * browser cannot encode WebP. This is the copy that syncs: a clipboard
+   * screenshot is a lossless PNG, which is free to keep locally and is not free
+   * against someone's Drive quota or a phone connection.
+   */
+  webp?: Blob;
   /** Recognition belongs to the pixels, not to placement (D13). */
   ocr: OcrState;
   /**

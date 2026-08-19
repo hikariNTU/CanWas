@@ -128,6 +128,21 @@ export function About() {
                 &times;{storage?.assetCount ?? 0}
               </span>
             </Row>
+            {/* What sync would actually send, which is not what the images
+                cost here: the originals stay on this device. */}
+            <Row label="about.compressed" testId="about-compressed">
+              {formatBytes(storage?.webpBytes ?? 0)}
+              {(storage?.assetBytes ?? 0) > 0 &&
+                (storage?.webpBytes ?? 0) > 0 && (
+                  <span className="ml-2 text-neutral-500">
+                    &minus;
+                    {Math.round(
+                      (1 - storage!.webpBytes / storage!.assetBytes) * 100,
+                    )}
+                    %
+                  </span>
+                )}
+            </Row>
             <Row label="about.weights" testId="about-model-bytes">
               {formatBytes(storage?.modelBytes ?? 0)}
             </Row>

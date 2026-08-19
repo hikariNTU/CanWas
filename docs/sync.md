@@ -94,26 +94,21 @@ against the local board list. With sync, a board that exists only on another
 device makes its assets look orphaned. The sweep has to run against the _synced_
 board list, or it will delete images that are still in use.
 
-## Image size is the open cost
+## Image size — settled
 
-Nothing is compressed today. `blob: file` stores exactly what the clipboard
-handed over, and a clipboard screenshot is a PNG — lossless, and large.
+Every image now gains a WebP re-encode in the background, at the same
+dimensions, keeping the original ([D52](decisions.md)). Measured at 2.4x smaller
+on a UI screenshot with no cost to recognition.
 
-Locally that has been free. Against someone's Drive quota it is not, and it is
-the same bytes going over a phone connection.
+**Only the WebP is uploaded.** The original never leaves the device that pasted
+it. A device that receives a board therefore has the WebP and nothing else,
+which is fine: it renders it, reads it, and the asset id still matches, because
+the id is the hash of the _original_ bytes and travels as the filename rather
+than being recomputed. Two devices holding different bytes for the same asset id
+is not a conflict — it is the design.
 
-Options, in the order they should be measured:
-
-1. **Re-encode to WebP above a size threshold.** Typically 5-10x smaller for
-   screenshots. Lossy, so it has to be measured against recognition accuracy
-   before adoption — small UI text is exactly what artifacts hurt, and it is
-   exactly what this app is for.
-2. **Keep the original, upload it as-is.** Correct, simple, and expensive.
-3. **Store both.** Rejected on sight: two sources of truth for the same image,
-   and a question about which one the hash names.
-
-Whatever is chosen applies at ingest, so the hash names the bytes that are
-actually stored, and every device agrees on the asset id.
+The one consequence to remember: a receiving device cannot reproduce the
+original, so a round trip through two devices is lossy exactly once.
 
 ## Open questions
 
