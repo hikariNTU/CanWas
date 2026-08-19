@@ -13,8 +13,15 @@ export function measureHeight(element: HTMLElement | null): number {
   return element?.offsetHeight ?? 0;
 }
 
+/**
+ * Shared so that entering and leaving edit mode cannot move a single glyph.
+ *
+ * The transparent border is load-bearing: editing swaps in a `.glass` field,
+ * whose border would otherwise eat two pixels of content width and rewrap the
+ * text the moment it was double-clicked.
+ */
 const SHARED_TEXT_STYLE =
-  "w-full resize-none border-none bg-transparent p-1 leading-snug break-words whitespace-pre-wrap";
+  "w-full resize-none border border-transparent bg-transparent p-1 leading-snug break-words whitespace-pre-wrap";
 
 export function TextNodeView({
   node,
@@ -75,7 +82,10 @@ export function TextNodeView({
         }}
         onPointerDown={(event) => event.stopPropagation()}
         style={{ fontSize: node.fontSize }}
-        className={`${SHARED_TEXT_STYLE} text-neutral-100 outline-none`}
+        // A surface means something: text is bare on the board and gains a
+        // field only while it is being edited, the same way the board title
+        // does.
+        className={`${SHARED_TEXT_STYLE} glass rounded-lg text-neutral-100 outline-none`}
       />
     );
   }

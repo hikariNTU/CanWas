@@ -282,7 +282,7 @@ export function Canvas({ boardId }: { boardId: string }) {
                 className={clsx(
                   // `group` so the recognition badge can expand from an icon
                   // to a sentence while the pointer is anywhere on the node.
-                  "group absolute",
+                  "group absolute rounded-lg",
                   isReading ? "cursor-text" : "cursor-move",
                 )}
                 style={{
@@ -292,6 +292,9 @@ export function Canvas({ boardId }: { boardId: string }) {
                   // Text lays out at automatic height; only images are sized
                   // in both axes.
                   height: node.kind === "image" ? rect.h : undefined,
+                  // An outline follows the element's own `border-radius`, so
+                  // rounding the node rounds the selection with it and the two
+                  // can never drift apart.
                   outline: isSelected
                     ? `${hairline}px solid var(--color-sky-500)`
                     : undefined,
@@ -303,7 +306,15 @@ export function Canvas({ boardId }: { boardId: string }) {
                       src={asset.url}
                       alt=""
                       draggable={false}
-                      className="pointer-events-none block h-full w-full select-none"
+                      // Rounded on the image rather than by clipping the node:
+                      // `overflow-hidden` here would also cut off the resize
+                      // handle, which sits deliberately outside the box.
+                      //
+                      // The radius is in world units, so it scales with the
+                      // zoom. That is the point — it belongs to the picture the
+                      // way its size does, and a corner that sharpened as you
+                      // zoomed in would read as chrome painted on top.
+                      className="pointer-events-none block h-full w-full rounded-lg select-none"
                     />
                     <OcrBadge
                       ocr={asset.ocr}
@@ -335,17 +346,33 @@ export function Canvas({ boardId }: { boardId: string }) {
                   selection.length === 1 &&
                   !isEditing &&
                   !isReading && (
+                    // The dot is 12px on screen and the grab area is 24px:
+                    // a handle small enough to look right is smaller than
+                    // anyone can reliably hit, so the two are separated.
                     <div
                       data-testid="resize-handle"
                       onPointerDown={(event) => startResize(event, node.id)}
-                      className="absolute cursor-nwse-resize bg-sky-500"
+                      className="group/handle absolute grid cursor-nwse-resize place-items-center"
                       style={{
-                        width: hairline * 5,
-                        height: hairline * 5,
-                        right: -hairline * 2.5,
-                        bottom: -hairline * 2.5,
+                        width: hairline * 12,
+                        height: hairline * 12,
+                        right: -hairline * 6,
+                        bottom: -hairline * 6,
                       }}
-                    />
+                    >
+                      {/* A dot with a light ring, not a solid square: the
+                          square vanished into any screenshot with a pale
+                          corner, and the ring holds its edge against both. */}
+                      <div
+                        className="rounded-full border-neutral-100 bg-sky-500 transition-colors group-hover/handle:bg-sky-400"
+                        style={{
+                          width: hairline * 6,
+                          height: hairline * 6,
+                          borderWidth: hairline,
+                          borderStyle: "solid",
+                        }}
+                      />
+                    </div>
                   )}
               </div>
             );
@@ -361,6 +388,10 @@ export function Canvas({ boardId }: { boardId: string }) {
                 width: lasso.w,
                 height: lasso.h,
                 border: `${hairline}px solid var(--color-sky-500)`,
+                // Counter-scaled, unlike a node's: the marquee is chrome that
+                // exists for the length of one drag, so it should look the same
+                // at every zoom rather than belonging to the board.
+                borderRadius: hairline * 2,
               }}
             />
           )}

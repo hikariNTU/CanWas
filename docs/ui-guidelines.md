@@ -136,12 +136,37 @@ The badge counter-scales, so it is the same size at any zoom — and it hides
 entirely once the node is under 48px on screen, since a fixed-size badge on a
 thumbnail is bigger than the thing it describes.
 
+## Nodes
+
+Nodes are `rounded-lg`, images included — the image carries the radius itself
+rather than the node clipping it, because `overflow-hidden` on the node would
+also cut off the resize handle, which sits outside the box on purpose.
+
+That radius is in **world** units and scales with the zoom, unlike every other
+measurement in the chrome. It belongs to the picture the way its size does, and
+a corner that sharpened as you zoomed in would read as chrome painted on top.
+The selection outline needs no radius of its own: an outline follows the
+element's `border-radius`, so the two can never drift apart.
+
+Text is bare on the board and gains a `.glass` field only while it is being
+edited, the same as the board title. The resting and editing styles share a
+class — including a transparent border matching the field's — so entering edit
+mode cannot move a glyph or rewrap a line.
+
 ## Selecting
 
 Click a node to select it, shift-click to add. Drag from empty canvas to draw a
 selection box; everything it touches is selected, and shift extends the existing
 selection instead of replacing it ([D54](decisions.md)). A selection of several
 moves and deletes as one action, and one undo puts it all back.
+
+A single selected node gets a resize handle at its bottom-right: an accent dot
+with a light ring, which holds an edge against both a dark board and a pale
+screenshot where the old solid square disappeared into one of them. The dot is
+12px on screen and its grab area is 24px — a handle small enough to look right
+is smaller than anyone can reliably hit, so the two are separated. Like the rest
+of the selection chrome, both are counter-scaled and so are the same size at
+every zoom.
 
 Because the left button now selects, panning is two-finger scroll, middle-drag,
 or space+drag — and one finger on touch, which has no other way.
