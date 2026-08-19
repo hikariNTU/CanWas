@@ -58,9 +58,30 @@ const translations = {
     "zh-TW": "還沒有任何畫板。",
     "en-US": "No boards yet.",
   },
-  "home.openDemo": {
-    "zh-TW": "開啟範例畫板",
-    "en-US": "Open demo board",
+  "home.create": {
+    "zh-TW": "新增畫板",
+    "en-US": "New board",
+  },
+  "home.untitled": {
+    "zh-TW": "未命名畫板",
+    "en-US": "Untitled board",
+  },
+  "home.delete": {
+    "zh-TW": "刪除",
+    "en-US": "Delete",
+  },
+  "home.deleteTitle": {
+    "zh-TW": "刪除這個畫板？",
+    "en-US": "Delete this board?",
+  },
+  "home.deleteBody": {
+    "zh-TW": "這個動作無法復原。畫板與其中的排列都會被移除。",
+    "en-US":
+      "This cannot be undone. The board and its arrangement are removed.",
+  },
+  "common.cancel": {
+    "zh-TW": "取消",
+    "en-US": "Cancel",
   },
   "board.back": {
     "zh-TW": "返回畫板列表",

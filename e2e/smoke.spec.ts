@@ -1,21 +1,19 @@
 import { expect, test } from "@playwright/test";
 
-/**
- * Step 1 smoke test. The real happy path — paste an image, see a node, select
- * its text — arrives at step 8 once those features exist. This only proves the
- * app boots, routes, and switches language.
- */
-test("home renders and routes to a board", async ({ page }) => {
+test("home renders, creates a board, and routes into it", async ({ page }) => {
   await page.goto("/CanWas/");
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText("No boards yet.")).toBeVisible();
   await page.screenshot({ path: "e2e/screenshots/home.png", fullPage: true });
 
-  await page.getByRole("link", { name: "Open demo board" }).click();
-
-  await expect(page).toHaveURL(/#\/board\/demo$/);
-  await expect(page.getByTestId("board-id")).toHaveText("demo");
+  await page.getByTestId("create-board").click();
+  await expect(page).toHaveURL(/#\/board\/[0-9a-f-]{36}$/);
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await page.screenshot({ path: "e2e/screenshots/board.png", fullPage: true });
+
+  await page.getByRole("link", { name: "Back to boards" }).click();
+  await expect(page.getByTestId("board-row")).toHaveCount(1);
 });
 
 test("language switches to zh-TW and persists", async ({ page }) => {

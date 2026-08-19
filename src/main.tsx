@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 
 import { routeTree } from "@/routeTree.gen";
+import { sweepOrphanedAssets } from "@/storage/db";
 
 import "@/index.css";
 
@@ -37,6 +38,13 @@ async function requestPersistentStorage() {
   }
 }
 void requestPersistentStorage();
+
+// Mark-and-sweep runs here and nowhere else (D14). Undo history is in-memory
+// and therefore empty at startup, so the sweep cannot reclaim bytes an undo
+// entry still needs.
+void sweepOrphanedAssets().catch(() => {
+  // A failed sweep only means orphaned bytes linger until the next start.
+});
 
 const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {

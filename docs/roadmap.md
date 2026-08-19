@@ -10,8 +10,8 @@ before it is independently useful.
 | 2   | Viewport: pan, zoom, world↔screen transform                                       | ✅ done  |
 | 3   | Ingest: paste + drop → Asset + Node, fit to viewport                              | ✅ done  |
 | 4   | Board store + **history stack**: select, move, resize, delete, reorder, undo/redo | ✅ done  |
-| 5   | Persistence: IndexedDB assets + boards, startup sweep, Home board list            | ⏳ next  |
-| 6   | OCR seam: `Recognizer`, `MockRecognizer`, worker wiring, per-asset status         | ☐        |
+| 5   | Persistence: IndexedDB assets + boards, startup sweep, Home board list            | ✅ done  |
+| 6   | OCR seam: `Recognizer`, `MockRecognizer`, worker wiring, per-asset status         | ⏳ next  |
 | 7   | Selection overlay: transparent spans, scaleX fit, single-node scope               | ☐        |
 | 8   | Playwright happy path + screenshots                                               | ☐        |
 | —   | _ship / evaluate_                                                                 |          |

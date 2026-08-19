@@ -149,6 +149,35 @@ empty at that point. If the sweep ran after a board delete, it could reclaim
 assets that an undo entry still needed. Board deletion is not undoable (it gets a
 confirmation dialog instead), so its orphans simply wait for the next startup.
 
+## Persistence timing
+
+Three different write cadences, because the three things have different values:
+
+| What          | Cadence           | Bumps `updatedAt` |
+| ------------- | ----------------- | ----------------- |
+| Asset bytes   | immediate         | —                 |
+| Board content | debounced 400 ms  | yes               |
+| Viewport      | debounced 1000 ms | **no**            |
+
+Asset bytes are irreplaceable and cannot be reconstructed, so they are never
+debounced. Layout can be redone by hand; camera position is pure churn.
+
+Panning must not bump `updatedAt`, or the Home list's "last edited" degrades
+into "last opened" and stops being a useful sort order.
+
+**Debounced saves lose the tail of a session.** Closing the tab inside the
+debounce window keeps the asset bytes, which were written immediately, and drops
+the node that referenced them — leaving an orphan for the next sweep and losing
+the user's paste. A flush on `visibilitychange` and `pagehide` covers tab close,
+tab switch and mobile backgrounding.
+
+Opening a board id that does not exist creates it. There is no 404 path: boards
+are cheap, deep links should always work, and a stray board is easier to delete
+than a dead link is to explain.
+
+The canvas does not render until the board has loaded. Rendering earlier would
+let an edit write an empty node list over stored content.
+
 ## History
 
 Per-Board, in-memory, cleared on reload. See

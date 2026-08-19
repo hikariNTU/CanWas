@@ -12,6 +12,7 @@ import {
 import { useBoardHistory } from "@/board/history";
 import { insertNodes } from "@/board/mutations";
 import { assetsAtom } from "@/board/store";
+import { putAsset } from "@/storage/db";
 import type { Asset, BoardNode } from "@/board/types";
 import { screenToWorld, type Point, type Viewport } from "@/canvas/coords";
 
@@ -85,6 +86,11 @@ export function useIngest({
       }
 
       if (newAssets.length > 0) {
+        // Asset writes are immediate: the bytes are the irreplaceable part,
+        // and unlike board layout they cannot be reconstructed.
+        await Promise.all(
+          newAssets.map(({ url: _url, ...record }) => putAsset(record)),
+        );
         setAssets((previous) => {
           const next = { ...previous };
           for (const asset of newAssets) {
