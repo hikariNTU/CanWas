@@ -70,3 +70,47 @@ body {
   background: color-mix(in srgb, var(--color-sky-400) 45%, transparent);
   color: transparent;
 }
+
+/* Floating chrome, as one surface treatment.
+   Translucent and heavily blurred, with the saturation boost that makes a
+   blurred backdrop read as glass rather than as fog, and a bright hairline
+   along the top edge standing in for a specular highlight. Every widget that
+   floats over the canvas uses one of these two rather than assembling its own
+   background, border and shadow — there were four different opacities in the
+   app before this existed, and nobody chose them.
+
+   A CSS class rather than Tailwind utilities because it is one decision, not
+   six, and because a `backdrop-filter` with two functions has no utility.
+   Radius stays in the markup: it is the one part that genuinely differs
+   between a panel and a control. */
+.glass,
+.glass-strong {
+  border: 1px solid
+    color-mix(in srgb, var(--color-neutral-100) 10%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 0
+      color-mix(in srgb, var(--color-neutral-100) 10%, transparent),
+    0 8px 24px -10px rgb(0 0 0 / 0.7);
+}
+
+/* Controls and small status chrome: thin enough to read as glass. */
+.glass {
+  background-color: color-mix(
+    in srgb,
+    var(--color-neutral-900) 55%,
+    transparent
+  );
+}
+
+/* Panels, menus and dialogs. Same glass, more tint — these hold paragraphs,
+   and a paragraph over a screenshot needs the contrast more than it needs the
+   effect. */
+.glass-strong {
+  background-color: color-mix(
+    in srgb,
+    var(--color-neutral-900) 82%,
+    transparent
+  );
+}

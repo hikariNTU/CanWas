@@ -57,7 +57,7 @@ export function BoardName({ boardId }: { boardId: string }) {
           // Shortcuts like Delete and Cmd+A belong to the text field here.
           event.stopPropagation();
         }}
-        className="pointer-events-auto h-9 w-52 rounded-lg border border-neutral-700 bg-neutral-900/90 px-2.5 text-sm text-neutral-100 shadow-lg backdrop-blur focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+        className="glass pointer-events-auto h-9 w-52 rounded-lg px-2.5 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
       />
     );
   }

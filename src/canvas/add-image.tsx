@@ -45,7 +45,7 @@ export function AddImage({ onFiles }: { onFiles: (files: File[]) => void }) {
         aria-label={t("image.add")}
         title={t("image.add")}
         onClick={() => inputRef.current?.click()}
-        className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900/80 text-neutral-300 shadow-lg backdrop-blur transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500"
+        className="glass pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500"
       >
         <Icon name="add_photo_alternate" size={22} />
       </button>

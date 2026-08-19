@@ -87,7 +87,7 @@ export function About() {
       <Popover.Trigger
         data-testid="about-open"
         aria-label={t("about.open")}
-        className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/80 text-neutral-400 backdrop-blur transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500"
+        className="glass pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500"
       >
         <Icon name="info" size={18} />
       </Popover.Trigger>
@@ -98,7 +98,7 @@ export function About() {
             // The popup takes focus when it opens, and the browser's default ring
             // on a panel this size reads as an error state rather than as
             // focus. The controls inside keep their own.
-            className="w-80 rounded-lg border border-neutral-800 bg-neutral-900/95 p-3 text-sm shadow-xl backdrop-blur focus:outline-none"
+            className="glass-strong w-80 rounded-lg p-3 text-sm focus:outline-none"
           >
             <Popover.Title className="mb-2 font-bold text-neutral-100">
               {t("about.title")}

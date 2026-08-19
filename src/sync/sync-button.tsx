@@ -30,11 +30,15 @@ interface Appearance {
 
 function appearanceFor(status: SyncStatus, connectable: boolean): Appearance {
   switch (status.state) {
+    // Sky is the selection and focus accent (see the palette in
+    // docs/ui-guidelines.md). Spending it on a status makes a button in the
+    // middle of a round look like the thing the user just clicked into. The
+    // glyph already says which state this is.
     case "syncing":
       return {
         icon: "cloud_sync",
         label: "sync.syncing",
-        tone: "text-sky-400",
+        tone: "text-neutral-400",
       };
     case "idle":
       return {
@@ -97,7 +101,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
         // whoever hits it to the console. The popup repeats it, but a tooltip
         // is cheaper than a click when all you wanted was to check.
         title={status.state === "failed" ? status.message : t(label)}
-        className={`pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/80 backdrop-blur transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${tone}`}
+        className={`glass pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${tone}`}
       >
         <Icon name={icon} size={18} />
       </Popover.Trigger>
@@ -105,7 +109,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
         <Popover.Positioner sideOffset={6} align="end">
           <Popover.Popup
             data-testid="sync-panel"
-            className="w-72 rounded-lg border border-neutral-800 bg-neutral-900/95 p-3 text-sm shadow-xl backdrop-blur focus:outline-none"
+            className="glass-strong w-72 rounded-lg p-3 text-sm focus:outline-none"
           >
             <Popover.Title className="mb-2 font-bold text-neutral-100">
               {t("sync.title")}

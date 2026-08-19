@@ -85,13 +85,13 @@ export function BoardMenu({
         <Menu.Trigger
           data-testid="board-menu"
           aria-label={t("menu.open")}
-          className="pointer-events-auto grid h-9 w-9 place-items-center rounded-lg border border-neutral-800 bg-neutral-900/90 text-neutral-400 shadow-lg backdrop-blur transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+          className="glass pointer-events-auto grid h-9 w-9 place-items-center rounded-lg text-neutral-400 transition-colors duration-150 hover:bg-neutral-800/60 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
         >
           <Icon name="menu" />
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner sideOffset={6} align="start">
-            <Menu.Popup className="max-h-[80vh] min-w-56 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900/95 p-1 text-sm shadow-xl backdrop-blur">
+            <Menu.Popup className="glass-strong max-h-[80vh] min-w-56 overflow-y-auto rounded-lg p-1 text-sm">
               <Menu.Item
                 data-testid="menu-new-board"
                 className={itemClass}
@@ -188,7 +188,7 @@ export function BoardMenu({
       >
         <AlertDialog.Portal>
           <AlertDialog.Backdrop className="fixed inset-0 bg-neutral-950/70 backdrop-blur-sm" />
-          <AlertDialog.Popup className="fixed top-1/2 left-1/2 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-800 bg-neutral-900 p-5 shadow-2xl">
+          <AlertDialog.Popup className="glass-strong fixed top-1/2 left-1/2 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg p-5">
             <AlertDialog.Title className="text-sm font-semibold text-neutral-100">
               {t("home.deleteTitle")}
             </AlertDialog.Title>

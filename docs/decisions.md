@@ -1337,3 +1337,32 @@ Specifics worth keeping:
 
 Reverses if: the fake stops being exercised. A seam kept for a second
 implementation nobody runs is just indirection.
+
+## D58 — Floating chrome is glass, from two shared classes
+
+Every widget that floats over the board is translucent and blurred: a 20px
+backdrop blur with a saturation boost, a neutral-900 tint under it, and a bright
+hairline along the top edge. Two classes in `index.css` — `.glass` for controls,
+`.glass-strong` for anything holding paragraphs — and nothing assembles its own
+background, border and shadow.
+
+This replaces a rule that said no shadows, which the app had already stopped
+following: there were `shadow-lg`, `shadow-xl` and `shadow-2xl` in the chrome,
+under four different background opacities, and nobody had chosen any of them.
+Glass is the same idea the old rule was reaching for — chrome that recedes and
+reads as above the board rather than as a second board — stated once instead of
+re-improvised per component.
+
+Why a CSS class rather than Tailwind utilities, against [D10](#d10--no-tailwind-theme-extension):
+D10 is about not registering theme tokens, and this registers none. A
+`backdrop-filter` carrying two functions has no utility, and repeating five
+utilities at nine call sites is how the four opacities happened. Radius stays in
+the markup, because a panel and a control genuinely differ there.
+
+The strong variant is not decoration. `.glass` over a screenshot of a white page
+is a pale smudge, so anything that can float over _content_ rather than over the
+canvas takes the heavier tint — today that is the recognition badge.
+
+Reverses if: the blur costs real frames on a full board. `backdrop-filter` is
+per-element and composited, and a board is a dozen widgets, not a thousand — but
+a badge per image is the one that could grow.

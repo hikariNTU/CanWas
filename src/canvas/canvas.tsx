@@ -280,7 +280,9 @@ export function Canvas({ boardId }: { boardId: string }) {
                   }
                 }}
                 className={clsx(
-                  "absolute",
+                  // `group` so the recognition badge can expand from an icon
+                  // to a sentence while the pointer is anywhere on the node.
+                  "group absolute",
                   isReading ? "cursor-text" : "cursor-move",
                 )}
                 style={{
@@ -303,7 +305,13 @@ export function Canvas({ boardId }: { boardId: string }) {
                       draggable={false}
                       className="pointer-events-none block h-full w-full select-none"
                     />
-                    <OcrBadge ocr={asset.ocr} scale={viewport.scale} />
+                    <OcrBadge
+                      ocr={asset.ocr}
+                      scale={viewport.scale}
+                      width={rect.w}
+                      height={rect.h}
+                      expanded={isSelected}
+                    />
                     {asset.ocr.status === "done" && (
                       <OcrOverlay
                         words={asset.ocr.words}
@@ -471,7 +479,7 @@ export function Canvas({ boardId }: { boardId: string }) {
 /** A floating chrome group. Excalidraw calls these islands; so do we. */
 export function Island({ children }: { children: React.ReactNode }) {
   return (
-    <div className="pointer-events-auto flex items-center gap-0.5 rounded-lg border border-neutral-800 bg-neutral-900/90 p-1 shadow-lg backdrop-blur">
+    <div className="glass pointer-events-auto flex items-center gap-0.5 rounded-lg p-1">
       {children}
     </div>
   );

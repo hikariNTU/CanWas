@@ -3,8 +3,9 @@
 ## Principles
 
 **Simple and modern.** The images are the content. Chrome recedes: no gradients,
-no shadows competing with image edges, no decorative motion. If a control isn't
-in use, it should be quiet or absent.
+no decorative motion. If a control isn't in use, it should be quiet or absent.
+Chrome is glass — translucent and blurred, so it reads as sitting above the
+board rather than as a second board ([D58](decisions.md)).
 
 **Dark only.** One theme ([D7](decisions.md#d7--dark-theme-only)). No light
 tokens, no toggle.
@@ -29,8 +30,32 @@ Stock Tailwind classes only. The working set, kept small on purpose:
 | Selection / focus accent | `ring-sky-500`, `bg-sky-500/20` |
 | Destructive              | `text-red-400`                  |
 
-One accent. Introducing a second needs a reason written into
-[decisions](decisions.md).
+One accent, and it is spent on selection and focus only. A status must not use
+it: sky on a working control makes it look like the thing the user just clicked
+into. Statuses are neutral, except a failure, which is amber. Introducing a
+third needs a reason written into [decisions](decisions.md).
+
+## Glass
+
+Floating chrome uses one of two classes from `index.css`, never its own
+assembly of background, border and shadow:
+
+| Class           | For                                                     |
+| --------------- | ------------------------------------------------------- |
+| `.glass`        | Controls and small chrome                               |
+| `.glass-strong` | Panels, menus, dialogs — anything with paragraphs in it |
+
+Both are the same treatment — translucent neutral-900, a 20px blur with the
+saturation boost that makes a blurred backdrop read as glass rather than fog,
+and a bright hairline along the top edge for a specular highlight. They differ
+only in how much tint sits under the blur.
+
+Radius stays in the markup, because it is the one part that genuinely differs:
+`rounded-lg` on panels, `rounded-md` on controls.
+
+Pick `.glass-strong` whenever the widget can end up over content rather than
+over the canvas. The recognition badge is the case: at the thin tint, a
+screenshot of a white page shows through and leaves a pale smudge.
 
 ## Icons
 
@@ -61,7 +86,7 @@ No Unicode glyphs standing in for icons.
 ## Layout
 
 - Canvas is full-bleed. Chrome floats over it, never reserves layout space.
-- Floating panels: `bg-neutral-900/90 backdrop-blur border border-neutral-800`.
+- Floating panels: `.glass-strong`; controls: `.glass`. See above.
 - Radius `rounded-lg` on panels, `rounded-md` on controls. Consistent, not zero —
   this is not homepage's Modernist system.
 - Hit targets at least 32px square.
@@ -88,6 +113,28 @@ sign in or sign out — everything the info panel used to say about Drive. The
 split is by cost: the one-glance answer is free to look at, and the detail costs
 a click, which is right because it is only wanted when something needs deciding.
 _Sync now_ is in there too, for the round you want before closing a laptop.
+
+## Recognition status
+
+An icon at rest, a sentence when asked. A board of screenshots is a board of
+these, and a caption on every image competes with the images for the one thing
+the app is for — so the word appears on hover, and while the node is selected,
+which is the touch answer to the same question.
+
+The glyph carries the state. `document_scanner` waiting (there is no `ocr`
+glyph — the name renders as the literal word), `progress_activity` spinning
+while reading, `cloud_download` while the weights come down, `error` on a
+failure. The spin is the one motion in the app that is not decoration: a long
+download sits at the same percentage for seconds, and it is what says the tab
+is working rather than wedged.
+
+Idle and done say nothing. Idle would flash for a frame; done is announced by
+the text becoming selectable, and a badge on every finished image is permanent
+clutter.
+
+The badge counter-scales, so it is the same size at any zoom — and it hides
+entirely once the node is under 48px on screen, since a fixed-size badge on a
+thumbnail is bigger than the thing it describes.
 
 ## Selecting
 
