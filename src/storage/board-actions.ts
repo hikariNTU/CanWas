@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 
 import { boardNodesAtom } from "@/board/store";
+import { createId } from "@/lib/id";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { viewportsAtom } from "@/canvas/viewport-atom";
 import { boardsMetaAtom, type BoardMeta } from "@/storage/boards-atom";
@@ -29,7 +30,7 @@ export async function listBoards(): Promise<BoardMeta[]> {
 export async function createBoard(name: string): Promise<StoredBoard> {
   const now = Date.now();
   const board: StoredBoard = {
-    id: crypto.randomUUID(),
+    id: createId(),
     name,
     nodes: [],
     viewport: IDENTITY_VIEWPORT,

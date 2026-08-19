@@ -29,7 +29,7 @@ test("opening the app lands on a board, creating one if none exist", async ({
   await page.goto("/CanWas/");
 
   // No home screen: the root resolves straight to a board (D31).
-  await expect(page).toHaveURL(/#\/board\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/#\/board\/[0-9a-hjkmnp-tv-z]{12}$/);
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await expect(page.getByTestId("board-name")).toHaveText("Untitled board");
   await page.screenshot({ path: "e2e/screenshots/landing.png" });

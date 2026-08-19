@@ -12,6 +12,7 @@ import {
 import { useBoardHistory } from "@/board/history";
 import { insertNodes } from "@/board/mutations";
 import { assetsAtom } from "@/board/store";
+import { createId } from "@/lib/id";
 import { putAsset } from "@/storage/db";
 import type { Asset, BoardNode } from "@/board/types";
 import { screenToWorld, type Point, type Viewport } from "@/canvas/coords";
@@ -112,7 +113,7 @@ export function useIngest({
         const origin = cascadeFreeOrigin(taken, placeCentred(centre, size));
         taken.push(origin);
         added.push({
-          id: crypto.randomUUID(),
+          id: createId(),
           kind: "image",
           x: origin.x,
           y: origin.y,

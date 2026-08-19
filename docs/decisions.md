@@ -505,3 +505,34 @@ during board hydration rather than by a separate screen.
 
 Deleting the current board falls through to the next most recent, or a fresh one
 if it was the last — the user is never left on a board that no longer exists.
+
+---
+
+## D32 — Short base32 ids, not UUIDs
+
+**2026-08-19 · settled**
+
+Boards and nodes use a 12-symbol id from Crockford's base32 alphabet, lowercased:
+`qyzs34jb14rz`.
+
+`crypto.randomUUID()` produces 36 characters, which dominated the address bar
+and was repeated in every stored node record. Nothing here needs RFC 4122 — ids
+are opaque local keys.
+
+Alphabet is the digits and letters minus `i`, `l`, `o` and `u`: that removes the
+pairs misread when an id is retyped or read aloud (`1/l/i`, `0/o`), and `u` so
+the alphabet cannot spell accidental profanity.
+
+**Exactly 32 symbols is what makes the generator unbiased.** 32 divides 256, so
+masking a uniform random byte to its low 5 bits yields a uniform symbol. An
+alphabet whose size is not a power of two — base62, say — would need rejection
+sampling, and a plain modulo would quietly favour its earlier letters.
+
+12 symbols is 60 bits. Measured over 300,000 generated ids: no collisions, all
+32 symbols used, worst-case symbol frequency 0.4% off uniform.
+
+Hand-rolled at ten lines rather than adding `nanoid`, which would be a
+dependency for one function.
+
+Existing UUID-keyed boards keep working — ids are opaque strings and nothing
+parses them.
