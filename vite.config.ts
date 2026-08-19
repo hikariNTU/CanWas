@@ -54,6 +54,12 @@ const ortVersion = (
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  worker: {
+    // ES, not the default IIFE. An IIFE worker bundle has nowhere to put a
+    // dynamic import, so Rollup inlines it — which silently undid the split
+    // that keeps ONNX Runtime out of the worker's first load.
+    format: "es",
+  },
   define: {
     __BUILD_COMMIT__: JSON.stringify(
       `${gitDescription()}${isDirty() ? "+" : ""}`,

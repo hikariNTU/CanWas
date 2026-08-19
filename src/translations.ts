@@ -134,6 +134,10 @@ const translations = {
     "zh-TW": "清除模型快取",
     "en-US": "Clear the cached weights",
   },
+  "image.add": {
+    "zh-TW": "加入圖片",
+    "en-US": "Add an image",
+  },
   "menu.open": {
     "zh-TW": "選單",
     "en-US": "Menu",

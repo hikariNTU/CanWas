@@ -84,6 +84,12 @@ Nothing marks a finished image as recognized. The badge is for work in progress
 only — a permanent label on every image would be clutter on a full board, and
 the text answering to a cursor is the affordance.
 
+## Adding an image
+
+Three ways in: paste, drop, and a file picker in the bottom right. The picker is
+always visible, because the first two are desktop gestures and a phone has
+neither.
+
 ## The info panel
 
 Top right, opposite the menu. It states what this build is — commit, date,

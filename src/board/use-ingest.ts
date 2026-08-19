@@ -234,4 +234,8 @@ export function useIngest({
       surface.removeEventListener("drop", handleDrop);
     };
   }, [ingestFiles, surfaceRef]);
+
+  // Returned so a file picker can reach the same pipeline. Paste and drop do
+  // not exist on a phone, so without a third way in the app is unusable there.
+  return { ingestFiles };
 }

@@ -22,6 +22,7 @@ import { useIngest } from "@/board/use-ingest";
 import { BoardMenu } from "@/canvas/board-menu";
 import { BoardName } from "@/canvas/board-name";
 import { About } from "@/canvas/about";
+import { AddImage } from "@/canvas/add-image";
 import { measureHeight, TextNodeView } from "@/canvas/text-node";
 import { OcrBadge } from "@/canvas/ocr-badge";
 import { OcrOverlay } from "@/canvas/ocr-overlay";
@@ -110,7 +111,7 @@ export function Canvas({ boardId }: { boardId: string }) {
     return () => surface.removeEventListener("dblclick", handleDoubleClick);
   }, [commit, select, startEditing, surfaceRef, viewport]);
 
-  useIngest({ boardId, viewport, surfaceRef, nodes });
+  const { ingestFiles } = useIngest({ boardId, viewport, surfaceRef, nodes });
   // Recognition is derived from the pixels, so it runs off the node list rather
   // than off any user action: an image that arrives by paste, by drop, or by
   // being restored from disk is read the same way.
@@ -341,6 +342,19 @@ export function Canvas({ boardId }: { boardId: string }) {
           window, and away from the zoom and undo controls that get used. */}
       <div className="pointer-events-none absolute top-3 right-3 flex items-center gap-1">
         <About />
+      </div>
+
+      {/* Bottom right: the only corner left, and the reachable one on a phone
+          held in either hand. */}
+      <div className="pointer-events-none absolute right-3 bottom-3">
+        <AddImage
+          onFiles={(files) => {
+            // No cursor to place against, so it lands in the middle of the
+            // view — the same fallback a paste uses when the pointer has never
+            // been over the canvas.
+            void ingestFiles(files, null);
+          }}
+        />
       </div>
 
       {nodes.length === 0 && (

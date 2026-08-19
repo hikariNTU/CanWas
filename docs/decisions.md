@@ -982,3 +982,59 @@ label. A dirty tree gets a `+`.
 
 Reverses if: the project starts tagging releases, at which point `git describe`
 says more than a bare SHA.
+
+---
+
+## D50 — The real recognizer is a separate chunk, and workers build as ES
+
+**2026-08-19 · settled**
+
+`src/ocr/worker.ts` imports `PaddleRecognizer` dynamically, and
+`vite.config.ts` sets `worker.format: "es"`.
+
+Measured in the production build:
+
+```
+worker chunk              192 KB   ->  2.95 KB
+paddle-recognizer chunk        —   ->   188 KB, fetched on demand
+```
+
+The second half is not optional. Vite builds workers as IIFE by default, and an
+IIFE bundle has nowhere to put a dynamic import, so Rollup inlines it — the
+split appears to be written, the build succeeds, and the chunk is exactly as
+large as before. It was only visible by reading the build output.
+
+Traced end to end, in the production build:
+
+```
+idle                  nothing at all, not even the worker
+?engine=mock, paste   worker chunk only
+default, paste        worker, recognizer, both graphs, the wasm runtime
+```
+
+Reverses if: the mock is retired, at which point the recognizer is the only
+engine and the extra round trip buys nothing.
+
+---
+
+## D51 — There is a third way to add an image
+
+**2026-08-19 · settled**
+
+A file picker, bottom right, always visible.
+
+Paste and drop are both desktop gestures. A phone has no drag source and iOS
+gives a web page no usable paste, so without this the app is a viewer on every
+touch device — which is most of the devices a screenshot is taken on.
+
+Shown everywhere rather than behind a media query: "add a picture" is not a
+worse idea with a keyboard attached, and a control only some people can see is
+a control nobody documents. `accept="image/*"` is what makes a phone offer the
+camera and the photo library instead of a file tree.
+
+It routes through the same `ingestFiles` as paste and drop, so what arrives is
+one undo step and gets recognized like anything else rather than being a second
+class of image. The input's value is cleared after each pick, or choosing the
+same file twice in a row fires no change event and the button looks broken.
+
+Reverses if: nothing foreseen. This is the only way in on a phone.
