@@ -7,11 +7,12 @@ import {
 import type { Viewport } from "@/canvas/coords";
 
 const DB_NAME = "canwas";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export const ASSET_STORE = "assets";
 export const BOARD_STORE = "boards";
 export const MODEL_STORE = "models";
+export const SYNC_STORE = "sync";
 
 /** What actually lands on disk. Object URLs are runtime-only and excluded. */
 export interface StoredAsset {
@@ -58,6 +59,11 @@ function openDatabase(): Promise<IDBDatabase> {
       // across a schema change.
       if (!db.objectStoreNames.contains(MODEL_STORE)) {
         db.createObjectStore(MODEL_STORE, { keyPath: "id" });
+      }
+      // Added in version 3. Also create-only: a missing base costs one merge
+      // that falls back to last-writer-wins, not a lost board.
+      if (!db.objectStoreNames.contains(SYNC_STORE)) {
+        db.createObjectStore(SYNC_STORE, { keyPath: "boardId" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -141,6 +147,32 @@ export function deleteBoard(id: string): Promise<undefined> {
   return run(BOARD_STORE, "readwrite", (store) => store.delete(id));
 }
 
+/**
+ * The last version of a board that this device and the remote agreed on.
+ *
+ * It is what turns a two-way merge into a three-way one: without it the merge
+ * can see that two copies differ but not which side did the differing, so a
+ * deletion on one device and an edit on the other are indistinguishable
+ * (D56).
+ */
+export interface SyncBase {
+  boardId: string;
+  board: unknown;
+  syncedAt: number;
+}
+
+export function putSyncBase(base: SyncBase): Promise<IDBValidKey> {
+  return run(SYNC_STORE, "readwrite", (store) => store.put(base));
+}
+
+export function getSyncBase(boardId: string): Promise<SyncBase | undefined> {
+  return run(SYNC_STORE, "readonly", (store) => store.get(boardId));
+}
+
+export function getAllSyncBases(): Promise<SyncBase[]> {
+  return run(SYNC_STORE, "readonly", (store) => store.getAll());
+}
+
 export interface StorageBreakdown {
   /** Image bytes, from the blobs themselves. */
   assetBytes: number;
@@ -215,11 +247,24 @@ export async function clearModels(): Promise<void> {
  * still needs.
  */
 export async function sweepOrphanedAssets(): Promise<number> {
-  const [boards, assetIds] = await Promise.all([
+  const [boards, bases, assetIds] = await Promise.all([
     getAllBoards(),
+    getAllSyncBases(),
     getAllAssetIds(),
   ]);
-  const live = new Set(boards.flatMap((board) => assetIdsOf(board.nodes)));
+  // Synced boards count as reachable too (D56). A board that lives on another
+  // device makes its images look orphaned here, and deleting them would be
+  // silent data loss that only the other device could notice.
+  //
+  // Bases are enough to cover it: an asset is only on this disk because this
+  // device made it or downloaded it, and downloading it means it synced that
+  // board, which means a base exists.
+  const live = new Set([
+    ...boards.flatMap((board) => assetIdsOf(board.nodes)),
+    ...bases.flatMap((base) =>
+      assetIdsOf((base.board as { nodes?: BoardNode[] }).nodes ?? []),
+    ),
+  ]);
   const orphans = assetIds.filter((id) => !live.has(id));
   await Promise.all(orphans.map((id) => deleteAsset(id)));
   return orphans.length;

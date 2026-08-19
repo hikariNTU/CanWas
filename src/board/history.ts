@@ -37,7 +37,13 @@ export type ChangeBuilder = (nodes: readonly BoardNode[]) => Change;
  */
 export const commitAtom = atom(
   null,
-  (get, set, boardId: string, build: ChangeBuilder) => {
+  (
+    get,
+    set,
+    boardId: string,
+    build: ChangeBuilder,
+    stamps: "now" | "preserve" = "now",
+  ) => {
     const nodesByBoard = get(boardNodesAtom);
     const nodes = nodesByBoard[boardId] ?? [];
     const change = build(nodes);
@@ -50,7 +56,11 @@ export const commitAtom = atom(
     const now = Date.now();
     set(boardNodesAtom, {
       ...nodesByBoard,
-      [boardId]: applyPatch(nodes, change.apply, now),
+      [boardId]: applyPatch(
+        nodes,
+        change.apply,
+        stamps === "now" ? now : stamps,
+      ),
     });
     recordTombstones(get, set, boardId, change.apply, now);
 
@@ -173,7 +183,8 @@ export function useBoardHistory(boardId: string) {
    * pointermove would bury every real action under hundreds of entries (D17).
    */
   const commit = useCallback(
-    (build: ChangeBuilder) => commitChange(boardId, build),
+    (build: ChangeBuilder, stamps: "now" | "preserve" = "now") =>
+      commitChange(boardId, build, stamps),
     [boardId, commitChange],
   );
 

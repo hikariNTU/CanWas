@@ -1,10 +1,15 @@
 # Sync design
 
-**Status: designed, partly built.** Sign-in and the Drive transport exist
-(`src/sync/`). Nothing is uploaded or downloaded yet, and the conflict design
-below is not implemented at all. Written so the
-shape is agreed before code, in the same order as everything else in this
-project.
+**Status: built, against a fake remote.** The merge, the tombstones, the loop
+and the asset transfer all exist and are tested (`src/sync/`). What has never
+run is Drive itself — there is no OAuth client yet, so the transport that has
+actually been exercised is the local fake behind `?sync=fake`
+([D57](decisions.md)).
+
+That ordering was deliberate. The transport is the easy half; the merge is the
+half that cannot be debugged after the fact, because by the time anyone notices,
+the evidence is two devices that disagree and no record of what either used to
+hold.
 
 ## What this is for
 
@@ -166,11 +171,20 @@ is not a conflict — it is the design.
 The one consequence to remember: a receiving device cannot reproduce the
 original, so a round trip through two devices is lossy exactly once.
 
+## What is still missing
+
+- **Drive has never run.** Every line of `drive-transport.ts` is untested
+  against the real API. Expect the first real sign-in to find something.
+- **Board _lists_ do not sync**, only the board that is open. A board created on
+  the phone does not appear on the laptop until the laptop opens it by id.
+- **Board deletion does not sync.** `deletedAt` is merged and honoured, but
+  nothing sets it — `removeBoard` still drops the row locally.
+- **Tombstones are never reclaimed.** They are small, and a wrong reclamation
+  resurrects a deleted node, so the bet is not worth taking until there is a
+  reason.
+
 ## Open questions
 
-- Should node order keys land now, ahead of sync? Every board written without
-  them is a board that has to be migrated later, and the migration is
-  guesswork once two devices disagree.
 - Does the app sign in on its own, or does an unsigned user keep working
   entirely locally with sync as something they turn on? (Local-first says the
   latter.)

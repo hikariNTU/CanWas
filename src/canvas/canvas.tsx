@@ -28,6 +28,8 @@ import { OcrBadge } from "@/canvas/ocr-badge";
 import { OcrOverlay } from "@/canvas/ocr-overlay";
 import { useOcr } from "@/ocr/use-ocr";
 import { useCompression } from "@/image/use-compression";
+import { SyncBadge } from "@/sync/sync-badge";
+import { useSync } from "@/sync/use-sync";
 import { Icon } from "@/ui/icon";
 import { screenToWorld } from "@/canvas/coords";
 import { useLasso } from "@/canvas/use-lasso";
@@ -122,6 +124,9 @@ export function Canvas({ boardId }: { boardId: string }) {
   // Runs alongside recognition rather than after it: neither waits on the
   // other, and the picture on screen waits on neither.
   useCompression(nodes);
+  // Best effort and never blocking: a failed round leaves the board exactly as
+  // it was, which is what the app already does offline.
+  useSync(boardId);
   useBoardShortcuts(boardId, readingId === null);
 
   // A press on empty canvas clears the selection. Registered natively so it
@@ -364,6 +369,7 @@ export function Canvas({ boardId }: { boardId: string }) {
       {/* Opposite corner from the menu, so the two never crowd a narrow
           window, and away from the zoom and undo controls that get used. */}
       <div className="pointer-events-none absolute top-3 right-3 flex items-center gap-1">
+        <SyncBadge />
         <About />
       </div>
 

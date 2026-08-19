@@ -50,10 +50,16 @@ export interface Change {
  * go on reading the array in paint order, and no caller has to remember to
  * re-sort after an edit.
  */
+/**
+ * `now` stamps every node the patch touches. `"preserve"` leaves the stamps on
+ * the nodes alone, which is what applying a merge needs: those stamps came from
+ * whichever device made the edit, and overwriting them with this device's clock
+ * would make every merge look like a local change and push straight back.
+ */
 export function applyPatch(
   nodes: readonly BoardNode[],
   patch: Patch,
-  now: number = Date.now(),
+  now: number | "preserve" = Date.now(),
 ): BoardNode[] {
   let next = [...nodes];
   for (const op of patch) {
@@ -100,10 +106,16 @@ export function tombstonesAfter(
   return next ?? (existing as Tombstone[]);
 }
 
-function applyOp(nodes: BoardNode[], op: NodeOp, now: number): BoardNode[] {
+function applyOp(
+  nodes: BoardNode[],
+  op: NodeOp,
+  now: number | "preserve",
+): BoardNode[] {
+  const stamp = (node: BoardNode) =>
+    now === "preserve" ? node.updatedAt : now;
   switch (op.kind) {
     case "insert": {
-      return [...nodes, { ...op.node, updatedAt: now }];
+      return [...nodes, { ...op.node, updatedAt: stamp(op.node) }];
     }
     case "remove": {
       const index = nodes.findIndex((node) => node.id === op.node.id);
@@ -116,26 +128,30 @@ function applyOp(nodes: BoardNode[], op: NodeOp, now: number): BoardNode[] {
     }
     case "geometry": {
       return nodes.map((node) =>
-        node.id === op.id ? { ...node, ...op.rect, updatedAt: now } : node,
+        node.id === op.id
+          ? { ...node, ...op.rect, updatedAt: stamp(node) }
+          : node,
       );
     }
     case "text": {
       return nodes.map((node) =>
         node.id === op.id && node.kind === "text"
-          ? { ...node, text: op.text, updatedAt: now }
+          ? { ...node, text: op.text, updatedAt: stamp(node) }
           : node,
       );
     }
     case "fontSize": {
       return nodes.map((node) =>
         node.id === op.id && node.kind === "text"
-          ? { ...node, fontSize: op.fontSize, updatedAt: now }
+          ? { ...node, fontSize: op.fontSize, updatedAt: stamp(node) }
           : node,
       );
     }
     case "order": {
       return nodes.map((node) =>
-        node.id === op.id ? { ...node, order: op.order, updatedAt: now } : node,
+        node.id === op.id
+          ? { ...node, order: op.order, updatedAt: stamp(node) }
+          : node,
       );
     }
   }

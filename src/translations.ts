@@ -162,9 +162,25 @@ const translations = {
     "zh-TW": "這個版本尚未設定 Google 用戶端 ID",
     "en-US": "This build has no Google client id",
   },
-  "sync.notSyncing": {
-    "zh-TW": "已登入，但尚未開始同步",
-    "en-US": "Signed in. Nothing syncs yet.",
+  "sync.fake": {
+    "zh-TW": "同步至本機測試遠端",
+    "en-US": "Syncing to the local fake remote",
+  },
+  "sync.syncing": {
+    "zh-TW": "同步中…",
+    "en-US": "Syncing…",
+  },
+  "sync.idle": {
+    "zh-TW": "已同步",
+    "en-US": "Synced",
+  },
+  "sync.failed": {
+    "zh-TW": "同步失敗",
+    "en-US": "Sync failed",
+  },
+  "sync.off": {
+    "zh-TW": "尚未同步",
+    "en-US": "Not syncing",
   },
   "menu.open": {
     "zh-TW": "選單",

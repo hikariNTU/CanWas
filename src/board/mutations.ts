@@ -127,6 +127,73 @@ export function reorderNodes(
 }
 
 /**
+ * Rewrites the node list to `next`, as one undoable Change.
+ *
+ * This is how a merge lands (D56). History is in-memory and per session (D16),
+ * so a change arriving from another device cannot be undone by the device that
+ * receives it — unless it arrives the same way a paste does, with its own
+ * inverse. Otherwise the undo stack and the board disagree about what happened,
+ * and the disagreement surfaces the next time anyone presses undo.
+ *
+ * A changed node is expressed as a remove and an insert rather than a pile of
+ * field ops: the merge hands back whole nodes, and reducing them to a diff here
+ * would be a second place that has to know every field a node has.
+ */
+export function replaceNodes(
+  current: readonly BoardNode[],
+  next: readonly BoardNode[],
+  label: string,
+): Change {
+  const before = new Map(current.map((node) => [node.id, node]));
+  const after = new Map(next.map((node) => [node.id, node]));
+
+  const removals: Patch = [];
+  const additions: Patch = [];
+  const undoRemovals: Patch = [];
+  const undoAdditions: Patch = [];
+
+  for (const node of current) {
+    const replacement = after.get(node.id);
+    if (!replacement || !identical(node, replacement)) {
+      removals.push({ kind: "remove", node });
+      undoAdditions.push({ kind: "insert", node });
+    }
+  }
+  for (const node of next) {
+    const original = before.get(node.id);
+    if (!original || !identical(original, node)) {
+      additions.push({ kind: "insert", node });
+      undoRemovals.push({ kind: "remove", node });
+    }
+  }
+
+  // Removals first in both directions: an insert of an id that is still
+  // present would leave the list holding it twice.
+  return {
+    label,
+    apply: [...removals, ...additions],
+    invert: [...undoRemovals, ...undoAdditions],
+  };
+}
+
+function identical(a: BoardNode, b: BoardNode): boolean {
+  return (
+    a.updatedAt === b.updatedAt &&
+    a.order === b.order &&
+    a.x === b.x &&
+    a.y === b.y &&
+    a.w === b.w &&
+    a.h === b.h &&
+    (a.kind === "image" && b.kind === "image"
+      ? a.assetId === b.assetId
+      : a.kind === "text" &&
+        b.kind === "text" &&
+        a.text === b.text &&
+        a.fontSize === b.fontSize)
+  );
+}
+
+/**
  * Text content plus the height it laid out to, as one Change.
  *
  * A patch is a list, so the content edit and its measurement travel together

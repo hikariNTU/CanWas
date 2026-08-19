@@ -1,4 +1,7 @@
+import { useAtomValue } from "jotai";
+
 import { useGoogleAccount } from "@/sync/use-google-account";
+import { syncStatusAtom } from "@/sync/use-sync";
 import { useTranslation } from "@/translations";
 
 /**
@@ -23,6 +26,7 @@ function bytes(value: number): string {
 export function GoogleAccount() {
   const { t } = useTranslation();
   const { state, isConfigured, signIn, signOut } = useGoogleAccount();
+  const status = useAtomValue(syncStatusAtom);
 
   if (!isConfigured) {
     // Said out loud rather than hidden. A sign-in button that cannot work is
@@ -60,9 +64,25 @@ export function GoogleAccount() {
               ` / ${bytes(session.storageLimit)}`}
           </p>
         )}
-        {/* The one thing worth saying while sync is unbuilt: being signed in
-            has not backed anything up. */}
-        <p className="mt-1 text-xs text-amber-500/80">{t("sync.notSyncing")}</p>
+        {/* Sync now runs, so this says where it got to rather than warning
+            that it does not exist. A failure is worth colour; success is not. */}
+        <p
+          data-testid="sync-state"
+          data-sync-state={status.state}
+          className={
+            status.state === "failed"
+              ? "mt-1 text-xs text-amber-500/80"
+              : "mt-1 text-xs text-neutral-500"
+          }
+        >
+          {status.state === "syncing"
+            ? t("sync.syncing")
+            : status.state === "idle"
+              ? t("sync.idle")
+              : status.state === "failed"
+                ? status.message
+                : t("sync.off")}
+        </p>
       </div>
     );
   }

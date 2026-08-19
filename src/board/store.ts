@@ -35,3 +35,13 @@ export function readNodes(
 ): BoardNode[] {
   return nodesByBoard[boardId] ?? NO_NODES;
 }
+
+/**
+ * Boards whose contents have finished loading from IndexedDB.
+ *
+ * Sync reads this before it does anything. A board that is still hydrating
+ * looks empty, and an empty board merged against a base that has nodes reads as
+ * "this device deleted everything" — which would then be pushed, and would be
+ * correct-looking on arrival.
+ */
+export const hydratedBoardsAtom = atom<Record<string, true>>({});

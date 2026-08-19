@@ -1247,3 +1247,93 @@ Specifics worth keeping:
 
 Reverses if: nothing plausible. If sync is abandoned the keys are harmless; the
 cost is one `order` field and one pure module.
+
+---
+
+## D56 — Boards merge per node, against a stored base
+
+**2026-08-19 · settled**
+
+Nodes carry `updatedAt`, deletions leave tombstones, and `mergeBoards` is a pure
+function that takes two versions of a board and the last version both devices
+agreed on.
+
+Per-board last-writer-wins was the obvious answer and it is wrong: two devices
+that each add one image produce two whole-board writes, and whichever lands
+second erases the other's image. On two devices that is Tuesday, not an edge
+case.
+
+Specifics worth keeping:
+
+- **The merge is symmetric, and that is the property everything rests on.** The
+  laptop merges `(local, remote)` and the phone merges `(remote, local)`. If
+  those disagree, each push convinces the other device it is stale and the two
+  ping-pong forever. So no rule breaks a tie by looking at which argument it was
+  handed — ties break on content and on ids, which both devices read alike.
+- **Stamps are applied by `applyPatch`**, from one clock reading per change, so
+  commit, undo and redo all stamp identically. An undo restamps: from the sync
+  layer's side an undo is an edit, and a node that kept an older stamp would
+  lose the next merge against the very change it was undoing.
+- **A base turns two-way into three-way.** Without it the merge can see that two
+  copies differ but not which side did the differing — a deletion on one device
+  and an edit on the other are indistinguishable. The base is the last merged
+  board, kept in its own IndexedDB store.
+- **Text edited on both sides keeps the loser beside the winner.** There is no
+  correct answer without a CRDT, and a CRDT would end the inverse-patch history
+  (D15). Ugly, visible and recoverable beats silent and correct-looking. The
+  rescued copy's id is _derived_ from the loser, not generated: a random id
+  differs on the two devices, and each sync would treat the other's rescue as a
+  new node. That was a real bug, caught by merging twice — one lost paragraph
+  became two, then three.
+- **Images are not rescued.** A picture moved on both devices has one rectangle
+  or the other; a duplicate image is litter.
+- **A merge lands as an ordinary Change**, with stamps preserved. History is
+  in-memory (D16), so a merge that bypassed it would leave the undo stack and
+  the board disagreeing about what happened.
+- **Sync never runs on a board that is still hydrating.** It looks empty, and an
+  empty board against a base with nodes reads as "this device deleted
+  everything" — which would then be pushed, and would look deliberate.
+- **The asset sweep now counts synced boards as reachable.** A board living only
+  on another device made its images look orphaned. Sync bases are enough to
+  cover it: an asset is only on this disk because this device made it or
+  downloaded it, and downloading it means a base exists.
+
+Reverses if: two people ever edit one board. Then the text rule stops being
+tolerable and a CRDT — with the history rewrite it implies — becomes the honest
+answer.
+
+---
+
+## D57 — Sync has a transport seam, and a fake remote behind it
+
+**2026-08-19 · settled**
+
+`SyncTransport` is six methods. Two implementations: Drive, and a second
+IndexedDB database on this machine, selected with `?sync=fake`.
+
+Written the day Google Cloud Console would not create an OAuth client. That is
+the shallow reason; the real one is that the merge is the part worth building
+carefully and it should never have been blocked on someone else's signup form.
+The fake runs the same loop, the same merge, and the same asset transfer, with
+the network swapped out.
+
+The same reasoning gave OCR its mock recognizer, and the same rule holds: one
+module names a concrete implementation, and it is `use-sync.ts`.
+
+Specifics worth keeping:
+
+- **A separate database, not another store in `canwas`.** The point is that it
+  is somewhere else. Sharing the app's own database would let a bug in the loop
+  read local state, call it remote, and pass the test.
+- **The fake returns its boards through `JSON.parse(JSON.stringify(...))`**,
+  because Drive hands back parsed JSON and any difference between the two is a
+  difference the loop would eventually come to depend on.
+- **Drive folder ids and listings are cached per session.** Drive has no path
+  lookup, so reaching `CanWas/assets/<hash>.webp` is three queries every time;
+  caching turns twenty assets from sixty requests into one listing.
+- **Assets go up before the board does.** A board referencing an image the
+  remote does not have is a board another device renders with a hole in it, and
+  the window between the two writes is when a phone is most likely to be closed.
+
+Reverses if: the fake stops being exercised. A seam kept for a second
+implementation nobody runs is just indirection.

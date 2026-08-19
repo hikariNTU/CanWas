@@ -5,6 +5,7 @@ import { normalizeNodes } from "@/board/order";
 import {
   assetsAtom,
   boardNodesAtom,
+  hydratedBoardsAtom,
   readNodes,
   tombstonesAtom,
 } from "@/board/store";
@@ -31,6 +32,7 @@ export function useBoardPersistence(boardId: string) {
   const setAssets = useSetAtom(assetsAtom);
   const setNodesByBoard = useSetAtom(boardNodesAtom);
   const setTombstones = useSetAtom(tombstonesAtom);
+  const setHydrated = useSetAtom(hydratedBoardsAtom);
   const setViewports = useSetAtom(viewportsAtom);
   const setBoardsMeta = useSetAtom(boardsMetaAtom);
 
@@ -145,6 +147,7 @@ export function useBoardPersistence(boardId: string) {
         },
       }));
       setHydratedBoardId(boardId);
+      setHydrated((previous) => ({ ...previous, [boardId]: true }));
     })();
 
     return () => {
@@ -154,6 +157,7 @@ export function useBoardPersistence(boardId: string) {
     boardId,
     setAssets,
     setBoardsMeta,
+    setHydrated,
     setNodesByBoard,
     setTombstones,
     setViewports,
