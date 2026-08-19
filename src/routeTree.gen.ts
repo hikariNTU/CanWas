@@ -10,43 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
+import { Route as BoardBoardSlugRouteImport } from './routes/board.$boardSlug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BoardBoardIdRoute = BoardBoardIdRouteImport.update({
-  id: '/board/$boardId',
-  path: '/board/$boardId',
+const BoardBoardSlugRoute = BoardBoardSlugRouteImport.update({
+  id: '/board/$boardSlug',
+  path: '/board/$boardSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/board/$boardId': typeof BoardBoardIdRoute
+  '/board/$boardSlug': typeof BoardBoardSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/board/$boardId': typeof BoardBoardIdRoute
+  '/board/$boardSlug': typeof BoardBoardSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/board/$boardId': typeof BoardBoardIdRoute
+  '/board/$boardSlug': typeof BoardBoardSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/board/$boardId'
+  fullPaths: '/' | '/board/$boardSlug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/board/$boardId'
-  id: '__root__' | '/' | '/board/$boardId'
+  to: '/' | '/board/$boardSlug'
+  id: '__root__' | '/' | '/board/$boardSlug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BoardBoardIdRoute: typeof BoardBoardIdRoute
+  BoardBoardSlugRoute: typeof BoardBoardSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,11 +58,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/board/$boardId': {
-      id: '/board/$boardId'
-      path: '/board/$boardId'
-      fullPath: '/board/$boardId'
-      preLoaderRoute: typeof BoardBoardIdRouteImport
+    '/board/$boardSlug': {
+      id: '/board/$boardSlug'
+      path: '/board/$boardSlug'
+      fullPath: '/board/$boardSlug'
+      preLoaderRoute: typeof BoardBoardSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -70,7 +70,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BoardBoardIdRoute: BoardBoardIdRoute,
+  BoardBoardSlugRoute: BoardBoardSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

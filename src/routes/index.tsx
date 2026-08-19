@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { boardSlug } from "@/lib/slug";
 import { resolveLandingBoard } from "@/storage/board-actions";
 import { translate } from "@/translations";
 
@@ -12,7 +13,10 @@ import { translate } from "@/translations";
  */
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
-    const boardId = await resolveLandingBoard(translate("home.untitled"));
-    throw redirect({ to: "/board/$boardId", params: { boardId } });
+    const board = await resolveLandingBoard(translate("home.untitled"));
+    throw redirect({
+      to: "/board/$boardSlug",
+      params: { boardSlug: boardSlug(board.id, board.name) },
+    });
   },
 });

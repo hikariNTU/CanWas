@@ -49,13 +49,14 @@ export async function removeBoard(id: string): Promise<void> {
 
 /**
  * Resolves what `/` should open: the most recently edited board, creating one
- * if the store is empty.
+ * if the store is empty. Returns metadata rather than an id, because the URL
+ * carries the name as a slug alongside it.
  */
 export async function resolveLandingBoard(
   fallbackName: string,
-): Promise<string> {
+): Promise<BoardMeta> {
   const boards = await listBoards();
-  return boards[0]?.id ?? (await createBoard(fallbackName)).id;
+  return boards[0] ?? metaOf(await createBoard(fallbackName));
 }
 
 /**

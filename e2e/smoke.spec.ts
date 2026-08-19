@@ -29,7 +29,9 @@ test("opening the app lands on a board, creating one if none exist", async ({
   await page.goto("/CanWas/");
 
   // No home screen: the root resolves straight to a board (D31).
-  await expect(page).toHaveURL(/#\/board\/[0-9a-hjkmnp-tv-z]{12}$/);
+  await expect(page).toHaveURL(
+    /#\/board\/[0-9a-hjkmnp-tv-z]{12}-untitled-board$/,
+  );
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await expect(page.getByTestId("board-name")).toHaveText("Untitled board");
   await page.screenshot({ path: "e2e/screenshots/landing.png" });
@@ -117,4 +119,56 @@ test("language switches to zh-TW and persists", async ({ page }) => {
 
   await page.reload();
   await expect(page.getByText("貼上或拖曳圖片到這裡")).toBeVisible();
+});
+
+test("the URL carries a slug that follows the board name", async ({ page }) => {
+  await page.goto("/CanWas/");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+  await expect(page).toHaveURL(/-untitled-board$/);
+
+  const id = page.url().split("/board/")[1]!.split("-")[0]!;
+
+  await page.getByTestId("board-name").click();
+  await page.getByTestId("board-name-input").fill("Mood Board 2026!");
+  await page.getByTestId("board-name-input").press("Enter");
+
+  // Renaming rewrites the URL, keeping the same id.
+  await expect(page).toHaveURL(new RegExp(`#/board/${id}-mood-board-2026$`));
+});
+
+test("a stale or missing slug still resolves, then canonicalises", async ({
+  page,
+}) => {
+  await page.goto("/CanWas/");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+  await page.getByTestId("board-name").click();
+  await page.getByTestId("board-name-input").fill("Reference");
+  await page.getByTestId("board-name-input").press("Enter");
+  await expect(page).toHaveURL(/-reference$/);
+  const id = page.url().split("/board/")[1]!.split("-")[0]!;
+
+  // A link kept from before the rename must still work.
+  await page.goto(`/CanWas/#/board/${id}-some-old-name`);
+  await expect(page.getByTestId("board-name")).toHaveText("Reference");
+  await expect(page).toHaveURL(new RegExp(`#/board/${id}-reference$`));
+
+  // And a bare id, with no slug at all.
+  await page.goto(`/CanWas/#/board/${id}`);
+  await expect(page.getByTestId("board-name")).toHaveText("Reference");
+  await expect(page).toHaveURL(new RegExp(`#/board/${id}-reference$`));
+});
+
+test("a CJK board name keeps its characters in the slug", async ({ page }) => {
+  await page.goto("/CanWas/");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+  await page.getByTestId("board-name").click();
+  await page.getByTestId("board-name-input").fill("設計參考");
+  await page.getByTestId("board-name-input").press("Enter");
+
+  // Letters in any script survive rather than being stripped to nothing.
+  // page.url() returns the percent-encoded serialisation; browsers display the
+  // decoded form in the address bar, as they do for any non-ASCII URL.
+  await expect
+    .poll(() => decodeURIComponent(page.url()))
+    .toMatch(/#\/board\/[0-9a-hjkmnp-tv-z]{12}-設計參考$/);
 });

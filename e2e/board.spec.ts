@@ -292,11 +292,11 @@ test("a cancelled gesture aborts instead of committing, and unsticks", async ({
 });
 
 test("the board is renamable, and the name persists", async ({ page }) => {
-  await page.goto("/CanWas/#/board/rename-me");
+  await page.goto("/CanWas/#/board/renameme");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 
   const name = page.getByTestId("board-name");
-  await expect(name).toHaveText("rename-me");
+  await expect(name).toHaveText("renameme");
   await page.screenshot({ path: "e2e/screenshots/chrome-idle.png" });
 
   await name.click();
@@ -309,9 +309,7 @@ test("the board is renamable, and the name persists", async ({ page }) => {
   await expect(name).toHaveText("Reference sheet");
 
   // The write is async, and a reload can abort a transaction still in flight.
-  await expect
-    .poll(() => storedName(page, "rename-me"))
-    .toBe("Reference sheet");
+  await expect.poll(() => storedName(page, "renameme")).toBe("Reference sheet");
   await page.reload();
   await expect(page.getByTestId("board-name")).toHaveText("Reference sheet");
 });
@@ -319,23 +317,23 @@ test("the board is renamable, and the name persists", async ({ page }) => {
 test("escape abandons a rename, and an empty name is refused", async ({
   page,
 }) => {
-  await page.goto("/CanWas/#/board/keep-name");
+  await page.goto("/CanWas/#/board/keepname");
   const name = page.getByTestId("board-name");
-  await expect(name).toHaveText("keep-name");
+  await expect(name).toHaveText("keepname");
 
   await name.click();
   await page.getByTestId("board-name-input").fill("discarded");
   await page.getByTestId("board-name-input").press("Escape");
-  await expect(name).toHaveText("keep-name");
+  await expect(name).toHaveText("keepname");
 
   await name.click();
   await page.getByTestId("board-name-input").fill("   ");
   await page.getByTestId("board-name-input").press("Enter");
-  await expect(name).toHaveText("keep-name");
+  await expect(name).toHaveText("keepname");
 });
 
 test("editing the name does not trigger board shortcuts", async ({ page }) => {
-  await page.goto("/CanWas/#/board/shortcut-safe");
+  await page.goto("/CanWas/#/board/shortcutsafe");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await pasteImage(page, 300, 200, 140);
   await expect(page.getByTestId("board-node")).toHaveCount(1);

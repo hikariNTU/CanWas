@@ -534,5 +534,30 @@ sampling, and a plain modulo would quietly favour its earlier letters.
 Hand-rolled at ten lines rather than adding `nanoid`, which would be a
 dependency for one function.
 
-Existing UUID-keyed boards keep working — ids are opaque strings and nothing
-parses them.
+Boards keyed by the old UUIDs are not supported: [D33](#d33--board-urls-carry-a-slug-after-the-id)
+splits the URL segment at its first hyphen, which a UUID contains four of. No
+migration was written — the store was scratch data at the time.
+
+---
+
+## D33 — Board URLs carry a slug after the id
+
+**2026-08-19 · settled**
+
+`#/board/qyzs34jb14rz-mood-board`. The id is authoritative; the slug is
+decoration.
+
+A bare id resolves. A stale slug from before a rename resolves. In both cases
+the app rewrites the URL to the canonical form with `replace`, so it stays out of
+history and Back still leaves the board rather than bouncing between spellings.
+This is how GitHub and Notion handle it, and it means renaming a board can never
+break a link someone kept.
+
+Parsing is "everything before the first hyphen", which works precisely because
+the base32 id alphabet excludes `-` (D32). The two decisions hold each other up:
+a base62 or UUID id would need a delimiter that could appear in a name.
+
+Slugs keep letters and numbers in **any** script — `\p{L}`, not `[a-z]` — so
+設計參考 survives as itself instead of being stripped to an empty slug. It
+appears percent-encoded in `location.href` and decoded in the address bar, as
+non-ASCII URLs always have.

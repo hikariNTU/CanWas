@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { boardSlug } from "@/lib/slug";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import {
   createBoard,
@@ -58,7 +59,10 @@ export function BoardMenu({
   async function openNewBoard() {
     const board = await createBoard(t("home.untitled"));
     setBoardsMeta((previous) => ({ ...previous, [board.id]: metaOf(board) }));
-    await navigate({ to: "/board/$boardId", params: { boardId: board.id } });
+    await navigate({
+      to: "/board/$boardSlug",
+      params: { boardSlug: boardSlug(board.id, board.name) },
+    });
   }
 
   async function deleteCurrentBoard() {
@@ -74,8 +78,11 @@ export function BoardMenu({
       (board) => board.id !== boardId,
     );
     const target =
-      remaining[0]?.id ?? (await createBoard(t("home.untitled"))).id;
-    await navigate({ to: "/board/$boardId", params: { boardId: target } });
+      remaining[0] ?? metaOf(await createBoard(t("home.untitled")));
+    await navigate({
+      to: "/board/$boardSlug",
+      params: { boardSlug: boardSlug(target.id, target.name) },
+    });
   }
 
   return (
@@ -118,12 +125,15 @@ export function BoardMenu({
               <Menu.Separator className="my-1 h-px bg-neutral-800" />
               <Menu.RadioGroup
                 value={boardId}
-                onValueChange={(value) =>
-                  void navigate({
-                    to: "/board/$boardId",
-                    params: { boardId: String(value) },
-                  })
-                }
+                onValueChange={(value) => {
+                  const target = boardsMeta[String(value)];
+                  if (target) {
+                    void navigate({
+                      to: "/board/$boardSlug",
+                      params: { boardSlug: boardSlug(target.id, target.name) },
+                    });
+                  }
+                }}
               >
                 {/* GroupLabel reads its group from context, so it must be
                     nested inside the RadioGroup rather than sitting beside it. */}

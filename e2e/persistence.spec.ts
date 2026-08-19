@@ -72,7 +72,7 @@ function storedNodeCount(page: Page, boardId: string) {
 }
 
 test("a pasted image survives a reload", async ({ page }) => {
-  await page.goto("/CanWas/#/board/persist-me");
+  await page.goto("/CanWas/#/board/persistme");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 
   await pasteImage(page);
@@ -82,7 +82,7 @@ test("a pasted image survives a reload", async ({ page }) => {
   // Asset bytes are written immediately, but board layout is debounced — wait
   // for the *board* record, or the reload races the save.
   await expect.poll(() => countStore(page, "assets")).toBe(1);
-  await expect.poll(() => storedNodeCount(page, "persist-me")).toBe(1);
+  await expect.poll(() => storedNodeCount(page, "persistme")).toBe(1);
 
   await page.reload();
   await expect(page.getByTestId("board-node")).toHaveCount(1);
@@ -100,7 +100,7 @@ test("a pasted image survives a reload", async ({ page }) => {
 });
 
 test("viewport is restored but does not count as an edit", async ({ page }) => {
-  await page.goto("/CanWas/#/board/viewport-me");
+  await page.goto("/CanWas/#/board/viewportme");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await pasteImage(page);
   await expect.poll(() => countStore(page, "boards")).toBe(1);
@@ -114,7 +114,7 @@ test("viewport is restored but does not count as an edit", async ({ page }) => {
             const request = open.result
               .transaction("boards", "readonly")
               .objectStore("boards")
-              .get("viewport-me");
+              .get("viewportme");
             request.onsuccess = () => resolve(request.result.updatedAt);
           };
         }),

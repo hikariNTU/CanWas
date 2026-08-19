@@ -253,9 +253,14 @@ Middle-drag still pans from anywhere, including over a node.
 Hash history, TanStack Router, file-based routes.
 
 ```
-#/                  resolves to the latest board, or creates one, and redirects
-#/board/$boardId    Canvas — the only screen (D31)
+#/                          resolves to the latest board, or creates one
+#/board/$boardSlug          Canvas — the only screen (D31)
+      └─ qyzs34jb14rz-mood-board
+         ^^^^^^^^^^^^ authoritative id   ^^^^^^^^^^ decoration (D33)
 ```
+
+A bare id or a stale slug both resolve; the app then rewrites the URL to the
+canonical form with `replace`, so it stays out of history.
 
 Hash avoids the GitHub Pages deep-link 404 with no `404.html` redirect trick.
 
