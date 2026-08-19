@@ -1,12 +1,12 @@
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useEffect, useRef, useState } from "react";
+import { useAtomValue, useSetAtom, useStore } from "jotai";
+import { useCallback, useEffect, useState } from "react";
 
 import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
 import type { Asset } from "@/board/types";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { readViewport, viewportsAtom } from "@/canvas/viewport-atom";
 import { getAsset, getBoard, putBoard, type StoredBoard } from "@/storage/db";
-import { boardsMetaAtom, type BoardMeta } from "@/storage/boards-atom";
+import { boardsMetaAtom } from "@/storage/boards-atom";
 
 /** Content edits settle quickly; viewport writes are pure churn, so they wait. */
 const CONTENT_SAVE_DELAY = 400;
@@ -20,28 +20,55 @@ const VIEWPORT_SAVE_DELAY = 1000;
  * delete than a dead link is to explain.
  */
 export function useBoardPersistence(boardId: string) {
-  const [assets, setAssets] = useAtom(assetsAtom);
+  const store = useStore();
+  const setAssets = useSetAtom(assetsAtom);
   const setNodesByBoard = useSetAtom(boardNodesAtom);
   const setViewports = useSetAtom(viewportsAtom);
-  const [boardsMeta, setBoardsMeta] = useAtom(boardsMetaAtom);
+  const setBoardsMeta = useSetAtom(boardsMetaAtom);
 
   const nodes = readNodes(useAtomValue(boardNodesAtom), boardId);
   const viewport = readViewport(useAtomValue(viewportsAtom), boardId);
 
-  const [hydrated, setHydrated] = useState(false);
+  // Derived rather than reset in the effect: switching boards makes this false
+  // immediately, with no extra render and no window where the previous board's
+  // nodes are shown as if they belonged to the new one.
+  const [hydratedBoardId, setHydratedBoardId] = useState<string | null>(null);
+  const hydrated = hydratedBoardId === boardId;
 
-  // Saves need the current meta without re-running on every meta change.
-  const metaRef = useRef<BoardMeta | null>(null);
-  metaRef.current = boardsMeta[boardId] ?? null;
-
-  // Assets are content-addressed, so one already in memory is byte-identical
-  // and its object URL can be reused across boards for the whole session.
-  const assetsRef = useRef(assets);
-  assetsRef.current = assets;
+  /**
+   * Every write reads current state from the store, never a render snapshot.
+   *
+   * A debounced timer fires long after the render that scheduled it, so a save
+   * carrying a captured snapshot silently overwrites newer content. The
+   * viewport save used to do exactly that: it re-ran only when the viewport
+   * changed, kept writing the node list from hydration time, and wiped
+   * everything pasted or resized since (D22).
+   */
+  const save = useCallback(
+    (options: { bumpUpdatedAt: boolean }) => {
+      const meta = store.get(boardsMetaAtom)[boardId];
+      if (!meta) {
+        return;
+      }
+      const record: StoredBoard = {
+        ...meta,
+        nodes: store.get(boardNodesAtom)[boardId] ?? [],
+        viewport: store.get(viewportsAtom)[boardId] ?? IDENTITY_VIEWPORT,
+      };
+      if (options.bumpUpdatedAt) {
+        record.updatedAt = Date.now();
+        store.set(boardsMetaAtom, {
+          ...store.get(boardsMetaAtom),
+          [boardId]: { ...meta, updatedAt: record.updatedAt },
+        });
+      }
+      void putBoard(record);
+    },
+    [boardId, store],
+  );
 
   useEffect(() => {
     let cancelled = false;
-    setHydrated(false);
 
     void (async () => {
       const now = Date.now();
@@ -54,9 +81,13 @@ export function useBoardPersistence(boardId: string) {
         updatedAt: now,
       };
 
+      // Assets are content-addressed, so one already in memory is
+      // byte-identical and its object URL can be reused for the whole session.
+      const inMemory = store.get(assetsAtom);
       const needed = [...new Set(stored.nodes.map((node) => node.assetId))];
-      const missing = needed.filter((id) => !assetsRef.current[id]);
-      const loaded = await Promise.all(missing.map((id) => getAsset(id)));
+      const loaded = await Promise.all(
+        needed.filter((id) => !inMemory[id]).map((id) => getAsset(id)),
+      );
       if (cancelled) {
         return;
       }
@@ -64,9 +95,9 @@ export function useBoardPersistence(boardId: string) {
       const restored: Record<string, Asset> = {};
       for (const record of loaded) {
         if (record) {
+          // `blob:` URLs do not survive a reload, so they are recreated here.
           restored[record.id] = {
             ...record,
-            // `blob:` URLs do not survive a reload, so they are recreated here.
             url: URL.createObjectURL(record.blob),
           };
         }
@@ -86,36 +117,25 @@ export function useBoardPersistence(boardId: string) {
           updatedAt: stored.updatedAt,
         },
       }));
-      setHydrated(true);
+      setHydratedBoardId(boardId);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [boardId, setAssets, setBoardsMeta, setNodesByBoard, setViewports]);
+  }, [boardId, setAssets, setBoardsMeta, setNodesByBoard, setViewports, store]);
 
   // Content changes bump `updatedAt`.
   useEffect(() => {
     if (!hydrated) {
       return;
     }
-    const timer = setTimeout(() => {
-      const meta = metaRef.current;
-      if (!meta) {
-        return;
-      }
-      const updatedAt = Date.now();
-      void putBoard({ ...meta, nodes, viewport, updatedAt });
-      setBoardsMeta((previous) => ({
-        ...previous,
-        [boardId]: { ...meta, updatedAt },
-      }));
-    }, CONTENT_SAVE_DELAY);
+    const timer = setTimeout(
+      () => save({ bumpUpdatedAt: true }),
+      CONTENT_SAVE_DELAY,
+    );
     return () => clearTimeout(timer);
-    // `viewport` is intentionally absent: it is saved by the effect below, and
-    // including it here would make panning bump `updatedAt`.
-    // eslint-disable-next-line react/exhaustive-deps
-  }, [boardId, hydrated, nodes, setBoardsMeta]);
+  }, [hydrated, nodes, save]);
 
   // Viewport is view state: persisted, but it must never bump `updatedAt` or
   // "last edited" degrades into "last opened".
@@ -123,33 +143,24 @@ export function useBoardPersistence(boardId: string) {
     if (!hydrated) {
       return;
     }
-    const timer = setTimeout(() => {
-      const meta = metaRef.current;
-      if (meta) {
-        void putBoard({ ...meta, nodes, viewport });
-      }
-    }, VIEWPORT_SAVE_DELAY);
+    const timer = setTimeout(
+      () => save({ bumpUpdatedAt: false }),
+      VIEWPORT_SAVE_DELAY,
+    );
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react/exhaustive-deps
-  }, [boardId, hydrated, viewport]);
+  }, [hydrated, save, viewport]);
 
-  // Debounced saves lose the tail of a session: closing the tab within the
-  // debounce window keeps the asset bytes (written immediately) but drops the
+  // Debounced saves lose the tail of a session: closing the tab inside the
+  // debounce window keeps the asset bytes, written immediately, but drops the
   // node that referenced them. Flush on hide, which covers tab close, tab
   // switch and mobile backgrounding.
-  const latestRef = useRef({ nodes, viewport });
-  useEffect(() => {
-    latestRef.current = { nodes, viewport };
-  }, [nodes, viewport]);
-
   useEffect(() => {
     if (!hydrated) {
       return;
     }
     function flush() {
-      const meta = metaRef.current;
-      if (document.visibilityState === "hidden" && meta) {
-        void putBoard({ ...meta, ...latestRef.current });
+      if (document.visibilityState === "hidden") {
+        save({ bumpUpdatedAt: false });
       }
     }
     document.addEventListener("visibilitychange", flush);
@@ -158,7 +169,7 @@ export function useBoardPersistence(boardId: string) {
       document.removeEventListener("visibilitychange", flush);
       window.removeEventListener("pagehide", flush);
     };
-  }, [hydrated]);
+  }, [hydrated, save]);
 
   return { hydrated };
 }

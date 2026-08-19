@@ -217,6 +217,12 @@ pointermove → overlay.dx/dy = (client - origin) / scale     ← render only
 pointerup   → commit(moveNodes(...))  ·  overlay = null
 ```
 
+Gesture listeners are bound to `window`, not to the pressed element, and only
+one gesture runs at a time. `pointercancel` aborts; only `pointerup` commits
+(D27). An element listener dies with its element, and a gesture that never gets
+its `pointerup` leaves the overlay stuck — the node draws at gesture geometry
+until a later commit clears it, then snaps back to stored geometry.
+
 Selection chrome is drawn inside the scene, so its thickness is divided by
 `viewport.scale` to stay constant on screen.
 

@@ -398,3 +398,40 @@ linking to `/canwas/`, produces a hard 404.
 
 Renaming the repository to `canwas` would remove the trap. Not done, since it
 would break the existing URL.
+
+---
+
+## D26 — Debounced writes read the store, never a captured snapshot
+
+**2026-08-19 · settled · extends [D22](#d22--mutations-are-built-at-commit-time-from-the-store)**
+
+Every persistence write reads `nodes` and `viewport` from the jotai store at the
+moment it runs.
+
+A debounced timer fires long after the render that scheduled it. The viewport
+save captured `nodes` in its closure but listed only `viewport` in its
+dependencies, so it re-ran only when the camera moved — and kept writing the
+node list from hydration time. Its 1000 ms timer then landed _after_ edits made
+in the first second of a session and wrote them away. Nothing looked wrong until
+the board was reopened, where it appeared as work silently reverting.
+
+D22 established this rule for mutations. It applies to any deferred write.
+
+---
+
+## D27 — Pointer gestures listen on `window` and abort on cancel
+
+**2026-08-19 · settled**
+
+`pointermove` / `pointerup` / `pointercancel` are bound to `window` for the life
+of a gesture, not to the element that was pressed. One gesture runs at a time.
+`pointercancel` discards the gesture; only `pointerup` commits.
+
+Element listeners stop firing the moment the element unmounts or loses pointer
+capture. A gesture that never receives its `pointerup` leaves the render overlay
+stuck, so the node keeps drawing at gesture geometry until some later commit
+clears the overlay — at which point it snaps back to whatever the store still
+held. The visible symptom is a resize that "un-does itself" after the next drag.
+
+Committing on `pointercancel` is separately wrong: the event carries no
+meaningful final position, so it writes a rectangle the user never chose.

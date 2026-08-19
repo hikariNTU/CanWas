@@ -203,3 +203,67 @@ test("select all and multi-node move", async ({ page }) => {
 
   await page.screenshot({ path: "e2e/screenshots/board-multi.png" });
 });
+
+test("resize then drag keeps the new size, in memory and after reload", async ({
+  page,
+}) => {
+  await pasteImage(page, 400, 200, 120);
+  const node = page.getByTestId("board-node");
+  await node.click();
+  const original = (await node.boundingBox())!;
+
+  const handle = (await page.getByTestId("resize-handle").boundingBox())!;
+  await dragBy(
+    page,
+    { x: handle.x + handle.width / 2, y: handle.y + handle.height / 2 },
+    120,
+    60,
+  );
+  const resized = (await node.boundingBox())!;
+  expect(resized.width).toBeGreaterThan(original.width + 50);
+
+  await dragBy(page, await centreOf(node), 60, 40);
+  const dragged = (await node.boundingBox())!;
+  expect(dragged.width).toBeCloseTo(resized.width, 0);
+  expect(dragged.height).toBeCloseTo(resized.height, 0);
+
+  // The viewport save runs on a longer timer than the content save and used to
+  // write a node list captured at hydration, silently undoing both edits.
+  await page.waitForTimeout(1400);
+  await page.reload();
+  const restored = (await page.getByTestId("board-node").boundingBox())!;
+  expect(restored.width).toBeCloseTo(dragged.width, 0);
+  expect(restored.x).toBeCloseTo(dragged.x, 0);
+});
+
+test("a cancelled gesture aborts instead of committing, and unsticks", async ({
+  page,
+}) => {
+  await pasteImage(page, 300, 300, 130);
+  const node = page.getByTestId("board-node");
+  await node.click();
+  const before = (await node.boundingBox())!;
+
+  // Start a drag, then have the browser take the pointer away mid-gesture.
+  const centre = await centreOf(node);
+  await page.mouse.move(centre.x, centre.y);
+  await page.mouse.down();
+  await page.mouse.move(centre.x + 90, centre.y + 60, { steps: 4 });
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new PointerEvent("pointercancel", { pointerId: 1, bubbles: true }),
+    );
+  });
+  await page.mouse.up();
+
+  // Cancel discards the gesture rather than committing a wrong rectangle.
+  const afterCancel = (await node.boundingBox())!;
+  expect(afterCancel.x).toBeCloseTo(before.x, 0);
+  expect(afterCancel.y).toBeCloseTo(before.y, 0);
+
+  // And the overlay is not left stuck: the next drag still works.
+  await dragBy(page, await centreOf(node), 70, 50);
+  const afterDrag = (await node.boundingBox())!;
+  expect(afterDrag.x - before.x).toBeCloseTo(70, 0);
+  expect(afterDrag.width).toBeCloseTo(before.width, 0);
+});

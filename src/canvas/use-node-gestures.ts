@@ -1,6 +1,7 @@
 import { useStore } from "jotai";
 import {
   useCallback,
+  useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -33,6 +34,74 @@ export function useNodeGestures(boardId: string, viewport: Viewport) {
   const { commit } = useBoardHistory(boardId);
   const { selection, setSelection, toggle } = useSelection(boardId);
   const [gesture, setGesture] = useState<Gesture>(null);
+  const activeRef = useRef(false);
+
+  /**
+   * Starts a pointer gesture and guarantees it ends exactly once.
+   *
+   * Listeners go on `window`, not on the element that was pressed. An element
+   * listener stops firing the moment its node unmounts or loses pointer
+   * capture, and a gesture that never receives its `pointerup` leaves the
+   * render overlay stuck: the node keeps drawing at gesture geometry until some
+   * later commit clears the overlay, at which point it snaps back to whatever
+   * the store still held.
+   *
+   * `pointercancel` aborts rather than commits. The event carries no meaningful
+   * final position, so committing from it writes a wrong rectangle.
+   */
+  const beginGesture = useCallback(
+    (
+      event: ReactPointerEvent,
+      handlers: {
+        onMove: (event: globalThis.PointerEvent) => void;
+        onCommit: (event: globalThis.PointerEvent) => void;
+      },
+    ): boolean => {
+      if (activeRef.current) {
+        return false;
+      }
+      activeRef.current = true;
+
+      const { pointerId } = event;
+      const target = event.currentTarget as HTMLElement;
+      target.setPointerCapture(pointerId);
+
+      const finish = () => {
+        activeRef.current = false;
+        setGesture(null);
+        window.removeEventListener("pointermove", handleMove);
+        window.removeEventListener("pointerup", handleUp);
+        window.removeEventListener("pointercancel", handleCancel);
+        if (target.hasPointerCapture(pointerId)) {
+          target.releasePointerCapture(pointerId);
+        }
+      };
+
+      function handleMove(move: globalThis.PointerEvent) {
+        if (move.pointerId === pointerId) {
+          handlers.onMove(move);
+        }
+      }
+      function handleUp(up: globalThis.PointerEvent) {
+        if (up.pointerId !== pointerId) {
+          return;
+        }
+        finish();
+        handlers.onCommit(up);
+      }
+      function handleCancel(cancel: globalThis.PointerEvent) {
+        if (cancel.pointerId === pointerId) {
+          finish();
+        }
+      }
+
+      window.addEventListener("pointermove", handleMove);
+      window.addEventListener("pointerup", handleUp);
+      window.addEventListener("pointercancel", handleCancel);
+      return true;
+    },
+    [],
+  );
 
   /**
    * Geometry is read from the store at pointerdown, never from a render-time
@@ -62,36 +131,27 @@ export function useNodeGestures(boardId: string, viewport: Viewport) {
           ? Array.from(new Set([...(additive ? selection : []), nodeId]))
           : selection;
 
-      const target = event.currentTarget as HTMLElement;
-      target.setPointerCapture(event.pointerId);
       const origin = { x: event.clientX, y: event.clientY };
-      setGesture({ kind: "move", ids, dx: 0, dy: 0 });
-
       const delta = (point: { clientX: number; clientY: number }) => ({
         dx: (point.clientX - origin.x) / viewport.scale,
         dy: (point.clientY - origin.y) / viewport.scale,
       });
 
-      const handleMove = (move: globalThis.PointerEvent) =>
-        setGesture({ kind: "move", ids, ...delta(move) });
-
-      const handleUp = (up: globalThis.PointerEvent) => {
-        target.removeEventListener("pointermove", handleMove);
-        target.removeEventListener("pointerup", handleUp);
-        target.removeEventListener("pointercancel", handleUp);
-        const { dx, dy } = delta(up);
-        setGesture(null);
-        // A click is a drag of zero distance: it selects but records nothing.
-        if (dx !== 0 || dy !== 0) {
-          commit((nodes) => moveNodes(nodes, ids, dx, dy));
-        }
-      };
-
-      target.addEventListener("pointermove", handleMove);
-      target.addEventListener("pointerup", handleUp);
-      target.addEventListener("pointercancel", handleUp);
+      const started = beginGesture(event, {
+        onMove: (move) => setGesture({ kind: "move", ids, ...delta(move) }),
+        onCommit: (up) => {
+          const { dx, dy } = delta(up);
+          // A click is a drag of zero distance: it selects but records nothing.
+          if (dx !== 0 || dy !== 0) {
+            commit((nodes) => moveNodes(nodes, ids, dx, dy));
+          }
+        },
+      });
+      if (started) {
+        setGesture({ kind: "move", ids, dx: 0, dy: 0 });
+      }
     },
-    [commit, selection, toggle, viewport.scale],
+    [beginGesture, commit, selection, toggle, viewport.scale],
   );
 
   const startResize = useCallback(
@@ -106,8 +166,6 @@ export function useNodeGestures(boardId: string, viewport: Viewport) {
         return;
       }
 
-      const target = event.currentTarget as HTMLElement;
-      target.setPointerCapture(event.pointerId);
       const origin = { x: event.clientX, y: event.clientY };
       const aspect = base.w / base.h;
 
@@ -120,35 +178,29 @@ export function useNodeGestures(boardId: string, viewport: Viewport) {
         return { x: base.x, y: base.y, w, h: w / aspect };
       };
 
-      setGesture({
-        kind: "resize",
-        id: nodeId,
-        rect: rectFrom(origin.x, origin.y),
+      const started = beginGesture(event, {
+        onMove: (move) =>
+          setGesture({
+            kind: "resize",
+            id: nodeId,
+            rect: rectFrom(move.clientX, move.clientY),
+          }),
+        onCommit: (up) => {
+          const rect = rectFrom(up.clientX, up.clientY);
+          if (rect.w !== base.w) {
+            commit((nodes) => resizeNode(nodes, nodeId, rect));
+          }
+        },
       });
-
-      const handleMove = (move: globalThis.PointerEvent) =>
+      if (started) {
         setGesture({
           kind: "resize",
           id: nodeId,
-          rect: rectFrom(move.clientX, move.clientY),
+          rect: rectFrom(origin.x, origin.y),
         });
-
-      const handleUp = (up: globalThis.PointerEvent) => {
-        target.removeEventListener("pointermove", handleMove);
-        target.removeEventListener("pointerup", handleUp);
-        target.removeEventListener("pointercancel", handleUp);
-        const rect = rectFrom(up.clientX, up.clientY);
-        setGesture(null);
-        if (rect.w !== base.w) {
-          commit((nodes) => resizeNode(nodes, nodeId, rect));
-        }
-      };
-
-      target.addEventListener("pointermove", handleMove);
-      target.addEventListener("pointerup", handleUp);
-      target.addEventListener("pointercancel", handleUp);
+      }
     },
-    [commit, currentNode, viewport.scale],
+    [beginGesture, commit, currentNode, viewport.scale],
   );
 
   /** Node geometry with the live gesture applied, for rendering only. */
