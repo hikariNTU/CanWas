@@ -43,6 +43,12 @@ What "skeleton" means precisely, so it can be called done:
 Explicitly _not_ in step 1: any canvas behaviour, any image handling, any history
 stack, any store beyond the language atom.
 
+## After step 9
+
+Sync to Google Drive, so one person's devices see the same boards. Designed in
+[sync.md](sync.md), not built. Sharing a board with another person is
+deliberately not part of it.
+
 ## Non-goals
 
 Not planned, and each needs a written decision to enter scope: server or accounts,
