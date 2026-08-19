@@ -144,17 +144,15 @@ test("deleting a board leaves its assets to the startup sweep", async ({
   page,
 }) => {
   await page.goto("/CanWas/");
-  await page.getByTestId("create-board").click();
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 
   await pasteImage(page);
   await expect.poll(() => countStore(page, "assets")).toBe(1);
 
   await page.getByTestId("board-menu").click();
-  await page.getByTestId("menu-back").click();
-  await page.getByTestId("delete-board").click();
+  await page.getByTestId("menu-delete-board").click();
   await page.getByTestId("confirm-delete").click();
-  await expect(page.getByTestId("board-row")).toHaveCount(0);
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
 
   // Deleting the board does not reclaim bytes — sweeping mid-session could
   // take assets a still-open board is using (D14).

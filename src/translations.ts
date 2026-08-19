@@ -24,6 +24,14 @@ export function useTranslation() {
   return { t, lang };
 }
 
+/**
+ * Translation outside React, for route loaders and other non-component code.
+ * Reads the stored preference directly rather than the atom.
+ */
+export function translate(key: TranslationsKey): string {
+  return translations[key][getPreferredLang()];
+}
+
 function getPreferredLang(): ProvidedLang {
   const stored = localStorage.getItem(preferredLangKey);
   if (stored === "zh-TW" || stored === "en-US") {
@@ -86,6 +94,10 @@ const translations = {
   "common.cancel": {
     "zh-TW": "取消",
     "en-US": "Cancel",
+  },
+  "board.delete": {
+    "zh-TW": "刪除此畫板",
+    "en-US": "Delete board",
   },
   "board.rename": {
     "zh-TW": "重新命名畫板",

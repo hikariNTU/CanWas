@@ -3,8 +3,59 @@ import { atom } from "jotai";
 import { boardNodesAtom } from "@/board/store";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { viewportsAtom } from "@/canvas/viewport-atom";
-import { boardsMetaAtom } from "@/storage/boards-atom";
-import { putBoard } from "@/storage/db";
+import { boardsMetaAtom, type BoardMeta } from "@/storage/boards-atom";
+import {
+  deleteBoard,
+  getAllBoards,
+  putBoard,
+  type StoredBoard,
+} from "@/storage/db";
+
+export function metaOf(board: StoredBoard): BoardMeta {
+  return {
+    id: board.id,
+    name: board.name,
+    createdAt: board.createdAt,
+    updatedAt: board.updatedAt,
+  };
+}
+
+/** Most recently edited first — the order the board list is shown in. */
+export async function listBoards(): Promise<BoardMeta[]> {
+  const boards = await getAllBoards();
+  return boards.map(metaOf).sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+export async function createBoard(name: string): Promise<StoredBoard> {
+  const now = Date.now();
+  const board: StoredBoard = {
+    id: crypto.randomUUID(),
+    name,
+    nodes: [],
+    viewport: IDENTITY_VIEWPORT,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await putBoard(board);
+  return board;
+}
+
+export async function removeBoard(id: string): Promise<void> {
+  await deleteBoard(id);
+  // Orphaned assets are reclaimed by the startup sweep (D14), not here:
+  // sweeping now could take bytes a still-open board is using.
+}
+
+/**
+ * Resolves what `/` should open: the most recently edited board, creating one
+ * if the store is empty.
+ */
+export async function resolveLandingBoard(
+  fallbackName: string,
+): Promise<string> {
+  const boards = await listBoards();
+  return boards[0]?.id ?? (await createBoard(fallbackName)).id;
+}
 
 /**
  * Renaming is not undoable — the history stack covers board content only

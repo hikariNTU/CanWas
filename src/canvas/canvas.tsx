@@ -131,7 +131,7 @@ export function Canvas({ boardId }: { boardId: string }) {
       {/* Chrome floats over the canvas and never reserves layout space, so the
           board reaches every edge of the window. */}
       <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1">
-        <BoardMenu onResetView={resetViewport} />
+        <BoardMenu boardId={boardId} onResetView={resetViewport} />
         <BoardName boardId={boardId} />
       </div>
 

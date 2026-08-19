@@ -6,9 +6,9 @@ canvas, arrange them freely, and select text out of them.
 Think PureRef's spatial freedom, with the text in your screenshots actually
 selectable.
 
-**Status:** steps 1-5 of 9 complete — boards persist to IndexedDB, pan/zoom
-canvas, paste and drop images, select/move/resize/delete/reorder with full
-undo/redo. OCR is designed but not built.
+**Status:** steps 1-5 of 9 complete — opens straight onto a board, persists to
+IndexedDB, pan/zoom canvas, paste and drop images, select/move/resize/delete/
+reorder with full undo/redo. OCR is designed but not built.
 
 ## Quickstart
 

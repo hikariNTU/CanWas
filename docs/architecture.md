@@ -253,8 +253,8 @@ Middle-drag still pans from anywhere, including over a node.
 Hash history, TanStack Router, file-based routes.
 
 ```
-#/                  Home — board list, create/rename/delete
-#/board/$boardId    Canvas
+#/                  resolves to the latest board, or creates one, and redirects
+#/board/$boardId    Canvas — the only screen (D31)
 ```
 
 Hash avoids the GitHub Pages deep-link 404 with no `404.html` redirect trick.

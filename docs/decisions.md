@@ -485,3 +485,23 @@ ordinary tab closes.
 
 The practical consequence is for tests: **poll the store for the written value
 before reloading**, rather than reloading straight after asserting the UI.
+
+---
+
+## D31 — No home screen; `/` opens a board
+
+**2026-08-19 · settled · supersedes the Home list from step 5**
+
+The root route resolves to the most recently edited board, creating an empty one
+if the store is empty, and redirects there. There is no index page.
+
+An index listing one-to-three boards is a stop on the way to the only screen
+that does anything. Excalidraw opens straight onto a canvas for the same reason:
+the tool should be usable the moment it loads, with no decision to make first.
+
+The board list moved into the board menu, alongside New board, Delete board,
+Reset view and language. Board metadata for _every_ board is therefore loaded
+during board hydration rather than by a separate screen.
+
+Deleting the current board falls through to the next most recent, or a fresh one
+if it was the last — the user is never left on a board that no longer exists.

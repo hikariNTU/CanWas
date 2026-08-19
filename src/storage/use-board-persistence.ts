@@ -7,6 +7,7 @@ import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { readViewport, viewportsAtom } from "@/canvas/viewport-atom";
 import { getAsset, getBoard, putBoard, type StoredBoard } from "@/storage/db";
 import { boardsMetaAtom } from "@/storage/boards-atom";
+import { listBoards } from "@/storage/board-actions";
 
 /** Content edits settle quickly; viewport writes are pure churn, so they wait. */
 const CONTENT_SAVE_DELAY = 400;
@@ -108,8 +109,15 @@ export function useBoardPersistence(boardId: string) {
       }
       setNodesByBoard((previous) => ({ ...previous, [boardId]: stored.nodes }));
       setViewports((previous) => ({ ...previous, [boardId]: stored.viewport }));
+      // The menu lists every board (D31), so all metadata is loaded here
+      // rather than by a separate screen.
+      const everyBoard = await listBoards();
+      if (cancelled) {
+        return;
+      }
       setBoardsMeta((previous) => ({
         ...previous,
+        ...Object.fromEntries(everyBoard.map((meta) => [meta.id, meta])),
         [boardId]: {
           id: stored.id,
           name: stored.name,
