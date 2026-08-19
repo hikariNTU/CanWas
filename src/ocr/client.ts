@@ -76,6 +76,11 @@ export class OcrClient {
     this.seen.add(assetId);
   }
 
+  /** True once this client has taken the asset on: queued, running or answered. */
+  accepted(assetId: AssetId): boolean {
+    return this.seen.has(assetId);
+  }
+
   private ensureWorker(): Worker {
     if (!this.worker) {
       this.worker = new Worker(new URL("./worker.ts", import.meta.url), {

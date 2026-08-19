@@ -73,12 +73,20 @@ export function useOcr(nodes: readonly BoardNode[]) {
       if (!asset || (status !== "idle" && status !== "failed")) {
         continue;
       }
-      // `enqueue` refuses an asset it has already accepted, which is what stops
-      // a stored `failed` from retrying in a loop: it is retried once per
-      // session, on the reload that clears the client's memory of it.
-      if (ocrClient.enqueue(assetId, asset.blob)) {
-        applyOcr(assetId, { status: "queued" });
+      // Asked before, and marked queued before: `enqueue` pumps synchronously,
+      // so for the first job in an idle queue `onRunning` fires *inside* the
+      // call. Marking queued afterwards would overwrite the running state with
+      // a staler one, and nothing would correct it until the first progress
+      // event — which, on a cold start, is behind a 21 MB download. The job
+      // ran the whole time; only the label was wrong.
+      //
+      // The check also stops a stored `failed` from retrying in a loop: it is
+      // retried once per session, on the reload that clears this memory.
+      if (ocrClient.accepted(assetId)) {
+        continue;
       }
+      applyOcr(assetId, { status: "queued" });
+      ocrClient.enqueue(assetId, asset.blob);
     }
   }, [applyOcr, assets, nodes]);
 
