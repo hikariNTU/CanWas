@@ -26,7 +26,7 @@ function storedNames(page: Page) {
 test("opening the app lands on a board, creating one if none exist", async ({
   page,
 }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
 
   // No home screen: the root resolves straight to a board (D31).
   await expect(page).toHaveURL(/#\/[0-9a-hjkmnp-tv-z]{12}-untitled-board$/);
@@ -38,7 +38,7 @@ test("opening the app lands on a board, creating one if none exist", async ({
 test("returning opens the most recently edited board, not a new one", async ({
   page,
 }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await page.getByTestId("board-name").click();
   await page.getByTestId("board-name-input").fill("First board");
@@ -47,7 +47,7 @@ test("returning opens the most recently edited board, not a new one", async ({
 
   // The write is async, and a navigation can abort one still in flight (D30).
   await expect.poll(() => storedNames(page)).toEqual(["First board"]);
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page).toHaveURL(first);
   await expect(page.getByTestId("board-name")).toHaveText("First board");
 });
@@ -55,7 +55,7 @@ test("returning opens the most recently edited board, not a new one", async ({
 test("the menu lists boards, creates and switches between them", async ({
   page,
 }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   const firstUrl = page.url();
 
@@ -76,7 +76,7 @@ test("the menu lists boards, creates and switches between them", async ({
 test("deleting the current board falls through to another", async ({
   page,
 }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   const firstUrl = page.url();
 
@@ -95,7 +95,7 @@ test("deleting the current board falls through to another", async ({
 });
 
 test("deleting the last board creates a fresh one", async ({ page }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   const firstUrl = page.url();
 
@@ -108,7 +108,7 @@ test("deleting the last board creates a fresh one", async ({ page }) => {
 });
 
 test("language switches to zh-TW and persists", async ({ page }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 
   await page.getByTestId("board-menu").click();
@@ -120,7 +120,7 @@ test("language switches to zh-TW and persists", async ({ page }) => {
 });
 
 test("the URL carries a slug that follows the board name", async ({ page }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await expect(page).toHaveURL(/-untitled-board$/);
 
@@ -137,7 +137,7 @@ test("the URL carries a slug that follows the board name", async ({ page }) => {
 test("a stale or missing slug still resolves, then canonicalises", async ({
   page,
 }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await page.getByTestId("board-name").click();
   await page.getByTestId("board-name-input").fill("Reference");
@@ -146,18 +146,18 @@ test("a stale or missing slug still resolves, then canonicalises", async ({
   const id = page.url().split("#/")[1]!.split("-")[0]!;
 
   // A link kept from before the rename must still work.
-  await page.goto(`/CanWas/#/${id}-some-old-name`);
+  await page.goto(`#/${id}-some-old-name`);
   await expect(page.getByTestId("board-name")).toHaveText("Reference");
   await expect(page).toHaveURL(new RegExp(`#/${id}-reference$`));
 
   // And a bare id, with no slug at all.
-  await page.goto(`/CanWas/#/${id}`);
+  await page.goto(`#/${id}`);
   await expect(page.getByTestId("board-name")).toHaveText("Reference");
   await expect(page).toHaveURL(new RegExp(`#/${id}-reference$`));
 });
 
 test("a CJK board name keeps its characters in the slug", async ({ page }) => {
-  await page.goto("/CanWas/");
+  await page.goto("./");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await page.getByTestId("board-name").click();
   await page.getByTestId("board-name-input").fill("設計參考");

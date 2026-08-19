@@ -17,7 +17,7 @@ async function centerOf(page: Page, testId: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/CanWas/#/demo");
+  await page.goto("#/demo");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
 

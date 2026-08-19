@@ -23,7 +23,7 @@ async function surfaceBox(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/CanWas/#/textboard");
+  await page.goto("#/textboard");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
 

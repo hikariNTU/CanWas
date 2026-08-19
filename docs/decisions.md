@@ -378,13 +378,15 @@ be hidden on the one screen that matters. Home renders its own.
 
 ---
 
-## D25 — The Pages base path is case-sensitive
+## D25 — The repository is lower-case, so the base path is too
 
-**2026-08-19 · settled**
+**2026-08-19 · settled · revised 2026-08-19**
 
-`base` is `/CanWas/`, matching the repository name exactly.
+`base` is `/canwas/`, matching the repository name exactly.
 
-Measured:
+The Pages **host** is case-insensitive and normalised to lower-case; the
+**path** preserves the repository's case and does not redirect. Measured while
+the repository was still named `CanWas`:
 
 ```
 200  https://hikarintu.github.io/CanWas/
@@ -392,12 +394,19 @@ Measured:
 200  https://hikariNTU.github.io/CanWas/
 ```
 
-The **host** is case-insensitive and normalised to lowercase; the **path**
-preserves the repository's case and does not redirect. Lower-casing `base`, or
-linking to `/canwas/`, produces a hard 404.
+A mixed-case repository name therefore hard-404s the URL people actually type.
+The repository was renamed to `canwas` rather than carrying that trap. Nothing
+linked to the old URL yet, which is the only reason the rename was free — GitHub
+redirects `github.com` repository URLs after a rename but does **not** redirect
+the Pages URL.
 
-Renaming the repository to `canwas` would remove the trap. Not done, since it
-would break the existing URL.
+The product is still called CanWas. Only the path is lower-case.
+
+The base path now has exactly two owners: `base` in `vite.config.ts` and
+`BASE_URL` in `playwright.config.ts`. Tests navigate with relative URLs
+(`goto("./")`, `goto("#/demo")`) so they resolve against Playwright's `baseURL`
+instead of repeating the path — 27 copies of it were what made the rename look
+expensive.
 
 ---
 

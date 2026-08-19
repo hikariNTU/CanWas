@@ -6,7 +6,7 @@ import { defineConfig, devices } from "@playwright/test";
  * Playwright starts its own server on any port it does not find one on.
  */
 const PORT = Number(process.env.E2E_PORT ?? 5173);
-const BASE_URL = `http://localhost:${PORT}/CanWas/`;
+const BASE_URL = `http://localhost:${PORT}/canwas/`;
 
 export default defineConfig({
   testDir: "./e2e",
