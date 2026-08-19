@@ -48,6 +48,29 @@ async function centreOf(locator: ReturnType<Page["getByTestId"]>) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+/** The board's stored name, read straight from IndexedDB. */
+function storedName(page: Page, boardId: string) {
+  return page.evaluate(
+    (id) =>
+      new Promise<string | null>((resolve) => {
+        const open = indexedDB.open("canwas");
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains("boards")) {
+            resolve(null);
+            return;
+          }
+          const request = db
+            .transaction("boards", "readonly")
+            .objectStore("boards")
+            .get(id);
+          request.onsuccess = () => resolve(request.result?.name ?? null);
+        };
+      }),
+    boardId,
+  );
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/CanWas/#/board/demo");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
@@ -266,4 +289,65 @@ test("a cancelled gesture aborts instead of committing, and unsticks", async ({
   const afterDrag = (await node.boundingBox())!;
   expect(afterDrag.x - before.x).toBeCloseTo(70, 0);
   expect(afterDrag.width).toBeCloseTo(before.width, 0);
+});
+
+test("the board is renamable, and the name persists", async ({ page }) => {
+  await page.goto("/CanWas/#/board/rename-me");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+
+  const name = page.getByTestId("board-name");
+  await expect(name).toHaveText("rename-me");
+  await page.screenshot({ path: "e2e/screenshots/chrome-idle.png" });
+
+  await name.click();
+  const input = page.getByTestId("board-name-input");
+  await expect(input).toBeFocused();
+  await page.screenshot({ path: "e2e/screenshots/chrome-editing.png" });
+
+  await input.fill("Reference sheet");
+  await input.press("Enter");
+  await expect(name).toHaveText("Reference sheet");
+
+  // The write is async, and a reload can abort a transaction still in flight.
+  await expect
+    .poll(() => storedName(page, "rename-me"))
+    .toBe("Reference sheet");
+  await page.reload();
+  await expect(page.getByTestId("board-name")).toHaveText("Reference sheet");
+});
+
+test("escape abandons a rename, and an empty name is refused", async ({
+  page,
+}) => {
+  await page.goto("/CanWas/#/board/keep-name");
+  const name = page.getByTestId("board-name");
+  await expect(name).toHaveText("keep-name");
+
+  await name.click();
+  await page.getByTestId("board-name-input").fill("discarded");
+  await page.getByTestId("board-name-input").press("Escape");
+  await expect(name).toHaveText("keep-name");
+
+  await name.click();
+  await page.getByTestId("board-name-input").fill("   ");
+  await page.getByTestId("board-name-input").press("Enter");
+  await expect(name).toHaveText("keep-name");
+});
+
+test("editing the name does not trigger board shortcuts", async ({ page }) => {
+  await page.goto("/CanWas/#/board/shortcut-safe");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+  await pasteImage(page, 300, 200, 140);
+  await expect(page.getByTestId("board-node")).toHaveCount(1);
+
+  await page.getByTestId("board-name").click();
+  const input = page.getByTestId("board-name-input");
+  await input.fill("abc");
+  // Backspace and Select All belong to the text field, not to the board.
+  await input.press("Backspace");
+  await input.press("ControlOrMeta+a");
+  await expect(page.getByTestId("board-node")).toHaveCount(1);
+
+  await input.press("Enter");
+  await expect(page.getByTestId("board-name")).toHaveText("ab");
 });

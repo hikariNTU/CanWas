@@ -1,6 +1,7 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAtom } from "jotai";
+import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
@@ -87,8 +88,9 @@ function Home() {
             type="button"
             data-testid="create-board"
             onClick={() => void createBoard()}
-            className="rounded-md border border-neutral-800 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 transition-colors duration-150 hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+            className="flex items-center gap-2 rounded-md border border-neutral-800 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 transition-colors duration-150 hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
           >
+            <PlusIcon size={16} />
             {t("home.create")}
           </button>
         </div>
@@ -149,9 +151,9 @@ function DeleteBoardButton({
       <AlertDialog.Trigger
         data-testid="delete-board"
         aria-label={t("home.delete")}
-        className="shrink-0 rounded-md px-2 py-1 text-sm text-neutral-500 transition-colors duration-150 hover:bg-neutral-800 hover:text-red-400 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-neutral-500 transition-colors duration-150 hover:bg-neutral-800 hover:text-red-400 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
       >
-        {t("home.delete")}
+        <Trash2Icon size={16} />
       </AlertDialog.Trigger>
       <AlertDialog.Portal>
         <AlertDialog.Backdrop className="fixed inset-0 bg-neutral-950/70 backdrop-blur-sm" />

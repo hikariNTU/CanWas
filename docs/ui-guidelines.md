@@ -32,6 +32,15 @@ Stock Tailwind classes only. The working set, kept small on purpose:
 One accent. Introducing a second needs a reason written into
 [decisions](decisions.md).
 
+## Icons
+
+`lucide-react`, imported by the `*Icon`-suffixed name (`MenuIcon`, `PlusIcon`,
+`Trash2Icon`) — never the bare name. Default size 16 in chrome.
+
+No Unicode glyphs standing in for icons. `☰`, `↺`, `⌖` and friends render at
+whatever weight and baseline the system font decides, so they align differently
+per platform and cannot be sized or coloured as a set.
+
 ## Layout
 
 - Canvas is full-bleed. Chrome floats over it, never reserves layout space.
@@ -39,6 +48,9 @@ One accent. Introducing a second needs a reason written into
 - Radius `rounded-lg` on panels, `rounded-md` on controls. Consistent, not zero —
   this is not homepage's Modernist system.
 - Hit targets at least 32px square.
+- **A surface means something.** Chrome that is only read carries no background;
+  a background marks a thing as interactive or editable. The board title is bare
+  text at rest and gains a field only while being edited.
 
 ## Motion
 

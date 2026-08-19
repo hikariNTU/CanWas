@@ -13,9 +13,16 @@ export const assetsAtom = atom<Record<string, Asset>>({});
 /** Nodes per board. Array order is paint order (D18). */
 export const boardNodesAtom = atom<Record<string, BoardNode[]>>({});
 
+/**
+ * Shared so an empty board yields a stable identity. Returning a fresh `[]`
+ * made every render look like a node change, which re-armed the debounced save
+ * timer continuously.
+ */
+const NO_NODES: BoardNode[] = [];
+
 export function readNodes(
   nodesByBoard: Record<string, BoardNode[]>,
   boardId: string,
 ): BoardNode[] {
-  return nodesByBoard[boardId] ?? [];
+  return nodesByBoard[boardId] ?? NO_NODES;
 }

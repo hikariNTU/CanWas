@@ -1,4 +1,5 @@
 import { useAtomValue } from "jotai";
+import { MinusIcon, PlusIcon, Redo2Icon, Undo2Icon } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { useBoardHistory } from "@/board/history";
@@ -6,6 +7,7 @@ import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
 import { useBoardShortcuts } from "@/board/use-board-shortcuts";
 import { useIngest } from "@/board/use-ingest";
 import { BoardMenu } from "@/canvas/board-menu";
+import { BoardName } from "@/canvas/board-name";
 import { useNodeGestures } from "@/canvas/use-node-gestures";
 import { useViewportControls } from "@/canvas/use-viewport-controls";
 import { useTranslation } from "@/translations";
@@ -128,8 +130,9 @@ export function Canvas({ boardId }: { boardId: string }) {
 
       {/* Chrome floats over the canvas and never reserves layout space, so the
           board reaches every edge of the window. */}
-      <div className="pointer-events-none absolute top-3 left-3">
-        <BoardMenu boardId={boardId} onResetView={resetViewport} />
+      <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1">
+        <BoardMenu onResetView={resetViewport} />
+        <BoardName boardId={boardId} />
       </div>
 
       {nodes.length === 0 && (
@@ -144,7 +147,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             label={t("canvas.zoomOut")}
             onClick={() => zoomFromCenter(1 / 1.2)}
           >
-            −
+            <MinusIcon size={16} />
           </IconButton>
           <button
             type="button"
@@ -159,7 +162,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             label={t("canvas.zoomIn")}
             onClick={() => zoomFromCenter(1.2)}
           >
-            +
+            <PlusIcon size={16} />
           </IconButton>
         </Island>
         <Island>
@@ -169,7 +172,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             onClick={undo}
             disabled={!canUndo}
           >
-            ↺
+            <Undo2Icon size={16} />
           </IconButton>
           <IconButton
             label={t("canvas.redo")}
@@ -177,7 +180,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             onClick={redo}
             disabled={!canRedo}
           >
-            ↻
+            <Redo2Icon size={16} />
           </IconButton>
         </Island>
       </div>
@@ -214,7 +217,7 @@ function IconButton({
       data-testid={testId}
       onClick={onClick}
       disabled={disabled}
-      className="h-8 w-8 rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-30"
+      className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-30"
     >
       {children}
     </button>

@@ -158,16 +158,22 @@ export function useBoardPersistence(boardId: string) {
     if (!hydrated) {
       return;
     }
-    function flush() {
+    function flushOnHide() {
       if (document.visibilityState === "hidden") {
         save({ bumpUpdatedAt: false });
       }
     }
-    document.addEventListener("visibilitychange", flush);
-    window.addEventListener("pagehide", flush);
+    // `pagehide` flushes unconditionally. Gating it on visibilityState made it
+    // a no-op for the most common way a session ends — a reload or a
+    // navigation, where the page is still "visible" as it goes away.
+    function flushOnUnload() {
+      save({ bumpUpdatedAt: false });
+    }
+    document.addEventListener("visibilitychange", flushOnHide);
+    window.addEventListener("pagehide", flushOnUnload);
     return () => {
-      document.removeEventListener("visibilitychange", flush);
-      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", flushOnHide);
+      window.removeEventListener("pagehide", flushOnUnload);
     };
   }, [hydrated, save]);
 

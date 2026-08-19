@@ -87,6 +87,10 @@ const translations = {
     "zh-TW": "取消",
     "en-US": "Cancel",
   },
+  "board.rename": {
+    "zh-TW": "重新命名畫板",
+    "en-US": "Rename board",
+  },
   "board.back": {
     "zh-TW": "返回畫板列表",
     "en-US": "Back to boards",

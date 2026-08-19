@@ -1,8 +1,13 @@
 import { Menu } from "@base-ui/react/menu";
 import { useNavigate } from "@tanstack/react-router";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom } from "jotai";
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  CrosshairIcon,
+  MenuIcon,
+} from "lucide-react";
 
-import { boardsMetaAtom } from "@/storage/boards-atom";
 import {
   currentLangAtom,
   useTranslation,
@@ -15,40 +20,22 @@ const languages: { value: ProvidedLang; label: string }[] = [
 ];
 
 const itemClass =
-  "flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-neutral-300 select-none data-[highlighted]:bg-neutral-800 data-[highlighted]:text-neutral-100";
+  "flex cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-neutral-300 select-none data-[highlighted]:bg-neutral-800 data-[highlighted]:text-neutral-100";
 
-/**
- * The board screen's only persistent chrome. Everything that would otherwise
- * need a header bar lives in here, so the canvas reaches every edge.
- */
-export function BoardMenu({
-  boardId,
-  onResetView,
-}: {
-  boardId: string;
-  onResetView: () => void;
-}) {
+/** The board screen's only persistent chrome besides the title and controls. */
+export function BoardMenu({ onResetView }: { onResetView: () => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [lang, setLang] = useAtom(currentLangAtom);
-  const meta = useAtomValue(boardsMetaAtom)[boardId];
 
   return (
     <Menu.Root>
       <Menu.Trigger
         data-testid="board-menu"
         aria-label={t("menu.open")}
-        className="pointer-events-auto flex h-9 items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/90 px-2.5 text-sm text-neutral-300 shadow-lg backdrop-blur transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+        className="pointer-events-auto grid h-9 w-9 place-items-center rounded-lg border border-neutral-800 bg-neutral-900/90 text-neutral-400 shadow-lg backdrop-blur transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
       >
-        <span aria-hidden className="text-base leading-none">
-          ☰
-        </span>
-        <span
-          data-testid="board-name"
-          className="max-w-40 truncate text-xs text-neutral-500"
-        >
-          {meta?.name ?? boardId}
-        </span>
+        <MenuIcon size={16} />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner sideOffset={6} align="start">
@@ -58,11 +45,11 @@ export function BoardMenu({
               className={itemClass}
               onClick={() => void navigate({ to: "/" })}
             >
-              <Slot>←</Slot>
+              <ArrowLeftIcon size={16} className="shrink-0 text-neutral-500" />
               {t("board.back")}
             </Menu.Item>
             <Menu.Item className={itemClass} onClick={onResetView}>
-              <Slot>⌖</Slot>
+              <CrosshairIcon size={16} className="shrink-0 text-neutral-500" />
               {t("canvas.resetView")}
             </Menu.Item>
 
@@ -82,11 +69,13 @@ export function BoardMenu({
                   value={language.value}
                   className={itemClass}
                 >
-                  <Slot>
-                    <Menu.RadioItemIndicator className="text-[0.5rem] text-sky-400">
-                      ●
+                  {/* Fixed-width gutter so labels align whether or not the
+                      indicator is showing. */}
+                  <span className="grid w-4 shrink-0 place-items-center">
+                    <Menu.RadioItemIndicator>
+                      <CheckIcon size={16} className="text-sky-400" />
                     </Menu.RadioItemIndicator>
-                  </Slot>
+                  </span>
                   {language.label}
                 </Menu.RadioItem>
               ))}
@@ -95,14 +84,5 @@ export function BoardMenu({
         </Menu.Positioner>
       </Menu.Portal>
     </Menu.Root>
-  );
-}
-
-/** Fixed-width gutter so labels align whether or not their icon is showing. */
-function Slot({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="grid w-3 shrink-0 place-items-center text-neutral-500">
-      {children}
-    </span>
   );
 }

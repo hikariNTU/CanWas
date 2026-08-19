@@ -435,3 +435,53 @@ held. The visible symptom is a resize that "un-does itself" after the next drag.
 
 Committing on `pointercancel` is separately wrong: the event carries no
 meaningful final position, so it writes a rectangle the user never chose.
+
+---
+
+## D28 — Icons come from `lucide-react`
+
+**2026-08-19 · settled**
+
+Imported by the `*Icon`-suffixed name, matching the sibling `homepage` repo's
+convention.
+
+Unicode glyphs were standing in for icons — `☰`, `↺`, `⌖`, `●`. They inherit the
+system font's weight and baseline, so they sit differently on each platform,
+cannot be sized or coloured as a set, and read as improvised next to real UI.
+
+One dependency, tree-shaken per icon.
+
+---
+
+## D29 — The board title is editable in place, with no surface at rest
+
+**2026-08-19 · settled**
+
+Clicking the title turns it into a text field: Enter or blur commits, Escape
+abandons, an empty or unchanged name is refused.
+
+A background is a signal that something is interactive. Chrome that is only read
+does not earn one, so the title is bare text over the canvas and gains a field
+only while being edited.
+
+Renaming is **not** undoable — the history stack covers board content only
+(D17) — so it writes straight through. Key events inside the field stop
+propagating, or Backspace and `⌘A` would reach the board and delete nodes.
+
+---
+
+## D30 — A write in flight can be lost to a reload
+
+**2026-08-19 · known limitation**
+
+`putBoard` is asynchronous. Reloading within a few milliseconds of a change can
+abort the transaction, and the record either never lands or lands after the new
+page has already hydrated — briefly reading as the change having been discarded.
+
+Not fixable from here: the browser is free to abort a transaction during
+navigation, and nothing may block unload. The realistic sequence — change
+something, keep working, reload later — is safe, and the `pagehide` flush covers
+ordinary tab closes.
+
+The practical consequence is for tests: **poll the store for the written value
+before reloading**, rather than reloading straight after asserting the UI.

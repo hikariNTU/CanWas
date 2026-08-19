@@ -1,4 +1,5 @@
 import { Menu } from "@base-ui/react/menu";
+import { CheckIcon, LanguagesIcon } from "lucide-react";
 import { useAtom } from "jotai";
 
 import {
@@ -20,8 +21,9 @@ export function LanguageMenu() {
     <Menu.Root>
       <Menu.Trigger
         aria-label={t("lang.label")}
-        className="rounded-md border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-sm text-neutral-300 transition-colors duration-150 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+        className="flex items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-sm text-neutral-300 transition-colors duration-150 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
       >
+        <LanguagesIcon size={16} className="shrink-0 text-neutral-500" />
         {options.find((o) => o.value === lang)?.label}
       </Menu.Trigger>
       <Menu.Portal>
@@ -37,9 +39,9 @@ export function LanguageMenu() {
                   value={option.value}
                   className="flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-neutral-300 select-none data-[highlighted]:bg-neutral-800 data-[highlighted]:text-neutral-100"
                 >
-                  <span className="grid w-3 shrink-0 place-items-center">
-                    <Menu.RadioItemIndicator className="text-[0.5rem] text-sky-400">
-                      ●
+                  <span className="grid w-4 shrink-0 place-items-center">
+                    <Menu.RadioItemIndicator>
+                      <CheckIcon size={16} className="text-sky-400" />
                     </Menu.RadioItemIndicator>
                   </span>
                   {option.label}
