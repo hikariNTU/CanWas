@@ -72,6 +72,17 @@ No Unicode glyphs standing in for icons.
   a background marks a thing as interactive or editable. The board title is bare
   text at rest and gains a field only while being edited.
 
+## Sync
+
+Sync is a floating button of its own, beside the info button — not a line inside
+the info panel. It is the only chrome that answers "is my work anywhere but
+here", and a state you have to open a panel to read is a state nobody reads.
+
+It is never hidden. The resting state says _not syncing_ rather than showing
+nothing, because nothing is indistinguishable from working. Off invites a
+connection; anything else syncs on demand, which is the thing you press before
+closing a laptop. Only a failure gets colour.
+
 ## Selecting
 
 Click a node to select it, shift-click to add. Drag from empty canvas to draw a

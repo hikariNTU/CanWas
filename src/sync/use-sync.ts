@@ -41,7 +41,10 @@ export const syncStatusAtom = atom<SyncStatus>({ state: "off" });
  * effort — a failed round leaves the local board exactly as it was, which is
  * the behaviour the app already has offline.
  */
-export function useSync(boardId: string): SyncStatus {
+export function useSync(boardId: string): {
+  status: SyncStatus;
+  syncNow: () => void;
+} {
   const store = useStore();
   const auth = useAtomValue(authAtom);
   const setStatus = useSetAtom(syncStatusAtom);
@@ -175,5 +178,7 @@ export function useSync(boardId: string): SyncStatus {
     return () => clearTimeout(timer);
   }, [nodes, runOnce, transport]);
 
-  return status;
+  // Exposed so the sync button can ask for a round now rather than at the next
+  // quiet moment — the thing you press before closing a laptop.
+  return { status, syncNow: () => void runOnce() };
 }

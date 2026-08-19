@@ -182,6 +182,10 @@ const translations = {
     "zh-TW": "尚未同步",
     "en-US": "Not syncing",
   },
+  "sync.connect": {
+    "zh-TW": "連結 Google 雲端硬碟",
+    "en-US": "Connect Google Drive",
+  },
   "menu.open": {
     "zh-TW": "選單",
     "en-US": "Menu",

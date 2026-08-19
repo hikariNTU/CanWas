@@ -128,10 +128,37 @@ test("a local board reaches the remote, images and all", async ({ page }) => {
   // The bytes go too, or another device renders a board full of holes.
   await expect.poll(() => remoteAssetCount(page), { timeout: 15000 }).toBe(1);
 
-  await expect(page.getByTestId("sync-badge")).toHaveAttribute(
+  await expect(page.getByTestId("sync-button")).toHaveAttribute(
     "data-sync-state",
     "idle",
   );
+});
+
+test("the sync button syncs on demand", async ({ page }) => {
+  await pasteImage(page, 80);
+  await expect(page.getByTestId("board-node")).toHaveCount(1);
+  const button = page.getByTestId("sync-button");
+  await expect(button).toHaveAttribute("data-sync-state", "idle");
+
+  // Another device adds a node. Pressing the button is how you find out
+  // without reloading or waiting for the quiet timer.
+  await addRemoteNode(page, BOARD, {
+    id: "pressed",
+    kind: "text",
+    order: "a9",
+    updatedAt: Date.now(),
+    x: 300,
+    y: 300,
+    w: 200,
+    h: 24,
+    text: "arrived on demand",
+    fontSize: 16,
+  });
+
+  await button.click();
+  await expect(page.locator('[data-node-id="pressed"]')).toBeVisible({
+    timeout: 15000,
+  });
 });
 
 test("a node added by another device arrives, without losing the local one", async ({
