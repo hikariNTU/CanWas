@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useId, useRef } from "react";
 
 import { useTranslation } from "@/translations";
@@ -16,7 +17,18 @@ import { Tip } from "@/ui/tooltip";
  * `accept="image/*"` is what makes the phone offer the camera and the photo
  * library rather than a file tree.
  */
-export function AddImage({ onFiles }: { onFiles: (files: File[]) => void }) {
+export function AddImage({
+  onFiles,
+  className,
+}: {
+  onFiles: (files: File[]) => void;
+  /**
+   * Replaces the resting pill. On touch this button sits inside the mode bar
+   * rather than alone in a corner, and a glass pill nested in a glass bar is
+   * two surfaces where the design has one.
+   */
+  className?: string;
+}) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
@@ -46,7 +58,10 @@ export function AddImage({ onFiles }: { onFiles: (files: File[]) => void }) {
           data-testid="add-image"
           aria-label={t("image.add")}
           onClick={() => inputRef.current?.click()}
-          className="glass pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500"
+          className={clsx(
+            "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500",
+            className ?? "glass",
+          )}
         >
           <Icon name="add_photo_alternate" size={22} />
         </button>

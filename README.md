@@ -65,13 +65,14 @@ when dependencies change and commit the result.
 
 ## On a phone
 
-Touch gets a mode chip above the zoom and undo controls
-([D70](docs/decisions.md)): **Pan** gives every press to the viewport — including
-a press on top of an image, which is the case that used to make a full-bleed
-screenshot impossible to move past — and a tap still selects. **Select** drags
-images instead. A selected image gets a delete button, since a phone has no
-`Delete` key. None of it renders on a mouse, which already has the space bar,
-the middle button and the key.
+Touch gets one bar above the zoom and undo controls
+([D70](docs/decisions.md)), holding the mode switch, the add-image button and —
+while something is selected — delete, since a phone has no `Delete` key.
+**Pan** gives every press to the viewport, including a press on top of an image,
+which is the case that used to make a full-bleed screenshot impossible to move
+past; a tap still selects. **Select** drags images and rubber-bands empty canvas,
+and does not pan at all. None of it renders on a mouse, which already has the
+space bar, the middle button and the key.
 
 A paste bigger than the window moves the _camera_, never the image
 ([D71](docs/decisions.md)): node geometry stays at its own pixel size (D59), so

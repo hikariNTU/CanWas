@@ -127,19 +127,18 @@ export function useViewportControls(
       // leaves no empty canvas to grab (D70). A tap that never travels is
       // handled elsewhere, by `useTapSelect`, so nodes stay selectable here.
       //
-      // In select mode: a node drag on a node, a lasso on empty canvas (D54),
-      // and panning only via the pan key or the middle button.
+      // In select mode a left press never pans. It is a node drag on a node
+      // and a lasso on empty canvas (D54); panning is the pan key, the middle
+      // button, or the chip. A finger is included in that: it used to be
+      // excluded so touch could always pan, but in select mode that made one
+      // finger pan the board AND draw a marquee at the same time, since
+      // `useLasso` had already claimed the same press.
       //
       // The node's own handler cannot prevent this by calling stopPropagation:
       // React delegates events to the root container, so this native listener
       // on an ancestor runs first, during real DOM propagation. The ownership
       // test has to live here. Middle-drag still pans from anywhere.
-      if (
-        event.button === 0 &&
-        currentMode() === "select" &&
-        ((event.target as Element | null)?.closest?.("[data-node-id]") ||
-          (event.pointerType !== "touch" && !isPanKeyDown()))
-      ) {
+      if (event.button === 0 && currentMode() === "select" && !isPanKeyDown()) {
         return;
       }
       panningPointerId = event.pointerId;

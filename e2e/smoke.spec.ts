@@ -179,9 +179,11 @@ test("a mouse gets no touch chrome", async ({ page }) => {
   // no middle button and no Delete key (D70). This project has all three, so
   // `(pointer: coarse)` does not match and neither widget is rendered — the
   // negative half of what e2e/touch.spec.ts asserts.
-  await expect(page.getByTestId("mode-chip")).toHaveCount(0);
+  await expect(page.getByTestId("touch-bar")).toHaveCount(0);
   await page
     .getByTestId("canvas-surface")
     .click({ position: { x: 400, y: 300 } });
-  await expect(page.getByTestId("selection-bar")).toHaveCount(0);
+  await expect(page.getByTestId("delete-selection")).toHaveCount(0);
+  // The add button keeps its own corner here, where no bar exists to hold it.
+  await expect(page.getByTestId("add-image")).toBeVisible();
 });

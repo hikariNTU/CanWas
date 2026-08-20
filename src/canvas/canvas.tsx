@@ -36,7 +36,7 @@ import { Icon } from "@/ui/icon";
 import { screenToWorld } from "@/canvas/coords";
 import { currentMode } from "@/canvas/canvas-mode";
 import { useCanvasMode } from "@/canvas/canvas-mode";
-import { ModeChip, SelectionBar } from "@/canvas/touch-controls";
+import { TouchBar } from "@/canvas/touch-controls";
 import { useTapSelect } from "@/canvas/use-tap-select";
 import { useLasso } from "@/canvas/use-lasso";
 import { useNodeGestures } from "@/canvas/use-node-gestures";
@@ -466,16 +466,20 @@ export function Canvas({ boardId }: { boardId: string }) {
 
           {/* Bottom right: the only corner left, and the reachable one on a phone
           held in either hand. */}
-          <div className="pointer-events-none absolute right-3 bottom-3">
-            <AddImage
-              onFiles={(files) => {
-                // No cursor to place against, so it lands in the middle of the
-                // view — the same fallback a paste uses when the pointer has never
-                // been over the canvas.
-                void ingestFiles(files, null);
-              }}
-            />
-          </div>
+          {/* Desktop only. On touch the same button lives in the mode bar,
+              where the thumb already is. */}
+          {!coarse && (
+            <div className="pointer-events-none absolute right-3 bottom-3">
+              <AddImage
+                onFiles={(files) => {
+                  // No cursor to place against, so it lands in the middle of the
+                  // view — the same fallback a paste uses when the pointer has never
+                  // been over the canvas.
+                  void ingestFiles(files, null);
+                }}
+              />
+            </div>
+          )}
 
           {nodes.length === 0 && (
             <p className="pointer-events-none absolute inset-x-0 top-1/2 text-center text-sm text-neutral-600">
@@ -557,23 +561,28 @@ export function Canvas({ boardId }: { boardId: string }) {
           </div>
 
           {/* Touch only, and one row up from the zoom and undo islands rather
-            than beside them: on a 412px-wide phone the chip is wide enough to
+            than beside them: on a 412px-wide phone this bar is wide enough to
             reach the bottom-left corner, and a control sitting on top of
-            another control is not a layout. The selection bar stacks above the
-            chip in turn, so the mode never moves under a thumb that is
-            reaching for it (D70). */}
+            another control is not a layout. */}
           {coarse && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-16 flex flex-col items-center gap-2">
-              {selection.length > 0 && (
-                <SelectionBar
-                  count={selection.length}
-                  onDelete={() => {
-                    commit((current) => deleteNodes(current, selection));
-                    setSelection([]);
-                  }}
-                />
-              )}
-              <ModeChip mode={mode} onChange={setMode} />
+            <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
+              <TouchBar
+                mode={mode}
+                onChange={setMode}
+                hasSelection={selection.length > 0}
+                onDelete={() => {
+                  commit((current) => deleteNodes(current, selection));
+                  setSelection([]);
+                }}
+                addImage={
+                  <AddImage
+                    className="active:bg-white/10"
+                    onFiles={(files) => {
+                      void ingestFiles(files, null);
+                    }}
+                  />
+                }
+              />
             </div>
           )}
         </div>

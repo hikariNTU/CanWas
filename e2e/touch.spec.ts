@@ -101,7 +101,7 @@ test.beforeEach(async ({ page }) => {
 test("the mode chip is there, and pan is the mode a phone starts in", async ({
   page,
 }) => {
-  await expect(page.getByTestId("mode-chip")).toBeVisible();
+  await expect(page.getByTestId("touch-bar")).toBeVisible();
   await expect(page.getByTestId("mode-pan")).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -116,7 +116,7 @@ test("the mode chip is there, and pan is the mode a phone starts in", async ({
   // exist at all, so it has to be measured here.
   await page.evaluate(() => document.fonts.ready);
   const glyphs = await page
-    .getByTestId("mode-chip")
+    .getByTestId("touch-bar")
     .locator(".material-symbol")
     .evaluateAll((elements) =>
       elements.map((element) => ({
@@ -125,7 +125,8 @@ test("the mode chip is there, and pan is the mode a phone starts in", async ({
         size: parseFloat(getComputedStyle(element).fontSize),
       })),
     );
-  expect(glyphs).toHaveLength(2);
+  // Two modes plus the add button, all three ligatures.
+  expect(glyphs).toHaveLength(3);
   for (const glyph of glyphs) {
     expect(
       glyph.width,
@@ -180,20 +181,20 @@ test("a tap selects, and the selection bar deletes what a keyboard cannot", asyn
   await pasteImage(page, 600, 400);
   const node = page.getByTestId("board-node");
   await expect(node).toHaveCount(1);
-  await expect(page.getByTestId("selection-bar")).toHaveCount(0);
+  await expect(page.getByTestId("delete-selection")).toHaveCount(0);
 
   // Still in pan mode: the tap has to hand the press back to the node, or
   // nothing on a phone can ever be selected.
   const centre = await centreOf(node);
   await page.touchscreen.tap(centre.x, centre.y);
   await expect(node).toHaveAttribute("data-selected", "true");
-  await expect(page.getByTestId("selection-bar")).toBeVisible();
+  await expect(page.getByTestId("delete-selection")).toBeVisible();
 
   await page.screenshot({ path: "e2e/screenshots/touch-selection.png" });
 
   await page.getByTestId("delete-selection").click();
   await expect(page.getByTestId("board-node")).toHaveCount(0);
-  await expect(page.getByTestId("selection-bar")).toHaveCount(0);
+  await expect(page.getByTestId("delete-selection")).toHaveCount(0);
 
   // Deleting by finger is the same change as deleting by key: one undo.
   await page.getByTestId("undo").click();
@@ -214,7 +215,7 @@ test("a tap on empty canvas clears, and a pan does not", async ({ page }) => {
 
   await page.touchscreen.tap(30, 500);
   await expect(node).not.toHaveAttribute("data-selected", "true");
-  await expect(page.getByTestId("selection-bar")).toHaveCount(0);
+  await expect(page.getByTestId("delete-selection")).toHaveCount(0);
 });
 
 test("holding the board does not select the whole page as text", async ({
@@ -260,7 +261,7 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   // canvas is not — that is what makes one rule move all of them (D68).
   const layered = await page.evaluate(() => {
     const layer = document.querySelector(".chrome-layer");
-    const chip = document.querySelector("[data-testid=mode-chip]");
+    const chip = document.querySelector("[data-testid=touch-bar]");
     const surface = document.querySelector("[data-testid=canvas-surface]");
     return {
       exists: layer !== null,
@@ -286,11 +287,13 @@ test("the touch controls sit above the corner islands, never on them", async ({
   const node = page.getByTestId("board-node");
   const centre = await centreOf(node);
   await page.touchscreen.tap(centre.x, centre.y);
-  await expect(page.getByTestId("selection-bar")).toBeVisible();
+  // Measured with a selection, which is the bar at its widest: the delete
+  // button exists only while something is selected.
+  await expect(page.getByTestId("delete-selection")).toBeVisible();
 
-  // A phone is 412px across. The chip is wide enough to reach the bottom-left
+  // A phone is 412px across. The bar is wide enough to reach the bottom-left
   // corner from the centre, so "bottom centre" and "bottom left" are not two
-  // free places to put things — they are one, unless the chip is lifted a row.
+  // free places to put things — they are one, unless the bar is lifted a row.
   const overlaps = async (a: string, b: string) => {
     const first = (await page.getByTestId(a).boundingBox())!;
     const second = (await page.getByTestId(b).boundingBox())!;
@@ -302,15 +305,45 @@ test("the touch controls sit above the corner islands, never on them", async ({
     );
   };
 
-  for (const island of ["undo", "redo", "zoom-reset", "add-image"]) {
+  for (const island of ["undo", "redo", "zoom-reset"]) {
     expect(
-      await overlaps("mode-chip", island),
-      `the chip covers ${island}`,
-    ).toBe(false);
-    expect(
-      await overlaps("selection-bar", island),
-      `the selection bar covers ${island}`,
+      await overlaps("touch-bar", island),
+      `the bar covers ${island}`,
     ).toBe(false);
   }
-  expect(await overlaps("selection-bar", "mode-chip")).toBe(false);
+
+  // The add button is inside the bar now rather than floating in the corner
+  // behind it, which is why it is not in the list above.
+  const inside = await page.evaluate(() => {
+    const bar = document.querySelector("[data-testid=touch-bar]");
+    const add = document.querySelector("[data-testid=add-image]");
+    return bar?.contains(add ?? null) ?? false;
+  });
+  expect(inside, "the add button is not in the bar").toBe(true);
+});
+
+test("in select mode a finger on empty canvas lassos, and only lassos", async ({
+  page,
+}) => {
+  await pasteImage(page, 240, 160);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveCount(1);
+  await page.getByTestId("mode-select").click();
+
+  const grid = await gridOffset(page);
+  const box = (await node.boundingBox())!;
+  // From clear canvas above the node, down across it.
+  await fingerDrag(
+    page,
+    { x: box.x - 30, y: box.y - 60 },
+    box.width + 60,
+    box.height + 90,
+  );
+
+  await expect(node).toHaveAttribute("data-selected", "true");
+  // Both handlers used to claim the same press: the board slid under the
+  // finger while a marquee was being drawn on it. One press, one gesture.
+  expect(await gridOffset(page), "the marquee also panned the board").toBe(
+    grid,
+  );
 });

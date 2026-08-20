@@ -1,23 +1,36 @@
 import clsx from "clsx";
+import type { ReactNode } from "react";
 
 import type { CanvasMode } from "@/canvas/canvas-mode";
 import { Icon } from "@/ui/icon";
 import { useTranslation } from "@/translations";
 
 /**
- * The touch-only chrome: the mode chip, and the selection bar that rises above
- * it. Both live at the bottom centre — the last free edge, and the half of the
- * screen a thumb reaches without regripping the phone.
+ * The touch-only bar: mode, add, delete — everything one finger needs and a
+ * mouse already has elsewhere (D70).
  *
- * Neither renders on a fine pointer (D70). A mouse already has the modifiers
- * the chip stands in for, and a keyboard already has Delete.
+ * One bar rather than a chip plus a corner button plus a floating selection
+ * strip. Three surfaces competing for the bottom of a 412px screen is how the
+ * chip ended up on top of the undo island in the first place, and a thumb that
+ * has found this bar should not have to leave it to add a picture or throw one
+ * away.
+ *
+ * Nothing here renders on a fine pointer. A mouse has the space bar, the
+ * middle button and the Delete key, and it keeps the add button in its corner.
  */
-export function ModeChip({
+export function TouchBar({
   mode,
   onChange,
+  hasSelection,
+  onDelete,
+  addImage,
 }: {
   mode: CanvasMode;
   onChange: (next: CanvasMode) => void;
+  hasSelection: boolean;
+  onDelete: () => void;
+  /** The file picker, passed in rather than rebuilt: one input, one owner. */
+  addImage: ReactNode;
 }) {
   const { t } = useTranslation();
   const options: { mode: CanvasMode; icon: string; label: string }[] = [
@@ -27,10 +40,10 @@ export function ModeChip({
 
   return (
     <div
-      data-testid="mode-chip"
-      // Fully rounded, unlike every other island: this is the one control that
-      // is a switch rather than a group of buttons, and the pill shape says so
-      // before the icons do.
+      data-testid="touch-bar"
+      // Fully rounded, unlike the square-cornered islands: this is a switch
+      // with tools attached rather than a group of equal buttons, and the pill
+      // says so before the icons do.
       className="glass pointer-events-auto flex items-center gap-0.5 rounded-full p-1"
     >
       {options.map((option) => (
@@ -44,10 +57,14 @@ export function ModeChip({
           className={clsx(
             // 44px, not the 32px the desktop islands use: a finger cannot
             // reliably hit anything smaller, and this is the control that
-            // exists specifically because there is no pointer.
+            // exists precisely because there is no pointer.
             "flex h-11 items-center gap-1.5 rounded-full px-4 text-xs transition-colors duration-150",
+            // White at a low alpha, never a fixed grey. Inside glass the
+            // surface is tinted and the board moves behind it, so a flat
+            // neutral is the one thing in the bar that does not move with it
+            // and it reads as a seam (docs/ui-guidelines.md).
             mode === option.mode
-              ? "bg-neutral-800 text-sky-400"
+              ? "bg-white/10 text-sky-400"
               : "text-neutral-400",
           )}
         >
@@ -55,38 +72,25 @@ export function ModeChip({
           {option.label}
         </button>
       ))}
-    </div>
-  );
-}
 
-export function SelectionBar({
-  count,
-  onDelete,
-}: {
-  count: number;
-  onDelete: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div
-      data-testid="selection-bar"
-      className="glass pointer-events-auto flex items-center gap-1 rounded-full p-1 pl-4"
-    >
-      {/* A bare number, not a sentence. "2 selected" would have to be built by
-          concatenation, which the translation table forbids — and the count is
-          the only part that changes anyway. */}
-      <span className="font-mono text-xs text-neutral-300 tabular-nums">
-        {count}
-      </span>
-      <button
-        type="button"
-        data-testid="delete-selection"
-        aria-label={t("canvas.deleteSelection")}
-        onClick={onDelete}
-        className="grid h-11 w-11 place-items-center rounded-full text-neutral-400 transition-colors duration-150 active:bg-neutral-800 active:text-red-400"
-      >
-        <Icon name="delete" />
-      </button>
+      <span aria-hidden className="mx-1 h-6 w-px bg-white/10" />
+
+      {addImage}
+
+      {/* Last, and conditional: a control that comes and goes must never shift
+          the position of the permanent ones — the same rule the desktop
+          bottom-left row follows. */}
+      {hasSelection && (
+        <button
+          type="button"
+          data-testid="delete-selection"
+          aria-label={t("canvas.deleteSelection")}
+          onClick={onDelete}
+          className="grid h-11 w-11 place-items-center rounded-full text-neutral-400 transition-colors duration-150 active:bg-white/10 active:text-red-400"
+        >
+          <Icon name="delete" size={22} />
+        </button>
+      )}
     </div>
   );
 }

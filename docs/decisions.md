@@ -1765,7 +1765,7 @@ lands — and `e2e/overlay.spec.ts` records the change where it used to assert i
 
 ---
 
-## D70 — One finger does one thing, and a chip says which
+## D70 — One finger does one thing, and a bar says which
 
 **2026-08-20 · settled**
 
@@ -1790,10 +1790,28 @@ consumers that matter are native `pointerdown` handlers registered once. Not
 persisted and not part of the board record: it is view state (D17), and syncing
 it would mean picking up a phone and finding the mode a laptop chose.
 
-The chip sits one row above the zoom and undo islands, not beside them: on a
-412px screen it is wide enough to reach the bottom-left corner, and one control
-on top of another is not a layout. Bottom to top the stack reads zoom and undo,
-then the mode chip, then the selection bar when there is a selection.
+**One bar, not three.** The mode switch, the add-image button and the delete
+button share a single pill: three surfaces competing for the bottom of a 412px
+screen is how the chip landed on top of the undo island in the first place, and
+a thumb that has found the bar should not leave it to add a picture or throw one
+away. Delete is last and conditional, so it never shifts the controls that are
+always there. The add button keeps its own corner on a mouse, where no bar
+exists to hold it.
+
+The bar sits one row above the zoom and undo islands rather than beside them,
+for the same 412px reason.
+
+The active segment is `bg-white/10`, not a fixed grey. Inside glass the surface
+is tinted and the board moves behind it, so a flat neutral is the one thing in
+the bar that does not move with it and it reads as a seam
+(docs/ui-guidelines.md).
+
+**Select mode never pans.** A left press in select mode belongs to the node or
+to the marquee, full stop; panning is the pan key, the middle button, or
+switching the mode. Touch was briefly exempted from that so a finger could
+always pan — which meant one finger panned the board _and_ drew a selection
+rectangle at the same time, because `useLasso` had already claimed the same
+press. Two handlers, one gesture, both running.
 
 **Reverses if:** a gesture emerges that separates the two without a mode —
 two-finger pan is the obvious candidate, but `touch-action: none` on the surface
