@@ -2108,3 +2108,54 @@ being a second class of thing.
 
 **Reverses if:** Android Chrome ever puts the camera in its picker, which
 would make this button pure duplication on every platform.
+
+## D79 — A board nothing has been done to never leaves the device
+
+Landing on the app with no boards creates one, so the first thing a new device
+does is make an empty "Untitled" — and the first thing it did after connecting
+was upload it. Sign in on a laptop, a phone and a tablet and the account
+collects three empty boards nobody asked for, each one newer than the real
+work and therefore at the top of the menu.
+
+`isUntouchedBoard` is the predicate, and all four of its clauses matter:
+
+- **No nodes.** The obvious half, and wrong on its own.
+- **No tombstones.** A board whose last image was deleted is empty too, and
+  that emptiness is an edit that has to travel or the deletion never reaches
+  the other devices. This is what separates the two cases.
+- **`updatedAt === createdAt`.** Every edit that leaves no node behind — a
+  rename, above all. Naming a board is something you can only do on purpose.
+- **Not deleted.** A grave is the one empty board that most needs to go up.
+
+A board materialised from a deep link fails the test deliberately: it is
+stamped `updatedAt: 0` precisely because this device has no edit to offer, and
+it must still sync in order to be filled in.
+
+**The sync base is the other half**, checked by both callers rather than by the
+predicate. Once the remote has seen a board it keeps syncing however empty it
+gets — from then on, silence here is a claim about the board rather than an
+absence of one. Both upload paths ask: `useSync` for the open board, and the
+reconcile pass for every other one, which additionally declines only while the
+remote agrees it has never heard of it.
+
+**And the placeholder gets out of the way.** When the pass brings down real
+boards, a device standing on an untouched placeholder discards it and opens the
+most recently edited board instead — otherwise the first sight of a synced
+account is a blank canvas with the work hidden in a menu. It is deleted
+outright rather than buried (D66): the remote never had it, so there is nothing
+to tell anyone about, and a grave would be pushed up as the deletion of a board
+that never existed. Safe by construction — anything at all having happened to
+the board makes it a real one, so nothing a user started can be taken away.
+
+**One old race had to be closed first.** A board opened by deep link was
+materialised in memory and only written to disk by the first debounced save,
+so for a few hundred milliseconds it existed on the remote — the sync round
+runs the moment hydration finishes — and not on this disk. The reconcile pass
+then read this device's own upload back as a board arriving from another one.
+Harmless until an arrival came to mean something; it now writes the record
+immediately, which is what the code always claimed to do.
+
+**Reverses if:** empty boards ever carry meaning of their own — a template, a
+board shared by name before it has content. Then the placeholder needs a flag
+saying it was created _by the app_ rather than being inferred from its
+emptiness.

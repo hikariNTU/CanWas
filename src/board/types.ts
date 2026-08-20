@@ -173,3 +173,47 @@ export function isBoardDeleted(board: {
 }): boolean {
   return board.deletedAt !== undefined && board.deletedAt >= board.updatedAt;
 }
+
+/**
+ * A board nothing has ever been done to.
+ *
+ * Landing on the app with no boards makes one, so the very first thing a new
+ * device does is create an empty "Untitled" — and the first thing it did after
+ * signing in was upload it. Sign in on three machines and the account collects
+ * three empty boards nobody asked for (D79). This is the predicate that keeps
+ * them home.
+ *
+ * All four clauses are load-bearing:
+ *
+ * - **No nodes** is the obvious half, and on its own it is wrong: a board whose
+ *   last image was deleted is empty too, and that emptiness is an edit that
+ *   has to travel or the deletion never reaches the other devices.
+ * - **No tombstones** is what separates those two. Something was deleted here.
+ * - **`updatedAt === createdAt`** catches every edit that leaves no node
+ *   behind — a rename, most of all. `createBoard` sets the two equal and every
+ *   edit moves one of them.
+ * - **Not deleted**, because a grave is the one empty board that most needs to
+ *   be uploaded.
+ *
+ * A board materialised from a deep link is *not* untouched by this test, which
+ * is the point: it is stamped `updatedAt: 0` precisely because this device has
+ * no edit to offer, and it must still sync in order to be filled in.
+ *
+ * Caller-side, being untouched is not enough — a board the remote has already
+ * seen must keep syncing however empty it is, or this device stops answering
+ * for it. The sync base is what says so, and both callers check it.
+ */
+export function isUntouchedBoard(board: {
+  nodes: readonly BoardNode[];
+  tombstones?: readonly Tombstone[];
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number;
+}): boolean {
+  return (
+    board.deletedAt === undefined &&
+    board.nodes.length === 0 &&
+    (board.tombstones?.length ?? 0) === 0 &&
+    board.updatedAt === board.createdAt
+  );
+}

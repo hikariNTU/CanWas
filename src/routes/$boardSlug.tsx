@@ -5,7 +5,10 @@ import { useEffect } from "react";
 import { isBoardDeleted } from "@/board/types";
 import { Canvas } from "@/canvas/canvas";
 import { boardSlug, parseBoardId } from "@/lib/slug";
-import { resolveLandingBoard } from "@/storage/board-actions";
+import {
+  discardedPlaceholderAtom,
+  resolveLandingBoard,
+} from "@/storage/board-actions";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import { useBoardPersistence } from "@/storage/use-board-persistence";
 import { useTranslation } from "@/translations";
@@ -40,6 +43,25 @@ function BoardScreen() {
       }),
     );
   }, [meta, navigate, t]);
+
+  // The board on screen turned out to be a placeholder, and a sync round has
+  // just brought down real boards to replace it (D79). Same move as a deletion
+  // from another device, and for the same reason — the board underneath is
+  // gone — except that this one leaves no grave, so there is no `deletedAt` to
+  // notice and the sync round has to say so itself.
+  const discarded = useAtomValue(discardedPlaceholderAtom);
+  useEffect(() => {
+    if (discarded !== boardId) {
+      return;
+    }
+    void resolveLandingBoard(t("home.untitled")).then((target) =>
+      navigate({
+        to: "/$boardSlug",
+        params: { boardSlug: boardSlug(target.id, target.name) },
+        replace: true,
+      }),
+    );
+  }, [boardId, discarded, navigate, t]);
 
   // Rewrite the URL to the canonical id-plus-slug form: after a rename, and
   // for any link that arrived with a stale or missing slug. `replace` keeps it

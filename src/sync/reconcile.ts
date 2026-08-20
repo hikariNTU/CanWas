@@ -23,7 +23,7 @@
  * has not arrived.
  */
 
-import { isBoardDeleted, type Asset } from "@/board/types";
+import { isBoardDeleted, isUntouchedBoard, type Asset } from "@/board/types";
 import type { EngineName } from "@/ocr/types";
 import type { BoardMeta } from "@/storage/boards-atom";
 import {
@@ -153,6 +153,15 @@ export async function reconcileBoards(options: {
       // Requires all three stamps to agree. An absent one means "ask": a board
       // written by an older build has no stamp, and reading that as agreement
       // would skip it forever.
+      // A board nothing has ever been done to is not offered to the remote
+      // (D79) — but only while both sides agree it does not exist there. A
+      // board the remote already has is synced however empty it is, and so is
+      // one this device has ever pushed.
+      if (!base && !remoteMeta && isUntouchedBoard(stored)) {
+        report.skipped++;
+        continue;
+      }
+
       if (
         base &&
         remoteMeta?.updatedAt !== undefined &&

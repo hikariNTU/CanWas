@@ -8,6 +8,7 @@ import { viewportsAtom } from "@/canvas/viewport-atom";
 import { boardsMetaAtom, type BoardMeta } from "@/storage/boards-atom";
 import { announce } from "@/storage/tab-channel";
 import {
+  deleteBoard,
   getAllBoards,
   getBoard,
   putBoard,
@@ -105,6 +106,39 @@ export async function removeBoard(id: string): Promise<BoardMeta> {
   // the second is true whichever order they land in.
   return metaOf(grave);
 }
+
+/**
+ * The placeholder that was thrown away, so the screen standing on it can move.
+ *
+ * Not a grave and not a deletion: this board was never anywhere but here, so
+ * there is nothing to tell anyone about (D79).
+ */
+export const discardedPlaceholderAtom = atom<string | null>(null);
+
+/**
+ * Removes an untouched board from this device, record and all.
+ *
+ * The one place in the app that deletes a board outright rather than burying
+ * it. It is safe here for exactly one reason: a placeholder has never been
+ * uploaded, so there is no remote copy for the reconcile pass to hand back —
+ * which is the whole reason `removeBoard` writes a grave instead (D66). Using
+ * this on a board the remote has seen would resurrect it on the next round.
+ *
+ * The metadata goes first. `useBoardPersistence` reads it before every write
+ * and skips the write when it is gone, so clearing it closes the window where
+ * a debounced save lands after the delete and puts the record straight back.
+ */
+export const discardPlaceholderAtom = atom(
+  null,
+  (get, set, boardId: string) => {
+    const remaining = { ...get(boardsMetaAtom) };
+    delete remaining[boardId];
+    set(boardsMetaAtom, remaining);
+    void deleteBoard(boardId);
+    announce({ kind: "boards" });
+    set(discardedPlaceholderAtom, boardId);
+  },
+);
 
 /**
  * Resolves what `/` should open: the most recently edited board, creating one

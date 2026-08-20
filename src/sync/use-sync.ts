@@ -10,9 +10,12 @@ import {
   tombstonesAtom,
 } from "@/board/store";
 import { readIntrinsicSize } from "@/board/ingest";
-import type { OcrState } from "@/board/types";
+import { isUntouchedBoard, type OcrState } from "@/board/types";
 import { ocrClient, selectedEngine } from "@/ocr/client";
-import { adoptBoardMetaAtom } from "@/storage/board-actions";
+import {
+  adoptBoardMetaAtom,
+  discardPlaceholderAtom,
+} from "@/storage/board-actions";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import { getSyncBase, putAsset, putSyncBase } from "@/storage/db";
 import { authAtom, isLive } from "@/sync/auth";
@@ -125,6 +128,19 @@ export function useSync(boardId: string): {
         ...(meta.deletedAt === undefined ? {} : { deletedAt: meta.deletedAt }),
       };
       const storedBase = await getSyncBase(boardId);
+
+      // A board nothing has ever been done to stays on this device (D79). The
+      // base is half the test: once the remote has seen this board it keeps
+      // syncing however empty it gets, because from then on silence here is a
+      // claim about the board rather than an absence of one.
+      //
+      // Reported as idle without a time. Something did happen — the round ran
+      // and decided — but stamping "last synced" on a board that has never
+      // been anywhere would be the one lie this status can tell.
+      if (!storedBase && isUntouchedBoard(local)) {
+        setStatus({ state: "idle" });
+        return;
+      }
 
       const result = await syncBoard({
         transport,
@@ -267,7 +283,43 @@ export function useSync(boardId: string): {
       // Deliberately not surfaced as a sync failure. The status belongs to the
       // open board, and telling someone their board failed to sync because a
       // different board did would send them looking in the wrong place.
-    }).catch(() => {});
+    })
+      .then(async (report) => {
+        // A device that has just met this account for the first time is
+        // standing on the empty board it made before it knew the account had
+        // any. Now that the real ones are here, that board is in the way: it
+        // is the newest thing in the menu and it is the thing on screen, so
+        // the first sight of a synced account would be a blank canvas (D79).
+        //
+        // Only arrivals count. Graves are not boards, and a pass that pushed
+        // or skipped has told this device nothing it did not already know.
+        if (report.arrived.length === 0) {
+          return;
+        }
+        const boardId = openBoard.current;
+        const meta = store.get(boardsMetaAtom)[boardId];
+        if (!meta) {
+          return;
+        }
+        // Read from the atoms rather than from disk: this is the open board,
+        // and a paste made while the pass was in the air is on screen before
+        // it is anywhere else. Anything at all having happened to it makes it
+        // a real board, which is what makes discarding it safe.
+        const open = {
+          nodes: store.get(boardNodesAtom)[boardId] ?? [],
+          tombstones: store.get(tombstonesAtom)[boardId] ?? [],
+          createdAt: meta.createdAt,
+          updatedAt: meta.updatedAt,
+          ...(meta.deletedAt === undefined
+            ? {}
+            : { deletedAt: meta.deletedAt }),
+        };
+        if (!isUntouchedBoard(open) || (await getSyncBase(boardId))) {
+          return;
+        }
+        store.set(discardPlaceholderAtom, boardId);
+      })
+      .catch(() => {});
     // `boardId` is deliberately not a dependency: the pass runs once per
     // connection, and the ref above is what keeps it current.
   }, [store, transport]);

@@ -136,7 +136,8 @@ export function useBoardPersistence(boardId: string) {
       // pushed to every other device, and a board deleted elsewhere comes back
       // from the dead. Zero says what is true — this side has no edit to offer
       // — and every field it lacks is taken from the remote on the first round.
-      const stored: StoredBoard = (await getBoard(boardId)) ?? {
+      const existing = await getBoard(boardId);
+      const stored: StoredBoard = existing ?? {
         id: boardId,
         name: boardId,
         nodes: [],
@@ -145,6 +146,15 @@ export function useBoardPersistence(boardId: string) {
         createdAt: now,
         updatedAt: 0,
       };
+      if (!existing) {
+        // Written now rather than at the first debounced save, because between
+        // the two this board exists on the remote and not on this disk — the
+        // sync round runs the moment hydration finishes, and the reconcile
+        // pass then reads its own upload back as a board arriving from another
+        // device. That was harmless until an arrival came to mean something
+        // (D79), and it was always a lie about where the board came from.
+        await putBoard(stored);
+      }
 
       // Assets are content-addressed, so one already in memory is
       // byte-identical and its object URL can be reused for the whole session.
