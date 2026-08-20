@@ -1,5 +1,13 @@
 import type { Page } from "@playwright/test";
 
+/** A 64x64 white PNG, inline so the tests carry no binary fixture. */
+export const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAXklEQVR4nO3PMQ0AMAzAsPInvYLYYVWK" +
+    "ESTzjhsd8KsBrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGt" +
+    "Aa0BrQGtAa0BbQHKU9LC7/CP1AAAAABJRU5ErkJggg==",
+  "base64",
+);
+
 /**
  * Builds a page of dark text on white in the browser and dispatches it as a
  * synthetic paste — the only clipboard path an automated browser can drive,

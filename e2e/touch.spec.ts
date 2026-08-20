@@ -3,7 +3,7 @@ import { devices, expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { pasteTextImage } from "./support";
+import { PNG, pasteTextImage } from "./support";
 
 /**
  * Everything that only exists on a phone.
@@ -178,8 +178,8 @@ test("the mode chip is there, and pan is the mode a phone starts in", async ({
         size: parseFloat(getComputedStyle(element).fontSize),
       })),
     );
-  // Two modes plus the add button, all three ligatures.
-  expect(glyphs).toHaveLength(3);
+  // Two modes plus the library and the camera, all four ligatures.
+  expect(glyphs).toHaveLength(4);
   for (const glyph of glyphs) {
     expect(
       glyph.width,
@@ -427,6 +427,7 @@ test("every control a finger can hit is round and at least 44px", async ({
     "mode-pan",
     "mode-select",
     "add-image",
+    "take-photo",
     "delete-selection",
   ];
 
@@ -546,4 +547,40 @@ test("while reading, a finger on the words selects instead of panning", async ({
   );
   const after = (await node.boundingBox())!;
   expect(after.width).toBeGreaterThan(before.width * 1.4);
+});
+
+test("the camera is its own button, and asks for the camera", async ({
+  page,
+}) => {
+  const camera = page.getByTestId("take-photo");
+  await expect(camera).toBeVisible();
+
+  const inside = await page.evaluate(() => {
+    const bar = document.querySelector("[data-testid=touch-bar]");
+    return (
+      bar?.contains(document.querySelector("[data-testid=take-photo]")) ?? false
+    );
+  });
+  expect(inside, "the camera button is not in the bar").toBe(true);
+
+  // `capture` is the whole point: without it Android Chrome opens the photo
+  // library, which is what the button beside this one already does.
+  const input = page.getByTestId("take-photo-input");
+  await expect(input).toHaveAttribute("capture", "environment");
+  await expect(input).toHaveAttribute("accept", "image/*");
+  // A camera hands back one frame, and `multiple` alongside `capture` is
+  // ignored anyway — so it is not claimed.
+  await expect(input).not.toHaveAttribute("multiple", /.*/);
+
+  // Same ingest path as every other image, so what it produces is a node that
+  // gets read like the rest (D78).
+  await input.setInputFiles({
+    name: "shot.png",
+    mimeType: "image/png",
+    buffer: PNG,
+  });
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveCount(1);
+  await expect(node).toHaveAttribute("data-node-kind", "image");
+  await expect(node).toHaveAttribute("data-ocr-status", /queued|running|done/);
 });

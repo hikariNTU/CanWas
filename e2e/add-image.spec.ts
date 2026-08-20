@@ -1,17 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { PNG } from "./support";
+
 test.beforeEach(async ({ page }) => {
   await page.goto("?engine=mock#/addimage");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 });
-
-/** A 64x64 white PNG, inline so the test carries no binary fixture. */
-const PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAXklEQVR4nO3PMQ0AMAzAsPInvYLYYVWK" +
-    "ESTzjhsd8KsBrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGtAa0BrQGt" +
-    "Aa0BrQGtAa0BbQHKU9LC7/CP1AAAAABJRU5ErkJggg==",
-  "base64",
-);
 
 test("the picker puts an image on the board", async ({ page }) => {
   await expect(page.getByTestId("board-node")).toHaveCount(0);
@@ -47,7 +41,7 @@ test("the same file can be picked twice in a row", async ({ page }) => {
     mimeType: "image/png",
     buffer: PNG,
   };
-  const input = page.locator("input[type=file]");
+  const input = page.getByTestId("add-image-input");
 
   await input.setInputFiles(file);
   await expect(page.getByTestId("board-node")).toHaveCount(1);
@@ -56,4 +50,11 @@ test("the same file can be picked twice in a row", async ({ page }) => {
   // again fires no change event at all and the button looks broken.
   await input.setInputFiles(file);
   await expect(page.getByTestId("board-node")).toHaveCount(2);
+});
+
+test("a mouse is not offered a camera", async ({ page }) => {
+  // `capture` is ignored on a desktop browser, so the button would open a
+  // second dialog identical to the library one — a control that lies (D78).
+  await expect(page.getByTestId("add-image")).toBeVisible();
+  await expect(page.getByTestId("take-photo")).toHaveCount(0);
 });

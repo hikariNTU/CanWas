@@ -30,6 +30,76 @@ export function AddImage({
   className?: string;
 }) {
   const { t } = useTranslation();
+
+  return (
+    <Picker
+      onFiles={onFiles}
+      className={className}
+      testId="add-image"
+      label={t("image.add")}
+      icon="add_photo_alternate"
+      multiple
+    />
+  );
+}
+
+/**
+ * The camera, as its own button rather than an option inside the picker above.
+ *
+ * iOS puts "Take Photo" in the sheet that `accept="image/*"` opens, so there
+ * the two buttons are one tap versus two. Android Chrome does not: its picker
+ * is the photo library, and reaching the camera from it is a trip through the
+ * system file app that most people do not find. `capture="environment"` is the
+ * one attribute that makes the browser hand the request straight to the rear
+ * camera, and it is why this cannot just be the same input with a different
+ * label — `capture` changes what a picker *is*, so an input carrying it can
+ * never also offer the library.
+ *
+ * Touch only. On a desktop browser `capture` is ignored and the button opens a
+ * second file dialog identical to the first, which is a control that lies.
+ *
+ * No `multiple`: a camera returns one frame, and the attribute is ignored
+ * alongside `capture` anyway.
+ */
+export function TakePhoto({
+  onFiles,
+  className,
+}: {
+  onFiles: (files: File[]) => void;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Picker
+      onFiles={onFiles}
+      className={className}
+      testId="take-photo"
+      label={t("image.camera")}
+      icon="photo_camera"
+      capture="environment"
+    />
+  );
+}
+
+/** The shared body: one hidden input, one button that clicks it. */
+function Picker({
+  onFiles,
+  className,
+  testId,
+  label,
+  icon,
+  multiple,
+  capture,
+}: {
+  onFiles: (files: File[]) => void;
+  className?: string;
+  testId: string;
+  label: string;
+  icon: string;
+  multiple?: boolean;
+  capture?: "environment";
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
 
@@ -38,9 +108,11 @@ export function AddImage({
       <input
         ref={inputRef}
         id={inputId}
+        data-testid={`${testId}-input`}
         type="file"
         accept="image/*"
-        multiple
+        multiple={multiple}
+        capture={capture}
         className="sr-only"
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
@@ -52,18 +124,18 @@ export function AddImage({
           event.target.value = "";
         }}
       />
-      <Tip label={t("image.add")}>
+      <Tip label={label}>
         <button
           type="button"
-          data-testid="add-image"
-          aria-label={t("image.add")}
+          data-testid={testId}
+          aria-label={label}
           onClick={() => inputRef.current?.click()}
           className={clsx(
             "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-neutral-300 transition-colors hover:bg-white/10 hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500",
             className ?? "glass",
           )}
         >
-          <Icon name="add_photo_alternate" size={22} />
+          <Icon name={icon} size={22} />
         </button>
       </Tip>
     </>

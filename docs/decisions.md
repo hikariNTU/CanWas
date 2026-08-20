@@ -2075,3 +2075,36 @@ either way; it is what says the text is there.
 **Reverses if:** something needs the word boxes without entering the node —
 search across a board, say. Then the spans come back, and the way to keep this
 is `content-visibility: auto` rather than rendering them all.
+
+## D78 — The camera is a second button, not an option inside the first
+
+`accept="image/*"` was supposed to be enough: it makes a phone offer the
+camera alongside the photo library. On iOS it does — the sheet has "Take
+Photo" at the top. Android Chrome does not. Its picker is the photo library,
+and the camera is reachable only by leaving it for the system file app, which
+is a route most people never find. On the device this app is mostly used from,
+"add a picture" could not take one.
+
+`capture="environment"` is the attribute that fixes it: the browser skips the
+picker and hands the request straight to the rear camera. But `capture`
+changes what a picker _is_ — an input carrying it can never also offer the
+library — so this could not be the same input with a different label. Two
+inputs, two buttons, side by side in the touch bar.
+
+**Touch only.** On a desktop browser `capture` is ignored, so the button would
+open a second file dialog identical to the first — a control that lies. It
+hangs off the same `(pointer: coarse)` query as the rest of the bar (D70).
+
+Shown on iOS too, where it duplicates one row of the sheet the other button
+opens. One tap instead of two is worth a fifth icon, and a control that
+appears on one phone and not the other is a bar nobody can describe.
+
+No `multiple`: a camera returns one frame, and the attribute is ignored
+alongside `capture` in any case.
+
+Everything downstream is unchanged — the file goes through the same ingest as
+a paste, a drop or a pick, so a photo is read like any other image rather than
+being a second class of thing.
+
+**Reverses if:** Android Chrome ever puts the camera in its picker, which
+would make this button pure duplication on every platform.

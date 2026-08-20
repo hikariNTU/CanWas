@@ -22,7 +22,7 @@ import { useIngest } from "@/board/use-ingest";
 import { BoardMenu } from "@/canvas/board-menu";
 import { BoardName } from "@/canvas/board-name";
 import { About } from "@/canvas/about";
-import { AddImage } from "@/canvas/add-image";
+import { AddImage, TakePhoto } from "@/canvas/add-image";
 import { measureHeight, TextNodeView } from "@/canvas/text-node";
 import { MissingAsset } from "@/canvas/missing-asset";
 import { OcrBadge } from "@/canvas/ocr-badge";
@@ -593,6 +593,14 @@ export function Canvas({ boardId }: { boardId: string }) {
                 }}
                 addImage={
                   <AddImage
+                    className="active:bg-white/10"
+                    onFiles={(files) => {
+                      void ingestFiles(files, null);
+                    }}
+                  />
+                }
+                takePhoto={
+                  <TakePhoto
                     className="active:bg-white/10"
                     onFiles={(files) => {
                       void ingestFiles(files, null);

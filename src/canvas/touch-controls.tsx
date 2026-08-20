@@ -24,6 +24,7 @@ export function TouchBar({
   hasSelection,
   onDelete,
   addImage,
+  takePhoto,
 }: {
   mode: CanvasMode;
   onChange: (next: CanvasMode) => void;
@@ -31,6 +32,8 @@ export function TouchBar({
   onDelete: () => void;
   /** The file picker, passed in rather than rebuilt: one input, one owner. */
   addImage: ReactNode;
+  /** The camera picker, on the same terms. */
+  takePhoto: ReactNode;
 }) {
   const { t } = useTranslation();
   const options: { mode: CanvasMode; icon: string; label: string }[] = [
@@ -82,6 +85,11 @@ export function TouchBar({
       <span aria-hidden className="h-6 w-px bg-white/10" />
 
       {addImage}
+
+      {/* Beside the library rather than in place of it: `capture` picks one of
+          the two, so the choice iOS offers inside its sheet has to be two
+          buttons here (D78). */}
+      {takePhoto}
 
       {/* Last, and conditional: a control that comes and goes must never shift
           the position of the permanent ones — the same rule the desktop
