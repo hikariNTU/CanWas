@@ -26,221 +26,223 @@
       <h1>Support</h1>
 
       <p class="lede">
-        CanWas is an infinite board for images. Paste or drop screenshots onto
-        it, arrange them, and select the text inside them as if it were text on
-        the page. It runs entirely in your browser.
+        CanWas is an unbounded board for images. Screenshots may be pasted or
+        dropped onto it, arranged freely, and their embedded text selected as
+        if it were text on the page. The application runs entirely within the
+        user's browser.
       </p>
 
-      <h2>Getting help</h2>
+      <h2>1. Obtaining assistance</h2>
 
       <p>
         <strong
           ><a href="https://github.com/hikariNTU/canwas/issues"
             >GitHub Issues</a
           >
-          is the only support channel.</strong
+          is the sole support channel.</strong
         >
-        There is no support email and no live chat. Reporting a problem needs a
-        free GitHub account, and every issue is public — do not paste anything
-        private into one, including screenshots of documents.
+        No support email address or live chat is provided. Reporting an issue
+        requires a free GitHub account, and all issues are public; sensitive
+        content, including document screenshots, must not be posted.
       </p>
 
-      <p>A report is much easier to act on with these four things in it:</p>
+      <p>A report is processed more efficiently when it includes the following:</p>
       <ul>
-        <li>What you did, what you expected, and what happened instead.</li>
+        <li>The action taken, the expected result, and the actual result.</li>
+        <li>Browser name and version, and device type (mobile or desktop).</li>
         <li>
-          Your browser and version, and whether it is a phone or a desktop.
+          The build identifier from the <strong>About</strong> panel, accessed
+          via the <code>i</code> button in the corner of the application. This
+          identifier names the exact commit in use.
         </li>
         <li>
-          The build identifier from the <strong>About</strong> panel — the
-          <code>i</code> button in the corner of the app. It names the exact
-          commit you are running.
-        </li>
-        <li>
-          Whether Google&nbsp;Drive is connected, if the problem involves boards
-          not matching between devices.
+          Whether Google&nbsp;Drive is connected, where the issue concerns
+          boards not matching across devices.
         </li>
       </ul>
 
       <p>
-        CanWas is a personal project offered as-is, with no warranty and no
-        service level. Issues are read and answered when there is time for them.
+        CanWas is a personal project provided as-is, without warranty or
+        service-level commitment. Issues are reviewed and answered as time
+        permits.
       </p>
 
-      <h2>Using it</h2>
+      <h2>2. Usage</h2>
       <ul>
         <li>
-          <strong>Add an image</strong> by pasting from the clipboard, dropping
-          a file onto the canvas, or using the add button.
+          <strong>Add an image</strong> by pasting from the clipboard,
+          dropping a file onto the canvas, or using the add button.
         </li>
         <li>
-          <strong>Move around</strong> by dragging the empty canvas or
-          scrolling; zoom with pinch, or with the scroll wheel while holding
+          <strong>Navigate</strong> by dragging the empty canvas or scrolling;
+          zoom using pinch gestures, or the scroll wheel while holding
           <code>Ctrl</code>.
         </li>
         <li>
-          <strong>Select text</strong> by dragging across an image once it has
-          been read. Reading starts by itself and takes a few seconds per image.
+          <strong>Select text</strong> by dragging across an image once
+          recognition has completed. Recognition begins automatically and
+          takes a few seconds per image.
         </li>
         <li>
-          <strong>Undo</strong> with <code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>, redo
-          with <code>Shift</code> added. History lives in the tab and is gone
-          after a reload; the board itself is saved continuously.
+          <strong>Undo</strong> with <code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>; redo
+          by additionally holding <code>Shift</code>. History is retained only
+          within the tab and is cleared on reload; the board itself is saved
+          continuously.
         </li>
       </ul>
 
-      <h2>When something goes wrong</h2>
+      <h2>3. Troubleshooting</h2>
 
-      <h3>Text recognition never finishes on the first image</h3>
+      <h3>Text recognition does not complete on the first image</h3>
       <p>
-        The first image on a new device downloads about 31&nbsp;MB of model
-        weights before anything can be read. On a slow connection that takes a
-        while, and it fails outright if <code>huggingface.co</code> is blocked
-        on your network. The About panel says whether the weights are cached.
+        On a new device, the first image requires approximately 31&nbsp;MB of
+        model weights to be downloaded before recognition can proceed. This
+        may take some time on a slow connection, and will fail entirely if
+        <code>huggingface.co</code> is blocked on the network in use. The
+        About panel indicates whether the weights are cached.
       </p>
 
-      <h3>Recognition read the wrong characters</h3>
+      <h3>Recognition returns incorrect characters</h3>
       <p>
-        Small, blurred, rotated or low-contrast text is read poorly, and that is
-        a limit of the model rather than a setting. A screenshot at its original
-        resolution reads far better than a photograph of a screen.
+        Text that is small, blurred, rotated, or low-contrast is recognized
+        poorly; this is a limitation of the model rather than a configurable
+        setting. A screenshot at its original resolution yields substantially
+        better results than a photograph of a screen.
       </p>
 
-      <h3>My boards vanished</h3>
+      <h3>Boards have disappeared</h3>
       <p>
-        Browsers may evict site storage when the disk is under pressure, and
-        clearing "site data", "cookies and site data", or browsing in a private
-        window all discard boards. CanWas asks the browser to exempt itself and
-        the About panel reports whether that request was granted. If boards
-        matter, connect Google&nbsp;Drive so a copy exists elsewhere.
+        Browsers may evict site storage under disk pressure, and clearing
+        "site data," clearing "cookies and site data," or browsing in a
+        private window will discard boards. CanWas requests storage-eviction
+        exemption from the browser, and the About panel reports whether that
+        request was granted. Where board persistence is important, connecting
+        Google&nbsp;Drive maintains a copy elsewhere.
       </p>
 
-      <h3>Connecting Google Drive does nothing</h3>
+      <h3>Connecting Google Drive has no effect</h3>
       <p>
-        Sign-in opens a Google window, so a popup blocker will stop it. Google
-        also requires the request to come from a click, so it cannot be retried
-        automatically.
+        Sign-in opens a Google window; a popup blocker will prevent this.
+        Google additionally requires that the request originate from a user
+        click, so it cannot be retried automatically.
       </p>
 
       <h3>A board on another device did not appear</h3>
       <p>
-        Boards reconcile when a connection is established, not continuously.
-        Reloading the tab reconnects and reconciles. A board deleted on one
-        device is marked deleted and stays deleted everywhere, which is
-        deliberate.
+        Boards are reconciled when a connection is established, not
+        continuously. Reloading the tab re-establishes the connection and
+        triggers reconciliation. A board deleted on one device is marked
+        deleted and remains deleted on all devices; this behavior is
+        intentional.
       </p>
 
-      <h3>It looks flat, or unreadable, in my browser</h3>
+      <h3>The interface appears flat or is difficult to read</h3>
       <p>
-        The interface uses a backdrop blur. Browsers without it fall back to a
-        solid panel, which is intended. Please report anything genuinely
-        unreadable, with the browser name.
+        The interface uses a backdrop blur effect. Browsers lacking support
+        for it fall back to a solid panel by design. Any content that remains
+        genuinely unreadable should be reported together with the browser
+        name.
       </p>
 
-      <h2>Your data</h2>
+      <h2>4. Data</h2>
       <p>
-        What is stored, what leaves the device, and how to delete it are all in
-        the <a href="./privacy.html">privacy policy</a>. The short version:
-        boards stay in your browser, sync goes to your own Google&nbsp;Drive,
-        and there is no server in between.
+        Details of what is stored, what leaves the device, and how to delete
+        it are set out in the <a href="./privacy.html">privacy policy</a>. In
+        summary: boards remain in the browser, synchronization is limited to
+        the user's own Google&nbsp;Drive, and no server is involved.
       </p>
 
       <section class="alt-lang" lang="zh-Hant">
         <h1>支援</h1>
 
         <p class="lede">
-          CanWas 是一個沒有邊界的圖片白板。把截圖貼上去或拖進來，隨意排列，
-          再像選取網頁文字一樣選取圖片裡的文字。全部都在你的瀏覽器裡執行。
+          CanWas 為無邊界圖片白板。使用者可將截圖貼上或拖入白板，自由排列，
+          並如同選取網頁文字一般選取圖片內之文字。本應用程式完全於使用者瀏覽器端執行。
         </p>
 
-        <h2>取得協助</h2>
+        <h2>一、取得協助</h2>
         <p>
           <strong
             ><a href="https://github.com/hikariNTU/canwas/issues"
               >GitHub Issues</a
             >
-            是唯一的支援管道。</strong
+            為唯一支援管道。</strong
           >
-          沒有客服信箱，也沒有線上客服。回報問題需要一個免費的 GitHub 帳號，
-          而且所有 issue 都是公開的，不要在裡面貼任何私人內容，包括文件的截圖。
+          本服務未提供客服信箱或線上即時客服。回報問題須具備免費 GitHub
+          帳號，且所有 Issue 內容均為公開，請勿張貼任何私人資訊，包括文件截圖。
         </p>
-        <p>回報時盡量附上這幾樣，處理起來會快很多：</p>
+        <p>回報問題時，建議附上以下資訊以利處理：</p>
         <ul>
-          <li>你做了什麼、原本預期發生什麼、結果實際發生什麼。</li>
-          <li>用的瀏覽器和版本，還有是手機還是電腦。</li>
+          <li>執行之操作、預期結果與實際結果。</li>
+          <li>使用之瀏覽器名稱、版本，及裝置類型（手機或桌面）。</li>
           <li>
-            應用程式角落 <code>i</code> 按鈕裡「關於」面板顯示的組建識別碼，
-            這個號碼標出你目前跑的是哪個版本。
+            應用程式角落 <code>i</code> 按鈕內「關於」面板所顯示之組建識別碼，
+            用以標示目前執行之確切版本。
           </li>
-          <li>
-            如果問題是裝置之間白板對不上，說明一下有沒有連結 Google 雲端硬碟。
-          </li>
+          <li>若問題涉及裝置間白板未同步，請說明是否已連結 Google 雲端硬碟。</li>
         </ul>
-        <p>CanWas 是個人專案，照現狀提供，不保固，也沒有服務水準承諾。</p>
+        <p>CanWas 為個人專案，依現狀提供，不提供保固，亦無服務水準承諾。問題將依可用時間審閱並回覆。</p>
 
-        <h2>操作方式</h2>
+        <h2>二、操作方式</h2>
         <ul>
           <li>
-            <strong>加圖片：</strong>從剪貼簿貼上、把檔案拖進來，或按新增按鈕。
+            <strong>新增圖片：</strong>透過剪貼簿貼上、將檔案拖入畫布，或使用新增按鈕。
           </li>
           <li>
-            <strong>移動畫面：</strong>拖曳空白處或捲動來移動；用雙指或按住
-            <code>Ctrl</code> 滾滾輪來縮放。
+            <strong>移動畫面：</strong>拖曳空白處或捲動以移動畫面；以雙指手勢或按住
+            <code>Ctrl</code> 鍵搭配滾輪進行縮放。
           </li>
           <li>
-            <strong>選取文字：</strong>圖片辨識完之後，直接在上面拖曳選取就行。
-            辨識會自動開始，一張圖片大概需要幾秒鐘。
+            <strong>選取文字：</strong>於圖片完成辨識後，直接於圖片上拖曳即可選取文字。
+            辨識將自動開始，每張圖片約需數秒。
           </li>
           <li>
-            <strong>復原：</strong><code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>，加上
-            <code>Shift</code> 就是重做。這段歷史只存在分頁裡，重新整理就沒了；
-            白板本身則是持續在存的。
+            <strong>復原：</strong>使用 <code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>；
+            加按 <code>Shift</code> 鍵則為重做。操作紀錄僅保存於分頁記憶體中，重新整理後即清除；白板本身則持續儲存。
           </li>
         </ul>
 
-        <h2>常見問題</h2>
-        <h3>第一張圖片的文字辨識一直跑不完</h3>
+        <h2>三、疑難排解</h2>
+        <h3>首張圖片文字辨識無法完成</h3>
         <p>
-          新裝置上第一次用，得先下載大約 31 MB 的模型權重才能開始辨識。
-          網路慢的話會等比較久，如果你的網路擋掉了
-          <code>huggingface.co</code>，就會直接失敗。
-          「關於」面板會顯示權重有沒有快取好。
+          於新裝置首次使用時，須先下載約 31&nbsp;MB 之模型權重方能進行辨識。
+          於網路速度較慢之情況下所需時間較長；若使用之網路已封鎖
+          <code>huggingface.co</code>，辨識將直接失敗。「關於」面板將顯示權重是否已完成快取。
         </p>
-        <h3>辨識結果錯字一堆</h3>
+        <h3>辨識結果字元錯誤</h3>
         <p>
-          文字太小、模糊、傾斜或對比太低，辨識效果就是不好，這是模型本身的限制。
-          截圖用原始解析度，會比拍螢幕的照片準確很多。
+          文字尺寸過小、模糊、傾斜或對比不足時，辨識效果將明顯降低，此為模型本身之限制，非可調整之設定。
+          以原始解析度之截圖，其辨識效果將明顯優於螢幕翻拍照片。
         </p>
-        <h3>白板不見了</h3>
+        <h3>白板內容消失</h3>
         <p>
-          瀏覽器在磁碟空間吃緊時可能會清掉網站的儲存空間；清「網站資料」
-          或用無痕視窗，都會讓白板跟著消失。CanWas 會請瀏覽器把自己排除在外，
-          「關於」面板會顯示這個請求有沒有成功。白板內容重要的話，建議連結
-          Google 雲端硬碟，備份一份在別的地方。
+          瀏覽器於磁碟空間不足時，可能自動清除網站儲存資料；清除「網站資料」、
+          「Cookie 與網站資料」，或於無痕視窗中瀏覽，均將導致白板遺失。CanWas
+          將主動向瀏覽器申請儲存空間豁免，「關於」面板將顯示該申請是否成功。
+          如白板內容具重要性，建議連結 Google 雲端硬碟以於他處保留備份。
         </p>
-        <h3>連結 Google 雲端硬碟沒反應</h3>
+        <h3>連結 Google 雲端硬碟無反應</h3>
         <p>
-          登入會跳出一個 Google 視窗，彈出視窗被擋掉的話就沒反應了。 Google
-          也規定這個請求一定要從點擊觸發，所以沒辦法自動重試。
+          登入程序將開啟 Google 視窗，若彈出視窗遭封鎖將無法完成。Google
+          另要求此請求須由使用者點擊觸發，故無法自動重試。
         </p>
-        <h3>另一台裝置上的白板沒同步過來</h3>
+        <h3>其他裝置之白板未同步顯示</h3>
         <p>
-          白板只會在建立連線的當下對帳，不是隨時都在對。重新整理分頁就會重新連線、重新對帳。
-          在一台裝置上刪掉的白板會被標記為刪除，然後在所有地方都保持刪除狀態，這是故意設計成這樣的。
+          白板僅於連線建立時進行對帳，非持續性同步。重新整理分頁將重新建立連線並執行對帳。
+          於單一裝置刪除之白板將標記為已刪除，並於所有裝置維持刪除狀態，此為系統既定設計。
         </p>
-
-        <h3>介面看起來扁扁的，或根本看不清楚</h3>
+        <h3>介面顯示扁平或難以辨識</h3>
         <p>
-          介面用了背景模糊效果。不支援的瀏覽器會退回不透明的面板，這是預期中的行為。
-          但如果真的看不清楚，請回報並附上瀏覽器名稱。
+          介面採用背景模糊效果。不支援此效果之瀏覽器將顯示為不透明面板，此為預期行為。
+          若確有內容難以辨識，請回報並附上瀏覽器名稱。
         </p>
 
-        <h2>你的資料</h2>
+        <h2>四、資料</h2>
         <p>
-          存了什麼、什麼會離開你的裝置、要怎麼刪掉，都寫在
+          有關儲存內容、外傳資訊及刪除方式之詳細說明，請參閱
           <a href="./privacy.html">隱私權政策</a
-          >裡。講白一點就是：白板留在你的瀏覽器，同步只會進你自己的 Google
-          雲端硬碟，中間沒有伺服器。
+          >。概要而言：白板資料留存於瀏覽器端，同步功能僅連接使用者個人 Google
+          雲端硬碟，過程中不經任何伺服器。
         </p>
       </section>
 

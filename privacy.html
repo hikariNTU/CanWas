@@ -24,327 +24,305 @@
       </header>
 
       <h1>Privacy policy</h1>
-      <p class="stamp">Last updated 20 August 2026</p>
+      <p class="stamp">Last updated: 20 August 2026</p>
 
       <p class="lede">
-        CanWas has no server. There is no account to create, no database behind
-        it, and no analytics. Your boards are held by your own browser, and if
-        you turn on sync they are copied to your own Google&nbsp;Drive. The
-        author of CanWas never receives them, because there is nowhere for them
-        to be sent.
+        CanWas operates without a server. No account registration, no backend
+        database, and no analytics integration are present. Board data is
+        stored locally in the user's own browser. If cloud synchronization is
+        enabled, data is additionally copied to the user's personal
+        Google&nbsp;Drive. The developer of CanWas has no means of accessing or
+        obtaining any user data.
       </p>
 
-      <h2>What is stored, and where</h2>
+      <h2>1. Local data storage</h2>
 
       <p>
-        Everything below is stored <strong>on the device you are using</strong>,
-        by your browser, under the origin this page is served from.
+        The following data is stored on the device in use, and is retained by
+        the browser under the origin from which this page is served:
       </p>
 
       <table>
         <tr>
           <th>IndexedDB <code>canwas</code></th>
           <td>
-            Your boards: the images you paste or drop, their positions and
-            sizes, board names, and the text recognized inside each image. Also
-            the OCR model weights once downloaded (about 31&nbsp;MB).
+            Board contents, including pasted or dropped images, object
+            positions and dimensions, board names, and optical character
+            recognition (OCR) results. OCR model weights (approximately
+            31&nbsp;MB) are also stored here once downloaded.
           </td>
         </tr>
         <tr>
           <th><code>canwas.preferredLang</code></th>
-          <td>Your interface language, so it survives a reload.</td>
+          <td>The preferred interface language.</td>
         </tr>
         <tr>
           <th><code>canwas.drive.account</code></th>
           <td>
-            Written only if you connect Google&nbsp;Drive: the name, email
-            address and profile picture URL of the account you connected, so the
-            app can offer to reconnect to the right one. It is not a credential
-            and grants nothing.
+            Written only when Google&nbsp;Drive is connected. Contains the
+            account name, email address, and profile picture URL, used to
+            identify the account for subsequent connections. This data is not
+            a credential and does not grant any system access.
           </td>
         </tr>
       </table>
 
       <p>
-        CanWas sets <strong>no cookies</strong> and contains no analytics,
-        advertising, tracking pixels, session recording or error-reporting
-        service of any kind.
+        This service does not use cookies and does not embed any third-party
+        analytics tool, advertising tracker, tracking pixel, session recording,
+        or error-reporting service.
       </p>
 
-      <h2>What leaves your device</h2>
+      <h2>2. External connections and third-party services</h2>
 
       <p>
-        Three third parties can receive a request from this app. In every case
-        what they receive is the request itself — your IP address, the time, and
-        your browser's user-agent string. None of them receives the contents of
-        your boards, with the single exception of Google&nbsp;Drive, described
-        below, which receives them because you asked it to.
+        Other than the Google&nbsp;Drive synchronization feature, which is
+        enabled only at the user's initiative, this service does not transmit
+        board contents externally under any circumstance. When an HTTP request
+        is made, the receiving third party obtains only the basic network
+        information of that request, including IP address, request time, and
+        browser user-agent string.
       </p>
 
-      <h3>Google Fonts — every page load of the app</h3>
+      <h3>Google Fonts</h3>
       <p>
-        The app loads its typefaces from
+        On each application load, typefaces are retrieved from
         <code>fonts.googleapis.com</code> and <code>fonts.gstatic.com</code>.
-        This happens whether or not you sign in to anything. The page you are
-        reading now loads no web font, so it makes no such request.
+        This page does not load any web font and therefore makes no such
+        request.
       </p>
 
-      <h3>Hugging Face — the first time an image is read</h3>
+      <h3>Hugging Face</h3>
       <p>
-        Text recognition runs entirely on your device, but the model weights
-        that do it are downloaded once, on demand, from
-        <code>huggingface.co</code>, and then cached in your browser. Your
-        images are <strong>never uploaded for recognition</strong> — no image
-        ever leaves your device for this purpose.
+        Text recognition is performed entirely on the local device. On first
+        use, the required model weights are downloaded from
+        <code>huggingface.co</code> and subsequently cached in the browser.
+        Images are never uploaded to an external server for recognition
+        purposes.
       </p>
 
-      <h3>Google Drive — only if you connect it</h3>
+      <h3>Google Drive (connection required)</h3>
       <p>
-        Sync is off until you press Connect. If you connect it, CanWas signs in
-        through <code>accounts.google.com</code> and reads and writes files
-        through <code>www.googleapis.com</code>.
+        Synchronization remains disabled until the user connects a
+        Google&nbsp;Drive account. Once connected, CanWas authenticates through
+        <code>accounts.google.com</code> and reads and writes files through
+        <code>www.googleapis.com</code>.
       </p>
       <ul>
         <li>
-          <strong>The only scope requested is</strong>
-          <code>https://www.googleapis.com/auth/drive.file</code>, which grants
-          access to files this app itself creates and nothing else. CanWas
-          cannot see, read or modify any other file in your Drive.
+          <strong>Scope:</strong> only the
+          <code>https://www.googleapis.com/auth/drive.file</code> scope is
+          requested. This service can access only files it has created;
+          CanWas cannot read, modify, or otherwise access any other file in the
+          user's Drive.
         </li>
         <li>
-          <strong>What is uploaded:</strong> your board records, your images
-          re-encoded as WebP, and the recognized text for those images. They are
-          stored in your Drive, in a folder you can open, and are subject to
-          Google's terms and your own Drive settings.
+          <strong>Uploaded content:</strong> board records, images re-encoded
+          in WebP format, and their recognized text. Files are stored in a
+          dedicated folder within the user's personal Google&nbsp;Drive.
         </li>
         <li>
-          <strong>The access token is never written to disk.</strong> It is held
-          in memory for the life of the tab and expires in about an hour. What
-          is stored is the account label described above, so the app knows it is
-          worth asking Google for a token silently instead of showing you a
-          Connect button you have already used.
+          <strong>Security:</strong> the access token is retained only in the
+          browser tab's memory, is never written to disk, and expires
+          automatically after approximately one hour.
         </li>
         <li>
-          Sharing a board with another person is not a feature of CanWas. Files
-          it writes are private to your Drive account unless you share them
-          yourself.
+          This service does not currently provide a feature for sharing a board
+          across accounts.
         </li>
       </ul>
 
-      <h3>GitHub Pages — hosting</h3>
+      <h3>GitHub Pages</h3>
       <p>
-        This site is served by GitHub Pages. GitHub receives a request for each
-        page load and may log it; see
+        This site is hosted by GitHub Pages. GitHub logs network requests upon
+        each page load in accordance with its own policy; see
         <a
           href="https://docs.github.com/site-policy/privacy-policies/github-privacy-statement"
           >GitHub's privacy statement</a
-        >. The author has no access to those logs beyond aggregate traffic
-        counts.
+        >. The developer has access only to aggregated, anonymized traffic
+        statistics and not to individual logs.
       </p>
 
-      <h2>Google API Services User Data Policy</h2>
+      <h2>3. Google API Services User Data Policy</h2>
       <p>
         CanWas's use and transfer of information received from Google APIs
         adheres to the
         <a
           href="https://developers.google.com/terms/api-services-user-data-policy"
           >Google API Services User Data Policy</a
-        >, including the Limited Use requirements. Data obtained through
-        Google&nbsp;Drive is used only to provide the sync feature you turned
-        on, is never transferred to anyone else, is never used for advertising,
-        and is never read by a human.
+        >, including its Limited Use requirements. Data obtained through
+        Google&nbsp;Drive is used solely to provide the synchronization feature
+        the user has enabled; it is never transferred to any third party, never
+        used for advertising, and never subject to human review.
       </p>
 
-      <h2>Deleting your data</h2>
+      <h2>4. Data deletion and management</h2>
       <ul>
         <li>
-          <strong>A board:</strong> delete it from the board menu inside the
-          app. A deleted board is marked as deleted so that the deletion travels
-          to your other devices, and its contents are erased after 30 days.
+          <strong>A single board:</strong> may be deleted from the board menu
+          within the application. The board is first marked as deleted to
+          propagate the deletion across devices, and its contents are
+          permanently erased after 30 days.
         </li>
         <li>
-          <strong>The model weights:</strong> the About panel in the app reports
-          what is on disk and has a button to remove them.
+          <strong>Model weights:</strong> may be removed using the dedicated
+          button in the application's About panel.
         </li>
         <li>
-          <strong>Everything on this device:</strong> clear site data for this
-          origin in your browser's settings. This removes all boards, images and
-          preferences. It cannot be undone.
+          <strong>All local data:</strong> may be cleared directly through the
+          browser's site data settings. This action cannot be undone.
         </li>
         <li>
-          <strong>Drive access:</strong> revoke it at
+          <strong>Google account authorization:</strong> may be revoked at
           <a href="https://myaccount.google.com/permissions"
             >myaccount.google.com/permissions</a
-          >. Revoking stops future syncing; it does not delete files already
-          written, which you remove from Drive yourself.
+          >. Revocation terminates future synchronization but does not
+          automatically delete files already written to Drive; those must be
+          removed manually.
         </li>
       </ul>
 
-      <h2>Children</h2>
+      <h2>5. Children's privacy</h2>
       <p>
-        CanWas is not directed at children and collects no personal information
-        from anyone, of any age, because it collects no personal information at
-        all.
+        This service is not directed at children and, owing to its
+        architecture, does not collect personal information from users of any
+        age.
       </p>
 
-      <h2>Changes</h2>
+      <h2>6. Changes to this policy</h2>
       <p>
-        If this policy changes, the date at the top changes with it, and the
-        change is visible in the
+        When this policy is revised, the "Last updated" date above is updated
+        accordingly. The full revision history is available in the project's
         <a
           href="https://github.com/hikariNTU/canwas/commits/master/privacy.html"
-          >file's history</a
+          >commit history</a
         >.
       </p>
 
-      <h2>Contact</h2>
+      <h2>7. Contact</h2>
       <p>
-        Questions about this policy go to
+        Questions regarding this policy may be submitted via
         <a href="https://github.com/hikariNTU/canwas/issues">GitHub Issues</a>,
-        which is the project's only support channel. Note that issues are public
-        — do not post anything private in one.
+        the project's sole official support channel. Issue content is public;
+        do not include any sensitive personal information.
       </p>
 
       <section class="alt-lang" lang="zh-Hant">
         <h1>隱私權政策</h1>
-        <p class="stamp">最後更新：2026 年 8 月 20 日</p>
+        <p class="stamp">最後更新日期：2026 年 8 月 20 日</p>
 
         <p class="lede">
-          CanWas 沒有伺服器，不用註冊帳號，背後沒有資料庫，也沒有任何分析工具。
-          白板存在你自己的瀏覽器裡；如果你開啟同步，會複製一份到你自己的 Google
-          雲端硬碟。CanWas
-          的作者永遠拿不到這些資料，因為根本沒有地方能把它們送出去。
+          本服務（CanWas）採無伺服器架構，無須註冊帳號、無後端資料庫，亦未整合任何數據分析工具。您所建立之白板資料均儲存於個人本地瀏覽器中；若啟用雲端同步功能，系統將複製資料至您的個人 Google Drive。本服務開發者無法存取或取得您的任何資料。
         </p>
 
-        <h2>存了什麼、存在哪裡</h2>
+        <h2>一、本地資料儲存說明</h2>
         <p>
-          以下這些都存在<strong>你正在用的這台裝置上</strong>，由瀏覽器保管。
+          下列資料均儲存於您所使用的裝置端，並由您的瀏覽器進行保管：
         </p>
         <table>
           <tr>
             <th>IndexedDB <code>canwas</code></th>
             <td>
-              你的白板：貼上或拖進來的圖片、它們的位置與大小、白板名稱，
-              還有圖片裡辨識出來的文字。OCR 模型權重下載後（約 31
-              MB）也存在這裡。
+              儲存白板內容（含貼入或拖載之圖片、物件位置與尺寸、白板名稱）及圖片文字辨識（OCR）結果。OCR 模型權重（約 31&nbsp;MB）下載後亦儲存於此。
             </td>
           </tr>
           <tr>
             <th><code>canwas.preferredLang</code></th>
-            <td>介面語言，重新整理後不會跑掉。</td>
+            <td>儲存偏好介面語言。</td>
           </tr>
           <tr>
             <th><code>canwas.drive.account</code></th>
             <td>
-              只有連結 Google
-              雲端硬碟才會寫入：帳號的名稱、電子郵件與大頭貼網址，
-              讓應用程式知道下次要重新連哪一個帳號。這不是憑證，也不授予任何權限。
+              僅於連結 Google Drive 時寫入，包含帳號名稱、電子郵件與頭像網址，用於辨識下次連線之帳號（此資料非憑證，亦不授予任何系統權限）。
             </td>
           </tr>
         </table>
         <p>
-          CanWas
-          <strong>不使用 Cookie</strong>，也沒有分析工具、廣告、追蹤像素、
-          操作錄影，或任何錯誤回報服務。
+          本服務不使用 Cookie，亦未嵌入任何第三方分析工具、廣告追蹤器、追蹤像素（Pixels）、操作錄影或錯誤回報服務。
         </p>
 
-        <h2>什麼會離開你的裝置</h2>
+        <h2>二、外部連線與第三方服務</h2>
         <p>
-          有三個第三方可能收到這個應用程式發出的請求。它們拿到的都只是請求本身：
-          你的 IP 位址、時間，還有瀏覽器的 user-agent 字串。除了 Google
-          雲端硬碟以外（那是你自己開啟的），沒有任何一方會收到你白板的內容。
+          除您主動開啟之 Google Drive 同步功能外，本服務絕不傳送您的白板內容至外部。發送 HTTP 請求時，第三方服務僅會接收請求之基本網路資訊（包括 IP 位址、請求時間及瀏覽器 User-Agent 字串）。
         </p>
-        <h3>Google Fonts：每次打開應用程式都會發生</h3>
+        <h3>Google Fonts</h3>
         <p>
-          應用程式會從 <code>fonts.googleapis.com</code> 和
-          <code>fonts.gstatic.com</code> 載入字型，不管你有沒有登入都一樣。
-          你現在看的這一頁不用網路字型，所以不會發出這個請求。
+          載入應用程式時，系統將自 <code>fonts.googleapis.com</code> 與
+          <code>fonts.gstatic.com</code> 取得字型資源。本頁面未載入網路字型，故不會發出此請求。
         </p>
-        <h3>Hugging Face：第一次辨識圖片的時候</h3>
+        <h3>Hugging Face</h3>
         <p>
-          文字辨識完全在你的裝置上跑，但要用的模型權重得先下載一次，來源是
-          <code>huggingface.co</code>，下載完就快取在瀏覽器裡。
-          <strong>你的圖片永遠不會為了辨識而被上傳</strong
-          >，不會有任何一張圖片因為這樣離開你的裝置。
+          文字辨識功能完全於本地裝置執行。首次使用時，系統須自
+          <code>huggingface.co</code> 下載模型權重，下載完成後即快取於瀏覽器中。您的圖片絕不會因辨識需求而上傳至外部伺服器。
         </p>
-        <h3>Google 雲端硬碟：只有你自己連結才會用到</h3>
+        <h3>Google Drive（僅限主動連結）</h3>
         <ul>
           <li>
-            <strong>只會要求一個權限範圍：</strong>
-            <code>https://www.googleapis.com/auth/drive.file</code>，
-            只能存取這個應用程式自己建立的檔案。CanWas
-            看不到、讀不到，也改不了你雲端硬碟裡的其他檔案。
+            <strong>權限範圍：</strong>僅要求
+            <code>https://www.googleapis.com/auth/drive.file</code>
+            權限，本服務僅能存取由 CanWas 建立之檔案，無法讀取、修改或存取您 Google Drive 中的其他資料。
           </li>
           <li>
-            <strong>會上傳的東西：</strong>你的白板紀錄、重新編碼成 WebP
-            的圖片，
-            還有這些圖片辨識出來的文字。它們存在你自己的雲端硬碟裡、一個你看得到的資料夾中。
+            <strong>上傳內容：</strong>包含白板紀錄、重新編碼為 WebP 格式之圖片及文字辨識結果，檔案均儲存於您個人 Google Drive 的專屬資料夾中。
           </li>
           <li>
-            <strong>存取權杖永遠不會寫進磁碟</strong>，只留在分頁的記憶體裡，
-            大約一小時後過期。
+            <strong>安全機制：</strong>存取權杖（Access Token）僅保留於瀏覽器頁面分頁記憶體中，絕不寫入磁碟，並於約一小時後自動失效。
           </li>
-          <li>跟別人共用白板不是 CanWas 的功能。</li>
+          <li>本服務目前未提供跨帳號共用白板之功能。</li>
         </ul>
-        <h3>GitHub Pages：網站代管</h3>
+        <h3>GitHub Pages</h3>
         <p>
-          這個網站由 GitHub Pages 代管，每次載入頁面 GitHub
-          都會收到請求並可能記錄下來。
-          作者除了彙總的流量數字之外，拿不到這些記錄。
+          本網站由 GitHub Pages 提供託管服務。載入頁面時，GitHub 將依其政策記錄網路請求。開發者僅能查看彙整後之匿名流量統計數據，無法存取個別日誌。
         </p>
 
-        <h2>Google API 服務使用者資料政策</h2>
+        <h2>三、Google API 服務使用者資料政策</h2>
         <p>
-          CanWas 使用與傳輸來自 Google API 的資訊時，遵守
+          CanWas 對於自 Google API 取得資訊之使用與傳輸，均恪守
           <a
             href="https://developers.google.com/terms/api-services-user-data-policy"
             >Google API Services User Data Policy</a
-          >，包括其中的 Limited Use 規範。透過 Google 雲端硬碟取得的資料，
-          只用來提供你自己開啟的同步功能，不會轉交給任何其他人，不會用於廣告，也不會由人工讀取。
+          >，並包含「有限使用」（Limited Use）規範。透過 Google Drive 取得之資料，僅用於提供您主動開啟之同步功能，絕不轉讓予第三方、不用於商業廣告，亦不會進行人工審閱。
         </p>
 
-        <h2>刪除你的資料</h2>
+        <h2>四、資料刪除與管理</h2>
         <ul>
           <li>
-            <strong>單一白板：</strong>在應用程式的白板選單裡刪除。刪除的白板
-            會先標記成已刪除，好讓這個動作同步到你的其他裝置，內容則在 30
-            天後清除。
-          </li>
-          <li><strong>模型權重：</strong>應用程式的「關於」面板有移除按鈕。</li>
-          <li>
-            <strong>此裝置上的全部資料：</strong
-            >到瀏覽器設定裡清除本網站的資料。 此動作無法復原。
+            <strong>單一白板：</strong>可於應用程式白板選單中執行刪除。系統將先標記為已刪除以利多裝置同步，相關內容將於 30 天後永久清除。
           </li>
           <li>
-            <strong>雲端硬碟授權：</strong>到
+            <strong>模型權重：</strong>可透過應用程式內「關於」面板之專用按鈕進行移除。
+          </li>
+          <li>
+            <strong>本地端全部資料：</strong>可透過瀏覽器設定直接清除本網站之儲存資料（此操作無法復原）。
+          </li>
+          <li>
+            <strong>Google 帳號授權：</strong>可至
             <a href="https://myaccount.google.com/permissions"
               >myaccount.google.com/permissions</a
             >
-            撤銷。撤銷只會擋掉之後的同步，不會刪掉已經寫入的檔案，那些要你自己去雲端硬碟刪。
+            撤銷授權。撤銷授權將終止後續同步功能，但不會自動刪除已存在於您 Google Drive 中的歷史檔案，如需清除須手動至雲端硬碟刪除。
           </li>
         </ul>
 
-        <h2>兒童</h2>
+        <h2>五、兒童隱私保護</h2>
         <p>
-          CanWas
-          不是為兒童設計的，也不會蒐集任何人、任何年齡的個人資訊，因為它本來就不蒐集任何個人資訊。
+          本服務非針對兒童設計，且因系統架構不蒐集任何個人資料，故亦不蒐集任何年齡層使用者之個人資訊。
         </p>
 
-        <h2>政策異動</h2>
+        <h2>六、政策變更說明</h2>
         <p>
-          這份政策如果有變動，上方的日期會跟著更新，改了什麼也都能在
+          本隱私權政策修訂時，將同步更新頁首之「最後更新日期」。詳細修改歷程可參閱
           <a
             href="https://github.com/hikariNTU/canwas/commits/master/privacy.html"
-            >檔案的變更紀錄</a
-          >裡看到。
+            >專案檔案之變更紀錄</a
+          >。
         </p>
 
-        <h2>聯絡方式</h2>
+        <h2>七、聯絡方式</h2>
         <p>
-          對這份政策有問題，請到
-          <a href="https://github.com/hikariNTU/canwas/issues">GitHub Issues</a
-          >，這是這個專案唯一的支援管道。issue
-          是公開的，請不要在裡面貼私人資訊。
+          若對本隱私權政策有任何疑問，請透過
+          <a href="https://github.com/hikariNTU/canwas/issues">GitHub Issues</a>
+          提交。此管道為本專案唯一官方支援管道；Issue 內容為公開資訊，請勿提供任何個人敏感資料。
         </p>
       </section>
 
