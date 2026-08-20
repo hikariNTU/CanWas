@@ -44,7 +44,7 @@ export function TouchBar({
       // Fully rounded, unlike the square-cornered islands: this is a switch
       // with tools attached rather than a group of equal buttons, and the pill
       // says so before the icons do.
-      className="glass pointer-events-auto flex items-center gap-1 rounded-full p-1"
+      className="pointer-events-auto flex items-center gap-1 rounded-full glass p-1"
     >
       {options.map((option) => (
         <button

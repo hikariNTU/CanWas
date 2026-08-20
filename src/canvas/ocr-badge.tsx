@@ -100,7 +100,7 @@ export function OcrBadge({
       // Kept as a title as well: the label is hidden at rest, and the pointer
       // is already there.
       title={`${t(label)}${percent}`}
-      className="glass-strong pointer-events-none absolute bottom-0 left-0 flex origin-bottom-left items-center gap-1.5 rounded-md px-2 py-1"
+      className="pointer-events-none absolute bottom-0 left-0 flex origin-bottom-left items-center gap-1.5 rounded-md glass-strong px-2 py-1"
       // Scale first, then step in: the translation is applied in the badge's
       // own space, so the 8px survives the counter-scale as 8 screen px.
       style={{ transform: `scale(${1 / scale}) translate(8px, -8px)` }}

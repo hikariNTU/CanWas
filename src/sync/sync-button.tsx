@@ -192,7 +192,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
           data-sync-state={status.state}
           data-sync-failed={failure ? "" : undefined}
           aria-label={failure ?? t(label)}
-          className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11 ${tone}`}
+          className={`pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-full glass transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11 ${tone}`}
         >
           <Icon name={icon} size={18} />
           {failure && (
@@ -211,7 +211,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
         <Popover.Positioner sideOffset={6} align="end">
           <Popover.Popup
             data-testid="sync-panel"
-            className="glass-strong w-72 rounded-lg p-3 text-sm focus:outline-none"
+            className="w-72 rounded-lg glass-strong p-3 text-sm focus:outline-none"
           >
             {/* State sits on the title line rather than under the panel.
                   It answers the question the panel is opened to ask, and at
@@ -472,18 +472,30 @@ export function ReconnectPill() {
         aria-label={reconnectLabel}
         disabled={state.status === "connecting"}
         onClick={() => void signIn()}
-        className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-full pr-3 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11 pointer-coarse:gap-2 pointer-coarse:pr-4 pointer-coarse:pl-2 pointer-coarse:text-sm"
+        className="pointer-events-auto flex h-9 items-center gap-1.5 rounded-full glass pr-2.5 pl-1.5 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11 pointer-coarse:gap-2 pointer-coarse:pr-3 pointer-coarse:pl-2"
       >
         {/* Grows with the pill. At 44px tall a 22px avatar sits in the
-                middle of a lot of glass, with the left padding reading as
-                half the right. */}
+            middle of a lot of glass, with the left padding reading as half
+            the right. */}
         <Avatar
           account={remembered}
           className="size-[22px] pointer-coarse:size-7"
         />
-        {t(
-          state.status === "connecting" ? "sync.connecting" : "sync.reconnect",
-        )}
+        {/* A face and a warning rather than the word "Reconnect". The word is
+            the widest thing in this corner and it says the least: the face
+            answers "as whom", which is the only question on a machine with two
+            accounts, and the triangle says this needs attention. The full
+            sentence is still on the button — as its `aria-label`, and in the
+            tooltip — so nothing is lost to anyone who cannot see the glyphs. */}
+        <Icon
+          name={state.status === "connecting" ? "sync" : "warning"}
+          size={16}
+          className={clsx(
+            state.status === "connecting"
+              ? "animate-spin text-neutral-400"
+              : "text-amber-400",
+          )}
+        />
       </button>
     </Tip>
   );

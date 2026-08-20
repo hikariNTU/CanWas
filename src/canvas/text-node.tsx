@@ -85,7 +85,7 @@ export function TextNodeView({
         // A surface means something: text is bare on the board and gains a
         // field only while it is being edited, the same way the board title
         // does.
-        className={`${SHARED_TEXT_STYLE} glass rounded-lg text-neutral-100 outline-none`}
+        className={`${SHARED_TEXT_STYLE} rounded-lg glass text-neutral-100 outline-none`}
       />
     );
   }

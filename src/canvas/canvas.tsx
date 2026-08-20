@@ -512,6 +512,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             <Island>
               <IconButton
                 label={t("canvas.zoomOut")}
+                testId="zoom-out"
                 onClick={() => zoomFromCenter(1 / 1.2)}
               >
                 <Icon name="remove" />
@@ -527,6 +528,7 @@ export function Canvas({ boardId }: { boardId: string }) {
               </button>
               <IconButton
                 label={t("canvas.zoomIn")}
+                testId="zoom-in"
                 onClick={() => zoomFromCenter(1.2)}
               >
                 <Icon name="add" />
@@ -613,7 +615,7 @@ export function Canvas({ boardId }: { boardId: string }) {
 /** A floating chrome group. Excalidraw calls these islands; so do we. */
 export function Island({ children }: { children: React.ReactNode }) {
   return (
-    <div className="glass pointer-events-auto flex items-center gap-0.5 rounded-full p-1">
+    <div className="pointer-events-auto flex items-center gap-0.5 rounded-full glass p-1">
       {children}
     </div>
   );

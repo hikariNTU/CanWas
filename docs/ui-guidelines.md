@@ -45,6 +45,17 @@ assembly of background, border and shadow:
 | `.glass`        | Controls and small chrome                               |
 | `.glass-strong` | Panels, menus, dialogs — anything with paragraphs in it |
 
+Both are `@utility` declarations in `index.css`, not plain classes. Unlayered
+CSS beats every layered rule no matter the specificity, so while `.glass` was
+a plain class it outranked `hover:bg-white/10` on the same element — several
+controls carried a hover tint that could never paint, and it read as the
+utility being wrong rather than the layer. As utilities they sit where their
+overrides sit, and they can take variants themselves.
+
+Each carries its tint as a literal percentage. A `color-mix()` whose
+percentage comes from a `var()` cannot be resolved at build time, so Lightning
+CSS emits a nonsense static fallback for browsers without `color-mix` support.
+
 Both are the same treatment — translucent neutral-900, a 20px blur with the
 saturation boost that makes a blurred backdrop read as glass rather than fog,
 and a bright hairline along the top edge for a specular highlight. They differ
@@ -76,6 +87,15 @@ Divisions are white at a low alpha and tint with whatever is behind them.
 | Rule between sections | `border-white/10` |
 | Track behind a bar    | `bg-white/10`     |
 | Control hover         | `bg-white/10`     |
+
+**Every control that can be pressed takes `bg-white/10` on hover, without
+exception** — including the icons in the corners, the board's name, and the
+reconnect pill. A control that only changes its text colour reads as text.
+
+The cursor is not set per control: `src/index.css` gives every enabled
+`button`, `summary` and menu item `cursor: pointer` in one rule, because
+Tailwind's reset makes buttons `cursor: default` and this chrome floats over a
+canvas that has cursors of its own. A disabled control keeps the arrow.
 
 Panel buttons carry no border at all — `PanelButton` in `ui/panel.tsx`. That
 costs the resting state its outline, so the icon is not optional: a bare line

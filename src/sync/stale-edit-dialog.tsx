@@ -55,7 +55,7 @@ export function StaleEditDialog() {
         <AlertDialog.Backdrop className="fixed inset-0 bg-neutral-950/70 backdrop-blur-sm" />
         <AlertDialog.Popup
           data-testid="stale-edit-dialog"
-          className="glass-strong fixed top-1/2 left-1/2 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg p-5"
+          className="fixed top-1/2 left-1/2 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg glass-strong p-5"
         >
           <AlertDialog.Title className="text-sm font-semibold text-neutral-100">
             {t("guard.title")}

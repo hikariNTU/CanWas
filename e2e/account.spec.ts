@@ -40,7 +40,7 @@ test("a browser that has never connected is not offered a reconnect", async ({
   );
 });
 
-test("a remembered account puts a reconnect beside the icon", async ({
+test("a remembered account puts a reconnect under the icons", async ({
   page,
 }) => {
   await remember(page, {
@@ -49,11 +49,18 @@ test("a remembered account puts a reconnect beside the icon", async ({
     photo: "https://example.invalid/never-loads.png",
   });
 
-  // Beside the icon, not behind it: reconnecting is not a decision, and after
-  // a reload it is the most likely thing to happen next.
+  // On the board, not behind the panel: reconnecting is not a decision, and
+  // after a reload it is the most likely thing to happen next.
   const pill = page.getByTestId("sync-reconnect");
   await expect(pill).toBeVisible();
-  await expect(pill).toContainText("Reconnect");
+  // A face and a warning triangle rather than the word. The word is the widest
+  // thing in that corner and says the least, so the sentence lives on the
+  // button as its accessible name, where a screen reader still reaches it.
+  await expect(pill).toHaveAttribute(
+    "aria-label",
+    "Reconnect as Some One someone@example.com",
+  );
+  await expect(pill.locator(".material-symbol")).toHaveText("warning");
 
   // The photo cannot load. A broken image where a face should be reads as a
   // broken connection, so the fallback is the initial.

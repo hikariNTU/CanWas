@@ -35,7 +35,7 @@ export function Tip({
               says. Announcing both would read it twice. */}
           <Tooltip.Popup
             data-testid="tooltip"
-            className="glass-strong pointer-events-none max-w-64 rounded-md px-2 py-1 text-xs text-neutral-200"
+            className="pointer-events-none max-w-64 rounded-md glass-strong px-2 py-1 text-xs text-neutral-200"
           >
             {label}
           </Tooltip.Popup>

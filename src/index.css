@@ -28,6 +28,24 @@ body {
     sans-serif;
 }
 
+/* Tailwind's reset gives buttons `cursor: default`, which is correct for a
+   native control and wrong for this app: every button here is chrome floating
+   over a canvas that has cursors of its own — grab, grabbing, move, text — so
+   a control that does not change the cursor reads as part of the board. Set
+   once, rather than as a utility on forty class lists that would each have to
+   remember it.
+
+   `:not(:disabled)` because a disabled control is exactly the case where the
+   default arrow is the honest answer. Base UI renders its menu and dialog
+   items as divs, which is what the role selectors are for. */
+button:not(:disabled),
+label[for],
+summary,
+[role="menuitem"]:not([data-disabled]),
+[role="menuitemradio"]:not([data-disabled]) {
+  cursor: pointer;
+}
+
 /* Material Symbols renders a glyph from the element's text via a ligature, so
    the text must survive untouched: no capitalisation, no letter-spacing, and
    `translate="no"` on the element itself. */
@@ -107,12 +125,18 @@ body {
    background, border and shadow — there were four different opacities in the
    app before this existed, and nobody chose them.
 
-   A CSS class rather than Tailwind utilities because it is one decision, not
-   six, and because a `backdrop-filter` with two functions has no utility.
-   Radius stays in the markup: it is the one part that genuinely differs
-   between a panel and a control. */
-.glass,
-.glass-strong {
+   One declaration rather than six utilities per site, because it is one
+   decision — and because a `backdrop-filter` with two functions and a two-part
+   `color-mix` shadow have no utilities to be. Radius stays in the markup: it is
+   the one part that genuinely differs between a panel and a control.
+
+   `@utility`, not a plain class. A plain class is unlayered, and unlayered CSS
+   outranks every layered rule whatever its specificity — which made
+   `hover:bg-white/10` on a `.glass` button dead text for as long as it was
+   written that way, on several controls at once. As a utility it sits in the
+   same layer as the things that override it, so an ordinary variant wins on
+   specificity, and it can take variants itself. */
+@utility glass {
   border: 1px solid
     color-mix(in srgb, var(--color-neutral-100) 10%, transparent);
   /* No hand-written `-webkit-` twin. Lightning CSS (which Tailwind v4 runs)
@@ -126,10 +150,6 @@ body {
     inset 0 1px 0 0
       color-mix(in srgb, var(--color-neutral-100) 10%, transparent),
     0 8px 24px -10px rgb(0 0 0 / 0.7);
-}
-
-/* Controls and small status chrome: thin enough to read as glass. */
-.glass {
   background-color: color-mix(
     in srgb,
     var(--color-neutral-900) 55%,
@@ -137,10 +157,17 @@ body {
   );
 }
 
-/* Panels, menus and dialogs. Same glass, more tint — these hold paragraphs,
-   and a paragraph over a screenshot needs the contrast more than it needs the
-   effect. */
-.glass-strong {
+/* Panels, menus and dialogs. Same glass, more tint — these hold paragraphs, and
+   a paragraph over a screenshot needs the contrast more than it needs the
+   effect. Its own utility rather than a modifier, so a panel stays one word in
+   the markup. */
+@utility glass-strong {
+  @apply glass;
+  /* Written out rather than driven by a custom property. A `color-mix` whose
+     percentage is a `var()` cannot be resolved at build time, so Lightning CSS
+     emits a nonsense static fallback for browsers without `color-mix` — and
+     both utilities would have shared the one it computed from the other's
+     tint. */
   background-color: color-mix(
     in srgb,
     var(--color-neutral-900) 82%,

@@ -29,7 +29,7 @@ export function UpdatePrompt() {
   return (
     <div
       data-testid="update-prompt"
-      className="glass-strong fixed inset-x-0 top-3 z-50 mx-auto flex w-fit items-center gap-2 rounded-full py-1 pr-1 pl-4"
+      className="fixed inset-x-0 top-3 z-50 mx-auto flex w-fit items-center gap-2 rounded-full glass-strong py-1 pr-1 pl-4"
     >
       <span className="text-xs text-neutral-200">{t("pwa.updateReady")}</span>
       <button
