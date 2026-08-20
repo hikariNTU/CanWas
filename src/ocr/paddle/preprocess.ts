@@ -6,7 +6,15 @@
  * maps to [-1, 1] and pins the height at 48.
  */
 
-/** Detection's long edge, from `DetResizeForTest: resize_long: 960`. */
+/**
+ * Detection's long edge, from PaddleOCR's own default.
+ *
+ * 1920 was tried, on the theory that a 3257x3382 photo of a dense A4 form is
+ * scaled by 0.28 here and its body text arrives at the detector too small to
+ * find. Measured on exactly that image, it changed nothing: same 68 boxes,
+ * marginally *fewer* characters, and 20% more time. v6's detector copes with
+ * the downscale, so the number stays where the model's authors put it.
+ */
 const DETECTION_LONG_EDGE = 960;
 /** The det graph downsamples by 32, so both sides must be a multiple of it. */
 const STRIDE = 32;

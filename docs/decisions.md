@@ -1523,3 +1523,46 @@ happens only once the array is no longer that one.
 
 Reverses if: two tabs need to edit the same board simultaneously without a
 winner, which needs the merge, not a channel.
+
+## D63 — PP-OCRv6 small, and the resolution theory that was wrong
+
+**2026-08-20 · settled**
+
+Recognition moves from PP-OCRv5 mobile to **PP-OCRv6 small**: 9.9 MB detection
+plus 21.2 MB recognition, against 21 MB for the pair it replaces.
+
+Measured on a photograph of a dense Traditional Chinese form, 3257x3382, ten
+structural headings probed:
+
+|                 | boxes | characters | headings found |
+| --------------- | ----- | ---------- | -------------- |
+| PP-OCRv5 mobile | 58    | 398        | 7 of 10        |
+| PP-OCRv6 small  | 68    | 880        | 10 of 10       |
+
+Twice the text off the same pixels. The three headings v5 lost were body-weight
+text in paragraphs, which is most of what a document is.
+
+`medium` is the better model and is not an option: 62 MB of detection and 77 MB
+of recognition is not a thing to make someone download to read a screenshot.
+`tiny` is 6 MB all in — smaller than what we had — and is the fallback if 31 MB
+proves too much.
+
+The swap is close to drop-in because the architecture did not change: DB
+detection, CTC recognition, ImageNet normalization, recognition height 48. Two
+things did. The DB thresholds are the model's own and are looser in v6 (0.2 /
+0.45 / 1.4 against 0.3 / 0.6 / 1.5), and the character dictionary grew from
+18,383 entries to 18,708. The charset script's class-count guard caught that
+immediately, which is what it was written for — a dictionary decoded against the
+wrong number of classes does not throw, it returns confident nonsense. The new
+count was verified against the graph's own final bias shape rather than taken
+from the dictionary it was supposed to be checking.
+
+**The theory that was wrong.** Detection resizes to a 960px long edge, so a
+3257px photo is scaled by 0.28 and body text reaches the detector around 8px
+tall. That looked like the obvious cause, and raising the edge to 1920 was the
+obvious fix. Measured on the same image, it changed nothing: identical 68 boxes,
+marginally fewer characters, 20% more time. Reverted. The number stays where
+PaddleOCR put it, and the comment there now says it was tried.
+
+Reverses if: 31 MB proves too heavy on a phone, in which case `tiny` is the
+next thing to measure rather than a return to v5.

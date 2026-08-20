@@ -8,15 +8,15 @@
  */
 
 /** Probability above which a pixel is text. */
-const BINARY_THRESHOLD = 0.3;
+const BINARY_THRESHOLD = 0.2;
 /** Mean probability a box must reach to be kept. */
-const BOX_SCORE_THRESHOLD = 0.6;
+const BOX_SCORE_THRESHOLD = 0.45;
 /**
  * How far the thresholded region is grown before it is cropped and read.
  * PaddleOCR's own value: deliberately generous, because a crop that clips
  * ascenders costs accuracy and a crop with slack costs nothing.
  */
-const CROP_UNCLIP_RATIO = 1.5;
+const CROP_UNCLIP_RATIO = 1.4;
 /**
  * How far it is grown to get back the box the glyphs actually occupy.
  *

@@ -5,9 +5,13 @@ import { getModel, putModel } from "@/storage/db";
  *
  * The official PaddlePaddle repositories publish these graphs as ONNX under
  * Apache-2.0, served with `access-control-allow-origin: *`, so the app can
- * fetch them directly rather than shipping 21 MB of binaries in git. Third
- * party ONNX mirrors of PP-OCRv5 exist and are more convenient; they are also
- * unverifiable, and these are the same files without that question.
+ * fetch them directly rather than shipping 31 MB of binaries in git. Third
+ * party ONNX mirrors exist and are more convenient; they are also unverifiable,
+ * and these are the same files without that question.
+ *
+ * The ids are versioned, so a device that already holds the old weights does
+ * not read the wrong graph out of its cache — it downloads the new pair and the
+ * old one is swept.
  */
 
 const HUGGING_FACE = "https://huggingface.co";
@@ -19,16 +23,28 @@ export interface ModelSource {
   approximateBytes: number;
 }
 
+/**
+ * PP-OCRv6, at the *small* size.
+ *
+ * The family comes in three, and the middle of them is the interesting one on
+ * paper and unusable here: `medium` is 62 MB of detection and 77 MB of
+ * recognition, and 138 MB is not a thing to make someone download to read a
+ * screenshot. `tiny` is 6 MB all in — smaller than the v5 pair this replaces —
+ * and is the fallback if 31 MB turns out to be too much.
+ *
+ * `small` costs 10 MB more than PP-OCRv5 mobile did and is a much larger model
+ * than that name suggests.
+ */
 export const DETECTION_MODEL: ModelSource = {
-  id: "ppocrv5-mobile-det",
-  url: `${HUGGING_FACE}/PaddlePaddle/PP-OCRv5_mobile_det_onnx/resolve/main/inference.onnx`,
-  approximateBytes: 4_826_518,
+  id: "ppocrv6-small-det",
+  url: `${HUGGING_FACE}/PaddlePaddle/PP-OCRv6_small_det_onnx/resolve/main/inference.onnx`,
+  approximateBytes: 9_880_512,
 };
 
 export const RECOGNITION_MODEL: ModelSource = {
-  id: "ppocrv5-mobile-rec",
-  url: `${HUGGING_FACE}/PaddlePaddle/PP-OCRv5_mobile_rec_onnx/resolve/main/inference.onnx`,
-  approximateBytes: 16_534_782,
+  id: "ppocrv6-small-rec",
+  url: `${HUGGING_FACE}/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.onnx`,
+  approximateBytes: 21_159_378,
 };
 
 export const MODEL_BYTES =

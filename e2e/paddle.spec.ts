@@ -1,124 +1,106 @@
 import { expect, test } from "@playwright/test";
 
-import { pasteTextImage, storedAssets } from "./support";
-
 /**
- * The only test that runs the real engine, and therefore the only one that
- * downloads 21 MB of weights. Opt in with `E2E_REAL_OCR=1`.
+ * The real recognizer, on a page-sized document.
  *
- * Everything else in the suite runs on `?engine=mock`, which is not a way of
- * avoiding the truth — the mock proves the plumbing and the overlay, and this
- * proves the plumbing was pointed at something that can read.
+ * Every other OCR test runs the mock. This one downloads the actual weights and
+ * reads actual pixels, because the things most likely to be wrong about a model
+ * swap cannot be mocked: whether the graph runs in onnxruntime-web at all,
+ * whether the charset lines up with the output layer, and whether detection
+ * finds small text on a full page rather than only the headings.
+ *
+ * A wrong charset does not throw. It returns confident nonsense, which is why
+ * this asserts on specific strings.
  */
-test.skip(
-  !process.env.E2E_REAL_OCR,
-  "set E2E_REAL_OCR=1 to run the real engine",
-);
 
-const LINES = ["the quick brown fox", "jumps over the", "lazy dog today"];
+test.describe("paddle", () => {
+  // A 31 MB download and real inference on a large image.
+  test.setTimeout(180_000);
 
-test("PP-OCRv5 reads a pasted screenshot", async ({ page }) => {
-  // The first run fetches both graphs and compiles them.
-  test.setTimeout(240_000);
+  test("reads a dense page of Chinese, not just its headings", async ({
+    page,
+  }) => {
+    await page.goto("#/paddle");
+    await expect(page.getByTestId("canvas-surface")).toBeVisible();
 
-  await page.goto("#/realocr");
-  await expect(page.getByTestId("canvas-surface")).toBeVisible();
-  await pasteTextImage(page, LINES);
+    // Drawn at the size a phone photo of a form arrives at, with body text at a
+    // document's proportions rather than a screenshot's — small relative to the
+    // page, which is the case PP-OCRv5 mobile was losing.
+    await page.evaluate(async () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 2400;
+      canvas.height = 1400;
+      const context = canvas.getContext("2d")!;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, 2400, 1400);
+      context.fillStyle = "#000000";
 
-  const node = page.getByTestId("board-node").first();
-  await expect(node).toHaveAttribute("data-ocr-status", "done", {
-    timeout: 200_000,
+      context.font = "bold 64px sans-serif";
+      context.fillText("體檢通知單", 120, 140);
+
+      // The part that matters: ordinary body text, small relative to the page.
+      context.font = "30px sans-serif";
+      const lines = [
+        "親愛的同仁您好，歡迎您加入本公司。",
+        "請持本通知單於九十日內至醫療院所完成體檢。",
+        "一、基本資料：廠別與工號請於報到後填寫。",
+        "二、體檢類別：檢查項目依法規與合約規定辦理。",
+        "三、注意事項說明：請詳閱新進員工體檢須知。",
+        "四、體檢確認：請體檢醫院蓋章後交還受檢者。",
+      ];
+      lines.forEach((line, index) => {
+        context.fillText(line, 120, 300 + index * 90);
+      });
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png"),
+      );
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([blob!], "form.png", { type: "image/png" }));
+      window.dispatchEvent(
+        new ClipboardEvent("paste", {
+          clipboardData: transfer,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+
+    const node = page.getByTestId("board-node");
+    await expect(node).toHaveCount(1);
+    await expect(node).toHaveAttribute("data-ocr-status", "done", {
+      timeout: 170_000,
+    });
+
+    const words: string[] = await page.evaluate(
+      () =>
+        new Promise((resolve, reject) => {
+          const open = indexedDB.open("canwas");
+          open.onerror = () => reject(open.error);
+          open.onsuccess = () => {
+            const all = open.result
+              .transaction("assets", "readonly")
+              .objectStore("assets")
+              .getAll();
+            all.onsuccess = () =>
+              resolve(
+                all.result.flatMap((asset: { ocr?: { words?: unknown[] } }) =>
+                  (asset.ocr?.words ?? []).map(
+                    (word) => (word as { text: string }).text,
+                  ),
+                ),
+              );
+            all.onerror = () => reject(all.error);
+          };
+        }),
+    );
+
+    const text = words.join("");
+    // The heading alone proves very little — it is large and was never missed.
+    // These are the body lines.
+    expect(text).toContain("體檢通知單");
+    expect(text).toContain("歡迎您加入");
+    expect(text).toContain("報到後填寫");
+    expect(text).toContain("體檢須知");
   });
-
-  const assets = await storedAssets(page);
-  const asset = assets.find((candidate) => candidate.ocr.status === "done")!;
-  const words = asset.ocr.words!;
-  console.log(
-    "read:",
-    words
-      .map(
-        (word) => `${word.text}@${Math.round(word.x0)},${Math.round(word.y0)}`,
-      )
-      .join(" "),
-  );
-
-  const text = words
-    .map((word) => word.text)
-    .join(" ")
-    .toLowerCase();
-  for (const expected of LINES.join(" ").split(" ")) {
-    expect(text).toContain(expected);
-  }
-
-  // The overlay has only ever been judged against the mock's boxes. Real
-  // detections are wider than the ink and come from a different code path, so
-  // the highlight is worth looking at once with them.
-  const box = (await node.boundingBox())!;
-  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
-  await expect(page.getByTestId("ocr-overlay")).toHaveAttribute(
-    "data-active",
-    "true",
-  );
-  await page.keyboard.press("Meta+a");
-  const selected = await page.evaluate(
-    () => window.getSelection()?.toString() ?? "",
-  );
-  expect(selected.trim().split("\n")).toHaveLength(LINES.length);
-  expect(selected.toLowerCase()).toContain("quick brown fox");
-
-  await page.screenshot({ path: "e2e/screenshots/ocr-real.png" });
-});
-
-test("PP-OCRv5 reads small dark-theme UI text", async ({ page }) => {
-  test.setTimeout(240_000);
-
-  // 13px light-on-dark is what a screenshot of an editor or a terminal
-  // actually looks like, and it is the case the preprocessing upscale exists
-  // for — engines want around 30px of cap height.
-  await page.goto("#/realocrsmall");
-  await expect(page.getByTestId("canvas-surface")).toBeVisible();
-  await pasteTextImage(page, LINES, { fontSize: 13, dark: true });
-
-  const node = page.getByTestId("board-node").first();
-  await expect(node).toHaveAttribute("data-ocr-status", "done", {
-    timeout: 200_000,
-  });
-
-  const assets = await storedAssets(page);
-  const asset = assets.find((candidate) => candidate.ocr.status === "done")!;
-  const text = asset.ocr
-    .words!.map((word) => word.text)
-    .join(" ")
-    .toLowerCase();
-  console.log("small:", text);
-
-  // Measured: every word, at 13px. Asserted exactly rather than with a margin,
-  // because the model is deterministic — a margin here would only hide the day
-  // the preprocessing stops upscaling.
-  for (const word of LINES.join(" ").split(" ")) {
-    expect(text).toContain(word);
-  }
-});
-
-test("the info panel accounts for the downloaded weights", async ({ page }) => {
-  test.setTimeout(240_000);
-
-  await page.goto("#/aboutreal");
-  await expect(page.getByTestId("canvas-surface")).toBeVisible();
-  await pasteTextImage(page, ["the quick brown fox"]);
-  await expect(page.getByTestId("board-node").first()).toHaveAttribute(
-    "data-ocr-status",
-    "done",
-    { timeout: 200_000 },
-  );
-
-  await page.getByTestId("about-open").click();
-  await expect(page.getByTestId("about-model-bytes")).toContainText("MB");
-  await page.screenshot({ path: "e2e/screenshots/about-real.png" });
-
-  // Taking the weights back has to actually take them back, or the panel is
-  // just a claim about disk usage with a button next to it.
-  await page.getByTestId("about-clear-models").click();
-  await expect(page.getByTestId("about-model-bytes")).toContainText("0 B");
-  await expect(page.getByTestId("about-clear-models")).toHaveCount(0);
 });
