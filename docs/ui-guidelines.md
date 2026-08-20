@@ -104,8 +104,7 @@ the info panel. It is the only chrome that answers "is my work anywhere but
 here", and a state you have to open a panel to read is a state nobody reads.
 
 It is never hidden. The resting state says _not syncing_ rather than showing
-nothing, because nothing is indistinguishable from working. Only a failure gets
-colour.
+nothing, because nothing is indistinguishable from working.
 
 Synced is the one status worth colour: **emerald**, and the only green in the
 app. It answers the question people ask without meaning to — is my work anywhere
