@@ -44,7 +44,7 @@ export function TouchBar({
       // Fully rounded, unlike the square-cornered islands: this is a switch
       // with tools attached rather than a group of equal buttons, and the pill
       // says so before the icons do.
-      className="glass pointer-events-auto flex items-center gap-0.5 rounded-full p-1"
+      className="glass pointer-events-auto flex items-center gap-1 rounded-full p-1"
     >
       {options.map((option) => (
         <button
@@ -74,7 +74,12 @@ export function TouchBar({
         </button>
       ))}
 
-      <span aria-hidden className="mx-1 h-6 w-px bg-white/10" />
+      {/* No margin of its own: the row's `gap-1` spaces it, so the distance
+          from the marquee to the rule is the same as from the rule to the add
+          button, and the same as between the two modes. A divider with its own
+          margins made the add button sit visibly further out than the
+          segments were from each other. */}
+      <span aria-hidden className="h-6 w-px bg-white/10" />
 
       {addImage}
 

@@ -1,4 +1,5 @@
 import { Popover } from "@base-ui/react/popover";
+import clsx from "clsx";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
 
@@ -107,12 +108,16 @@ function bytes(value: number): string {
 function Avatar({
   account,
   size,
+  className,
 }: {
   account: RememberedAccount;
-  size: number;
+  /** Fixed pixels. Omit and pass `className` when the size has to follow a
+   * media query — an inline style would win over the utility and freeze it. */
+  size?: number;
+  className?: string;
 }) {
   const [broken, setBroken] = useState(false);
-  const box = { width: size, height: size };
+  const box = size === undefined ? undefined : { width: size, height: size };
 
   if (account.photo && !broken) {
     return (
@@ -123,7 +128,7 @@ function Avatar({
         style={box}
         referrerPolicy="no-referrer"
         onError={() => setBroken(true)}
-        className="shrink-0 rounded-full object-cover"
+        className={clsx("shrink-0 rounded-full object-cover", className)}
       />
     );
   }
@@ -135,8 +140,16 @@ function Avatar({
     <span
       data-testid="sync-avatar"
       aria-hidden
-      style={{ ...box, fontSize: size * 0.45 }}
-      className="flex shrink-0 items-center justify-center rounded-full bg-neutral-700 font-bold text-neutral-300"
+      // With a fixed box the initial is scaled from it. With a class-sized box
+      // there is no number to scale from, so it takes a plain step the caller
+      // can override — this is the fallback for a missing photo, not the
+      // normal case.
+      style={size === undefined ? undefined : { ...box, fontSize: size * 0.45 }}
+      className={clsx(
+        "flex shrink-0 items-center justify-center rounded-full bg-neutral-700 font-bold text-neutral-300",
+        size === undefined && "text-[10px] pointer-coarse:text-xs",
+        className,
+      )}
     >
       {initial || "?"}
     </span>
@@ -202,9 +215,15 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
             aria-label={reconnectLabel}
             disabled={state.status === "connecting"}
             onClick={() => void signIn()}
-            className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-full pr-3 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11"
+            className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-full pr-3 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11 pointer-coarse:gap-2 pointer-coarse:pr-4 pointer-coarse:pl-2 pointer-coarse:text-sm"
           >
-            <Avatar account={remembered} size={22} />
+            {/* Grows with the pill. At 44px tall a 22px avatar sits in the
+                middle of a lot of glass, with the left padding reading as
+                half the right. */}
+            <Avatar
+              account={remembered}
+              className="size-[22px] pointer-coarse:size-7"
+            />
             {t(
               state.status === "connecting"
                 ? "sync.connecting"

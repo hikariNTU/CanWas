@@ -570,7 +570,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             reach the bottom-left corner, and a control sitting on top of
             another control is not a layout. */}
           {coarse && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
+            <div className="pointer-events-none absolute inset-x-0 bottom-20 flex justify-center">
               <TouchBar
                 mode={mode}
                 onChange={setMode}
