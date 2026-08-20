@@ -9,8 +9,9 @@ import {
   placeCentred,
   readIntrinsicSize,
 } from "@/board/ingest";
+import { decodeNodes, type CopiedBoard } from "@/board/clipboard";
 import { readDensity } from "@/board/density";
-import { useBoardHistory } from "@/board/history";
+import { useBoardHistory, useSelection } from "@/board/history";
 import { insertNodes } from "@/board/mutations";
 import { createTextNode, DEFAULT_TEXT_WIDTH } from "@/board/text";
 import { assetsAtom } from "@/board/store";
@@ -61,6 +62,7 @@ export function useIngest({
   const pointerRef = useRef<Point | null>(null);
   const [assets, setAssets] = useAtom(assetsAtom);
   const { commit } = useBoardHistory(boardId);
+  const { setSelection } = useSelection(boardId);
 
   const ingestFiles = useCallback(
     async (files: File[], screenPoint: Point | null) => {
@@ -207,12 +209,63 @@ export function useIngest({
     [commit, surfaceRef, viewport],
   );
 
+  /**
+   * Pastes nodes copied from a board — this one or another.
+   *
+   * The group lands centred on the pointer, keeping the relative layout it was
+   * copied with, and cascades off anything already sitting at that corner so a
+   * paste in place is visibly a second copy rather than nothing happening.
+   *
+   * No asset travels with it: the nodes name assets by id, so a paste on the
+   * same device shares the pixels it already has (D13), and one on a device
+   * that has never seen them renders as missing until sync brings them.
+   */
+  const pasteNodes = useCallback(
+    (copied: CopiedBoard, screenPoint: Point | null) => {
+      const surface = surfaceRef.current;
+      if (!surface) {
+        return;
+      }
+      const rect = surface.getBoundingClientRect();
+      const anchor = screenPoint ?? { x: rect.width / 2, y: rect.height / 2 };
+      const centre = screenToWorld(anchor, viewport);
+      const origin = cascadeFreeOrigin(
+        nodes.map((node) => ({ x: node.x, y: node.y })),
+        placeCentred(centre, copied),
+      );
+      const added: NewNode[] = copied.nodes.map((node) => ({
+        ...node,
+        id: createId(),
+        x: origin.x + node.x,
+        y: origin.y + node.y,
+      }));
+      commit((current) =>
+        insertNodes(current, added, `paste ${added.length} node(s)`),
+      );
+      // Selected on arrival, so the next thing done to them — a drag, a
+      // delete, a size step — needs no aiming click first.
+      setSelection(added.map((node) => node.id));
+    },
+    [commit, nodes, setSelection, surfaceRef, viewport],
+  );
+
   useEffect(() => {
     function handlePaste(event: ClipboardEvent) {
       const files = imageFilesFrom(event.clipboardData);
       if (files.length === 0) {
         // Images win when the clipboard carries both: a screenshot copied from
         // a browser also brings its alt text or source URL along.
+        // Nodes copied from a board come back before plain text does: the
+        // same clipboard carries both, and the text flavour is only the
+        // readable fallback for other apps.
+        const copied = decodeNodes(
+          event.clipboardData?.getData("text/html") ?? "",
+        );
+        if (copied) {
+          event.preventDefault();
+          pasteNodes(copied, pointerRef.current);
+          return;
+        }
         const text = event.clipboardData?.getData("text/plain") ?? "";
         if (text.trim() !== "") {
           event.preventDefault();
@@ -225,7 +278,7 @@ export function useIngest({
     }
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
-  }, [ingestFiles, ingestText]);
+  }, [ingestFiles, ingestText, pasteNodes]);
 
   useEffect(() => {
     const surface = surfaceRef.current;

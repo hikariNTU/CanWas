@@ -175,6 +175,19 @@ export function useViewportControls(
           return;
         }
       }
+      // The text of the node being read owns a one-finger drag: that drag is
+      // how the selection is extended, and on a phone it is the only way there
+      // is. Panning from here left the words sliding under the finger, so a
+      // selection could never grow past the first tap. A pinch is unaffected —
+      // it was claimed above, before this test — and every other press still
+      // pans, including one on the read node's own margins.
+      if (
+        (event.target as Element | null)?.closest?.(
+          "[data-testid=ocr-overlay][data-active]",
+        )
+      ) {
+        return;
+      }
       const isPanButton = event.button === 0 || event.button === 1;
       if (!isPanButton || panningPointerId !== null) {
         return;

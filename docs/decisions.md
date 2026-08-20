@@ -1965,3 +1965,58 @@ found idle.
 most of the value is to guard destructive changes only — deletes and renames —
 and let moves and pastes through, since a move that merges wrongly is visible
 and fixable in a way a delete is not.
+
+## D75 — Copy rides on the clipboard's HTML flavour
+
+Copying nodes writes two flavours through the `copy` event: `text/plain` with
+the readable text, and `text/html` holding a single empty `<div>` whose
+`data-canwas` attribute carries the payload as JSON. Paste reads the HTML
+flavour back, and falls through to the existing text and image paths when the
+attribute is not there.
+
+A custom MIME type would be the honest thing to name a private payload, and
+Safari drops unknown flavours crossing the OS clipboard — which turns copy into
+a feature that works until someone changes browser. `text/html` is a flavour
+every platform already carries, and the attribute survives the round trip
+because it is markup, not metadata.
+
+`text/plain` alongside it is what makes a copy useful outside the app: pasting a
+text node into a message is the text, not a wall of JSON. Images contribute
+nothing to it — their recognition belongs to the Asset, not the Node — so a
+selection of images writes the HTML flavour alone rather than an empty string
+that would blank whatever a text editor pastes.
+
+Both directions are synchronous, on the events. That is D21 again: an app
+reading `navigator.clipboard` cannot be driven by a synthetic event, and every
+clipboard path here has to be coverable in Playwright.
+
+**No asset travels.** A copied node names its Asset by id, so a paste on the
+same device shares the pixels (D13) and one on a device that has never seen them
+renders as missing, exactly as an unsynced image does. Copying the bytes would
+be a second copy of something content-addressed, which is the one thing the
+Asset table exists to prevent.
+
+Pasted nodes land centred on the pointer, keep the relative layout they were
+copied with, cascade off whatever already sits at that corner (D71's neighbour),
+and arrive selected — a paste is almost always followed by a drag.
+
+**Reverses if:** a browser starts sanitizing data attributes out of clipboard
+HTML. The fallback is a custom flavour with the HTML one kept as the
+compatibility path.
+
+## D76 — The text being read owns the finger
+
+While a node is in reading mode, a press that lands on its active overlay does
+not pan the viewport — for a mouse, and above all for a finger, where a drag
+across the words is the only way to extend a selection there is.
+
+Panning from there was not a small annoyance: the board moved under the finger,
+so the words being dragged through travelled with it and the selection could
+never grow past the point it started at. Reading a screenshot on a phone was
+effectively impossible.
+
+The test is on the press target, in `use-viewport-controls.ts`, and it sits
+_after_ the pinch has been claimed: two fingers still zoom while reading, since
+reading mode has no zoom of its own and a screenshot is read at whatever size
+turns out to be legible. Everything else still pans, including a press on the
+read node's own margins — outside the overlay is outside the text.

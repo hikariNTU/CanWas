@@ -1,6 +1,7 @@
 import { useStore } from "jotai";
 import { useEffect } from "react";
 
+import { encodeNodes } from "@/board/clipboard";
 import { useBoardHistory, useSelection } from "@/board/history";
 import { deleteNodes, reorderNodes, stepFontSize } from "@/board/mutations";
 import { boardNodesAtom } from "@/board/store";
@@ -18,6 +19,60 @@ export function useBoardShortcuts(boardId: string, enabled = true) {
   const store = useStore();
   const { commit, undo, redo } = useBoardHistory(boardId);
   const { selection, setSelection } = useSelection(boardId);
+
+  /**
+   * Copy puts the selected nodes on the system clipboard.
+   *
+   * Handled on the `copy` event rather than on Cmd+C, so the menu bar's Copy
+   * and a phone's edit menu reach the same code, and written synchronously
+   * into `event.clipboardData` rather than through `navigator.clipboard`, for
+   * the reason paste is read the same way (D21). What actually goes on the
+   * clipboard is `src/board/clipboard.ts`.
+   */
+  useEffect(() => {
+    function handleCopy(event: ClipboardEvent) {
+      // Reading mode: the clipboard belongs to the recognized text, which is
+      // the whole point of being in it.
+      if (!enabled) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.isContentEditable ||
+        /^(INPUT|TEXTAREA)$/.test(target?.tagName ?? "")
+      ) {
+        return;
+      }
+      // A live text selection anywhere outranks the node selection: the user
+      // is copying the words they can see highlighted.
+      const highlighted = window.getSelection();
+      if (highlighted && !highlighted.isCollapsed) {
+        return;
+      }
+      if (selection.length === 0 || !event.clipboardData) {
+        return;
+      }
+      // Board order, not click order, so a paste stacks the way the original
+      // did.
+      const nodes = store.get(boardNodesAtom)[boardId] ?? [];
+      const flavours = encodeNodes(
+        nodes.filter((node) => selection.includes(node.id)),
+      );
+      if (!flavours) {
+        return;
+      }
+      event.preventDefault();
+      event.clipboardData.setData("text/html", flavours.html);
+      // Images contribute no text — their recognition lives on the Asset — so
+      // a selection of images writes the HTML flavour alone rather than an
+      // empty string that would clear whatever a text editor pastes.
+      if (flavours.text !== "") {
+        event.clipboardData.setData("text/plain", flavours.text);
+      }
+    }
+    window.addEventListener("copy", handleCopy);
+    return () => window.removeEventListener("copy", handleCopy);
+  }, [boardId, enabled, selection, store]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {

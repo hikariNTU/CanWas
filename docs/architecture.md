@@ -321,6 +321,13 @@ dispatching a synthetic `ClipboardEvent` carrying a `DataTransfer` from inside
 `page.evaluate`. An app reading the async Clipboard API cannot be driven that way,
 which would make the required happy-path E2E impossible to write.
 
+Copy is the same rule in the other direction: it writes into the `copy` event's
+`clipboardData`, synchronously, never through `navigator.clipboard.write()`. The
+payload is nodes-without-assets in a `data-canwas` attribute on the clipboard's
+`text/html` flavour, with the readable text alongside as `text/plain`
+([D75](decisions.md)). `src/board/clipboard.ts` owns both ends of that format,
+and validates every field on the way back in — a clipboard is untrusted input.
+
 ## Worker boundary
 
 OCR runs in a dedicated Web Worker. `ImageBitmap` transfers to it zero-copy.

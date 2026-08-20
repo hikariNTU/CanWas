@@ -3,6 +3,8 @@ import { devices, expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { pasteTextImage } from "./support";
+
 /**
  * Everything that only exists on a phone.
  *
@@ -506,4 +508,42 @@ test("a pinch on an image zooms it without moving it", async ({ page }) => {
   expect(Math.abs(after.x - before.x)).toBeLessThan(2);
   expect(Math.abs(after.y - before.y)).toBeLessThan(2);
   expect(Math.abs(after.width - before.width)).toBeLessThan(2);
+});
+
+test("while reading, a finger on the words selects instead of panning", async ({
+  page,
+}) => {
+  await pasteTextImage(page, ["Titanium white", "Cadmium red"]);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveAttribute("data-ocr-status", "done");
+  const box = (await node.boundingBox())!;
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  const overlay = page.locator("[data-testid=ocr-overlay][data-active]");
+  await expect(overlay).toHaveCount(1);
+
+  // A drag along a line of text. On a phone this is the only way to extend a
+  // selection, and while the board panned under it the words moved with the
+  // finger — so the selection could never grow past where it started.
+  const word = (await overlay.locator("[data-word]").first().boundingBox())!;
+  const grid = await gridOffset(page);
+  await fingerDrag(
+    page,
+    { x: word.x + 2, y: word.y + word.height / 2 },
+    Math.round(word.width * 4),
+    0,
+  );
+  expect(await gridOffset(page)).toBe(grid);
+
+  // Two fingers are still a pinch, even here: reading mode has no zoom of its
+  // own, and a screenshot is read at whatever size it is legible at.
+  const before = (await node.boundingBox())!;
+  await pinch(
+    page,
+    { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+    80,
+    240,
+  );
+  const after = (await node.boundingBox())!;
+  expect(after.width).toBeGreaterThan(before.width * 1.4);
 });
