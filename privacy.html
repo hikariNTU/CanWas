@@ -28,11 +28,11 @@
 
       <p class="lede">
         CanWas operates without a server. No account registration, no backend
-        database, and no analytics integration are present. Board data is
-        stored locally in the user's own browser. If cloud synchronization is
-        enabled, data is additionally copied to the user's personal
-        Google&nbsp;Drive. The developer of CanWas has no means of accessing or
-        obtaining any user data.
+        database, and no analytics integration are present. Board data is stored
+        locally in the user's own browser. If cloud synchronization is enabled,
+        data is additionally copied to the user's personal Google&nbsp;Drive.
+        The developer of CanWas has no means of accessing or obtaining any user
+        data.
       </p>
 
       <h2>1. Local data storage</h2>
@@ -46,10 +46,10 @@
         <tr>
           <th>IndexedDB <code>canwas</code></th>
           <td>
-            Board contents, including pasted or dropped images, object
-            positions and dimensions, board names, and optical character
-            recognition (OCR) results. OCR model weights (approximately
-            31&nbsp;MB) are also stored here once downloaded.
+            Board contents, including pasted or dropped images, object positions
+            and dimensions, board names, and optical character recognition (OCR)
+            results. OCR model weights (approximately 31&nbsp;MB) are also
+            stored here once downloaded.
           </td>
         </tr>
         <tr>
@@ -61,8 +61,8 @@
           <td>
             Written only when Google&nbsp;Drive is connected. Contains the
             account name, email address, and profile picture URL, used to
-            identify the account for subsequent connections. This data is not
-            a credential and does not grant any system access.
+            identify the account for subsequent connections. This data is not a
+            credential and does not grant any system access.
           </td>
         </tr>
       </table>
@@ -112,13 +112,13 @@
         <li>
           <strong>Scope:</strong> only the
           <code>https://www.googleapis.com/auth/drive.file</code> scope is
-          requested. This service can access only files it has created;
-          CanWas cannot read, modify, or otherwise access any other file in the
-          user's Drive.
+          requested. This service can access only files it has created; CanWas
+          cannot read, modify, or otherwise access any other file in the user's
+          Drive.
         </li>
         <li>
-          <strong>Uploaded content:</strong> board records, images re-encoded
-          in WebP format, and their recognized text. Files are stored in a
+          <strong>Uploaded content:</strong> board records, images re-encoded in
+          WebP format, and their recognized text. Files are stored in a
           dedicated folder within the user's personal Google&nbsp;Drive.
         </li>
         <li>
@@ -184,9 +184,8 @@
 
       <h2>5. Children's privacy</h2>
       <p>
-        This service is not directed at children and, owing to its
-        architecture, does not collect personal information from users of any
-        age.
+        This service is not directed at children and, owing to its architecture,
+        does not collect personal information from users of any age.
       </p>
 
       <h2>6. Changes to this policy</h2>
@@ -203,8 +202,8 @@
       <p>
         Questions regarding this policy may be submitted via
         <a href="https://github.com/hikariNTU/canwas/issues">GitHub Issues</a>,
-        the project's sole official support channel. Issue content is public;
-        do not include any sensitive personal information.
+        the project's sole official support channel. Issue content is public; do
+        not include any sensitive personal information.
       </p>
 
       <section class="alt-lang" lang="zh-Hant">
@@ -212,18 +211,18 @@
         <p class="stamp">最後更新日期：2026 年 8 月 20 日</p>
 
         <p class="lede">
-          本服務（CanWas）採無伺服器架構，無須註冊帳號、無後端資料庫，亦未整合任何數據分析工具。您所建立之白板資料均儲存於個人本地瀏覽器中；若啟用雲端同步功能，系統將複製資料至您的個人 Google Drive。本服務開發者無法存取或取得您的任何資料。
+          本服務（CanWas）採無伺服器架構，無須註冊帳號、無後端資料庫，亦未整合任何數據分析工具。您所建立之白板資料均儲存於個人本地瀏覽器中；若啟用雲端同步功能，系統將複製資料至您的個人
+          Google Drive。本服務開發者無法存取或取得您的任何資料。
         </p>
 
         <h2>一、本地資料儲存說明</h2>
-        <p>
-          下列資料均儲存於您所使用的裝置端，並由您的瀏覽器進行保管：
-        </p>
+        <p>下列資料均儲存於您所使用的裝置端，並由您的瀏覽器進行保管：</p>
         <table>
           <tr>
             <th>IndexedDB <code>canwas</code></th>
             <td>
-              儲存白板內容（含貼入或拖載之圖片、物件位置與尺寸、白板名稱）及圖片文字辨識（OCR）結果。OCR 模型權重（約 31&nbsp;MB）下載後亦儲存於此。
+              儲存白板內容（含貼入或拖載之圖片、物件位置與尺寸、白板名稱）及圖片文字辨識（OCR）結果。OCR
+              模型權重（約 31&nbsp;MB）下載後亦儲存於此。
             </td>
           </tr>
           <tr>
@@ -233,46 +232,58 @@
           <tr>
             <th><code>canwas.drive.account</code></th>
             <td>
-              僅於連結 Google Drive 時寫入，包含帳號名稱、電子郵件與頭像網址，用於辨識下次連線之帳號（此資料非憑證，亦不授予任何系統權限）。
+              僅於連結 Google Drive
+              時寫入，包含帳號名稱、電子郵件與頭像網址，用於辨識下次連線之帳號（此資料非憑證，亦不授予任何系統權限）。
             </td>
           </tr>
         </table>
         <p>
-          本服務不使用 Cookie，亦未嵌入任何第三方分析工具、廣告追蹤器、追蹤像素（Pixels）、操作錄影或錯誤回報服務。
+          本服務不使用
+          Cookie，亦未嵌入任何第三方分析工具、廣告追蹤器、追蹤像素（Pixels）、操作錄影或錯誤回報服務。
         </p>
 
         <h2>二、外部連線與第三方服務</h2>
         <p>
-          除您主動開啟之 Google Drive 同步功能外，本服務絕不傳送您的白板內容至外部。發送 HTTP 請求時，第三方服務僅會接收請求之基本網路資訊（包括 IP 位址、請求時間及瀏覽器 User-Agent 字串）。
+          除您主動開啟之 Google Drive
+          同步功能外，本服務絕不傳送您的白板內容至外部。發送 HTTP
+          請求時，第三方服務僅會接收請求之基本網路資訊（包括 IP
+          位址、請求時間及瀏覽器 User-Agent 字串）。
         </p>
         <h3>Google Fonts</h3>
         <p>
           載入應用程式時，系統將自 <code>fonts.googleapis.com</code> 與
-          <code>fonts.gstatic.com</code> 取得字型資源。本頁面未載入網路字型，故不會發出此請求。
+          <code>fonts.gstatic.com</code>
+          取得字型資源。本頁面未載入網路字型，故不會發出此請求。
         </p>
         <h3>Hugging Face</h3>
         <p>
           文字辨識功能完全於本地裝置執行。首次使用時，系統須自
-          <code>huggingface.co</code> 下載模型權重，下載完成後即快取於瀏覽器中。您的圖片絕不會因辨識需求而上傳至外部伺服器。
+          <code>huggingface.co</code>
+          下載模型權重，下載完成後即快取於瀏覽器中。您的圖片絕不會因辨識需求而上傳至外部伺服器。
         </p>
         <h3>Google Drive（僅限主動連結）</h3>
         <ul>
           <li>
             <strong>權限範圍：</strong>僅要求
             <code>https://www.googleapis.com/auth/drive.file</code>
-            權限，本服務僅能存取由 CanWas 建立之檔案，無法讀取、修改或存取您 Google Drive 中的其他資料。
+            權限，本服務僅能存取由 CanWas 建立之檔案，無法讀取、修改或存取您
+            Google Drive 中的其他資料。
           </li>
           <li>
-            <strong>上傳內容：</strong>包含白板紀錄、重新編碼為 WebP 格式之圖片及文字辨識結果，檔案均儲存於您個人 Google Drive 的專屬資料夾中。
+            <strong>上傳內容：</strong>包含白板紀錄、重新編碼為 WebP
+            格式之圖片及文字辨識結果，檔案均儲存於您個人 Google Drive
+            的專屬資料夾中。
           </li>
           <li>
-            <strong>安全機制：</strong>存取權杖（Access Token）僅保留於瀏覽器頁面分頁記憶體中，絕不寫入磁碟，並於約一小時後自動失效。
+            <strong>安全機制：</strong>存取權杖（Access
+            Token）僅保留於瀏覽器頁面分頁記憶體中，絕不寫入磁碟，並於約一小時後自動失效。
           </li>
           <li>本服務目前未提供跨帳號共用白板之功能。</li>
         </ul>
         <h3>GitHub Pages</h3>
         <p>
-          本網站由 GitHub Pages 提供託管服務。載入頁面時，GitHub 將依其政策記錄網路請求。開發者僅能查看彙整後之匿名流量統計數據，無法存取個別日誌。
+          本網站由 GitHub Pages 提供託管服務。載入頁面時，GitHub
+          將依其政策記錄網路請求。開發者僅能查看彙整後之匿名流量統計數據，無法存取個別日誌。
         </p>
 
         <h2>三、Google API 服務使用者資料政策</h2>
@@ -281,26 +292,32 @@
           <a
             href="https://developers.google.com/terms/api-services-user-data-policy"
             >Google API Services User Data Policy</a
-          >，並包含「有限使用」（Limited Use）規範。透過 Google Drive 取得之資料，僅用於提供您主動開啟之同步功能，絕不轉讓予第三方、不用於商業廣告，亦不會進行人工審閱。
+          >，並包含「有限使用」（Limited Use）規範。透過 Google Drive
+          取得之資料，僅用於提供您主動開啟之同步功能，絕不轉讓予第三方、不用於商業廣告，亦不會進行人工審閱。
         </p>
 
         <h2>四、資料刪除與管理</h2>
         <ul>
           <li>
-            <strong>單一白板：</strong>可於應用程式白板選單中執行刪除。系統將先標記為已刪除以利多裝置同步，相關內容將於 30 天後永久清除。
+            <strong>單一白板：</strong
+            >可於應用程式白板選單中執行刪除。系統將先標記為已刪除以利多裝置同步，相關內容將於
+            30 天後永久清除。
           </li>
           <li>
-            <strong>模型權重：</strong>可透過應用程式內「關於」面板之專用按鈕進行移除。
+            <strong>模型權重：</strong
+            >可透過應用程式內「關於」面板之專用按鈕進行移除。
           </li>
           <li>
-            <strong>本地端全部資料：</strong>可透過瀏覽器設定直接清除本網站之儲存資料（此操作無法復原）。
+            <strong>本地端全部資料：</strong
+            >可透過瀏覽器設定直接清除本網站之儲存資料（此操作無法復原）。
           </li>
           <li>
             <strong>Google 帳號授權：</strong>可至
             <a href="https://myaccount.google.com/permissions"
               >myaccount.google.com/permissions</a
             >
-            撤銷授權。撤銷授權將終止後續同步功能，但不會自動刪除已存在於您 Google Drive 中的歷史檔案，如需清除須手動至雲端硬碟刪除。
+            撤銷授權。撤銷授權將終止後續同步功能，但不會自動刪除已存在於您
+            Google Drive 中的歷史檔案，如需清除須手動至雲端硬碟刪除。
           </li>
         </ul>
 
@@ -322,7 +339,8 @@
         <p>
           若對本隱私權政策有任何疑問，請透過
           <a href="https://github.com/hikariNTU/canwas/issues">GitHub Issues</a>
-          提交。此管道為本專案唯一官方支援管道；Issue 內容為公開資訊，請勿提供任何個人敏感資料。
+          提交。此管道為本專案唯一官方支援管道；Issue
+          內容為公開資訊，請勿提供任何個人敏感資料。
         </p>
       </section>
 

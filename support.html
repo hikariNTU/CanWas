@@ -27,8 +27,8 @@
 
       <p class="lede">
         CanWas is an unbounded board for images. Screenshots may be pasted or
-        dropped onto it, arranged freely, and their embedded text selected as
-        if it were text on the page. The application runs entirely within the
+        dropped onto it, arranged freely, and their embedded text selected as if
+        it were text on the page. The application runs entirely within the
         user's browser.
       </p>
 
@@ -46,7 +46,9 @@
         content, including document screenshots, must not be posted.
       </p>
 
-      <p>A report is processed more efficiently when it includes the following:</p>
+      <p>
+        A report is processed more efficiently when it includes the following:
+      </p>
       <ul>
         <li>The action taken, the expected result, and the actual result.</li>
         <li>Browser name and version, and device type (mobile or desktop).</li>
@@ -70,8 +72,8 @@
       <h2>2. Usage</h2>
       <ul>
         <li>
-          <strong>Add an image</strong> by pasting from the clipboard,
-          dropping a file onto the canvas, or using the add button.
+          <strong>Add an image</strong> by pasting from the clipboard, dropping
+          a file onto the canvas, or using the add button.
         </li>
         <li>
           <strong>Navigate</strong> by dragging the empty canvas or scrolling;
@@ -80,8 +82,8 @@
         </li>
         <li>
           <strong>Select text</strong> by dragging across an image once
-          recognition has completed. Recognition begins automatically and
-          takes a few seconds per image.
+          recognition has completed. Recognition begins automatically and takes
+          a few seconds per image.
         </li>
         <li>
           <strong>Undo</strong> with <code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>; redo
@@ -96,10 +98,10 @@
       <h3>Text recognition does not complete on the first image</h3>
       <p>
         On a new device, the first image requires approximately 31&nbsp;MB of
-        model weights to be downloaded before recognition can proceed. This
-        may take some time on a slow connection, and will fail entirely if
-        <code>huggingface.co</code> is blocked on the network in use. The
-        About panel indicates whether the weights are cached.
+        model weights to be downloaded before recognition can proceed. This may
+        take some time on a slow connection, and will fail entirely if
+        <code>huggingface.co</code> is blocked on the network in use. The About
+        panel indicates whether the weights are cached.
       </p>
 
       <h3>Recognition returns incorrect characters</h3>
@@ -112,44 +114,42 @@
 
       <h3>Boards have disappeared</h3>
       <p>
-        Browsers may evict site storage under disk pressure, and clearing
-        "site data," clearing "cookies and site data," or browsing in a
-        private window will discard boards. CanWas requests storage-eviction
-        exemption from the browser, and the About panel reports whether that
-        request was granted. Where board persistence is important, connecting
-        Google&nbsp;Drive maintains a copy elsewhere.
+        Browsers may evict site storage under disk pressure, and clearing "site
+        data," clearing "cookies and site data," or browsing in a private window
+        will discard boards. CanWas requests storage-eviction exemption from the
+        browser, and the About panel reports whether that request was granted.
+        Where board persistence is important, connecting Google&nbsp;Drive
+        maintains a copy elsewhere.
       </p>
 
       <h3>Connecting Google Drive has no effect</h3>
       <p>
-        Sign-in opens a Google window; a popup blocker will prevent this.
-        Google additionally requires that the request originate from a user
-        click, so it cannot be retried automatically.
+        Sign-in opens a Google window; a popup blocker will prevent this. Google
+        additionally requires that the request originate from a user click, so
+        it cannot be retried automatically.
       </p>
 
       <h3>A board on another device did not appear</h3>
       <p>
         Boards are reconciled when a connection is established, not
         continuously. Reloading the tab re-establishes the connection and
-        triggers reconciliation. A board deleted on one device is marked
-        deleted and remains deleted on all devices; this behavior is
-        intentional.
+        triggers reconciliation. A board deleted on one device is marked deleted
+        and remains deleted on all devices; this behavior is intentional.
       </p>
 
       <h3>The interface appears flat or is difficult to read</h3>
       <p>
-        The interface uses a backdrop blur effect. Browsers lacking support
-        for it fall back to a solid panel by design. Any content that remains
-        genuinely unreadable should be reported together with the browser
-        name.
+        The interface uses a backdrop blur effect. Browsers lacking support for
+        it fall back to a solid panel by design. Any content that remains
+        genuinely unreadable should be reported together with the browser name.
       </p>
 
       <h2>4. Data</h2>
       <p>
-        Details of what is stored, what leaves the device, and how to delete
-        it are set out in the <a href="./privacy.html">privacy policy</a>. In
-        summary: boards remain in the browser, synchronization is limited to
-        the user's own Google&nbsp;Drive, and no server is involved.
+        Details of what is stored, what leaves the device, and how to delete it
+        are set out in the <a href="./privacy.html">privacy policy</a>. In
+        summary: boards remain in the browser, synchronization is limited to the
+        user's own Google&nbsp;Drive, and no server is involved.
       </p>
 
       <section class="alt-lang" lang="zh-Hant">
@@ -179,26 +179,36 @@
             應用程式角落 <code>i</code> 按鈕內「關於」面板所顯示之組建識別碼，
             用以標示目前執行之確切版本。
           </li>
-          <li>若問題涉及裝置間白板未同步，請說明是否已連結 Google 雲端硬碟。</li>
+          <li>
+            若問題涉及裝置間白板未同步，請說明是否已連結 Google 雲端硬碟。
+          </li>
         </ul>
-        <p>CanWas 為個人專案，依現狀提供，不提供保固，亦無服務水準承諾。問題將依可用時間審閱並回覆。</p>
+        <p>
+          CanWas
+          為個人專案，依現狀提供，不提供保固，亦無服務水準承諾。問題將依可用時間審閱並回覆。
+        </p>
 
         <h2>二、操作方式</h2>
         <ul>
           <li>
-            <strong>新增圖片：</strong>透過剪貼簿貼上、將檔案拖入畫布，或使用新增按鈕。
+            <strong>新增圖片：</strong
+            >透過剪貼簿貼上、將檔案拖入畫布，或使用新增按鈕。
           </li>
           <li>
-            <strong>移動畫面：</strong>拖曳空白處或捲動以移動畫面；以雙指手勢或按住
+            <strong>移動畫面：</strong
+            >拖曳空白處或捲動以移動畫面；以雙指手勢或按住
             <code>Ctrl</code> 鍵搭配滾輪進行縮放。
           </li>
           <li>
-            <strong>選取文字：</strong>於圖片完成辨識後，直接於圖片上拖曳即可選取文字。
+            <strong>選取文字：</strong
+            >於圖片完成辨識後，直接於圖片上拖曳即可選取文字。
             辨識將自動開始，每張圖片約需數秒。
           </li>
           <li>
             <strong>復原：</strong>使用 <code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>；
-            加按 <code>Shift</code> 鍵則為重做。操作紀錄僅保存於分頁記憶體中，重新整理後即清除；白板本身則持續儲存。
+            加按
+            <code>Shift</code>
+            鍵則為重做。操作紀錄僅保存於分頁記憶體中，重新整理後即清除；白板本身則持續儲存。
           </li>
         </ul>
 
@@ -207,7 +217,8 @@
         <p>
           於新裝置首次使用時，須先下載約 31&nbsp;MB 之模型權重方能進行辨識。
           於網路速度較慢之情況下所需時間較長；若使用之網路已封鎖
-          <code>huggingface.co</code>，辨識將直接失敗。「關於」面板將顯示權重是否已完成快取。
+          <code>huggingface.co</code
+          >，辨識將直接失敗。「關於」面板將顯示權重是否已完成快取。
         </p>
         <h3>辨識結果字元錯誤</h3>
         <p>
