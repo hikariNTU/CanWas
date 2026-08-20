@@ -52,6 +52,11 @@ const ortVersion = (
   ) as { version: string }
 ).version;
 
+/** Rollup wants a path, and `import.meta.url` is the only root this file knows. */
+function htmlEntry(name: string): string {
+  return new URL(`./${name}`, import.meta.url).pathname;
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   worker: {
@@ -68,6 +73,22 @@ export default defineConfig({
     __ORT_VERSION__: JSON.stringify(ortVersion),
   },
   base: "/canwas/",
+  build: {
+    rollupOptions: {
+      // Multi-page, deliberately. The app is a hash router (D6) because Pages
+      // 404s on deep-link refresh; a hash never reaches a server, so `#/privacy`
+      // is not a URL anything but a browser can fetch — and a privacy policy
+      // that Google's reviewer, a crawler or a link unfurler cannot fetch is
+      // not a published policy. Real `.html` files have no deep-link problem,
+      // so these sit beside the router without contradicting it (D67).
+      input: {
+        app: htmlEntry("index.html"),
+        privacy: htmlEntry("privacy.html"),
+        support: htmlEntry("support.html"),
+        licenses: htmlEntry("licenses.html"),
+      },
+    },
+  },
   resolve: {
     alias: {
       "@/": new URL("./src/", import.meta.url).pathname,

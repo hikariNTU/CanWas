@@ -142,6 +142,18 @@ const translations = {
     "zh-TW": "壓縮後（同步用）",
     "en-US": "WebP for sync",
   },
+  "about.privacy": {
+    "zh-TW": "隱私權",
+    "en-US": "Privacy",
+  },
+  "about.support": {
+    "zh-TW": "支援",
+    "en-US": "Support",
+  },
+  "about.licenses": {
+    "zh-TW": "授權",
+    "en-US": "Licenses",
+  },
   "sync.title": {
     "zh-TW": "Google 雲端硬碟",
     "en-US": "Google Drive",

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="CanWas support: how to use it, how to report a problem, and answers to the things that go wrong most often."
+    />
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="stylesheet" href="/src/pages.css" />
+    <title>Support · CanWas</title>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <a class="wordmark" href="./">CanWas</a>
+        <nav>
+          <a href="./privacy.html">Privacy</a>
+          <a href="./support.html">Support</a>
+          <a href="./licenses.html">Licenses</a>
+        </nav>
+      </header>
+
+      <h1>Support</h1>
+
+      <p class="lede">
+        CanWas is an infinite board for images. Paste or drop screenshots onto
+        it, arrange them, and select the text inside them as if it were text on
+        the page. It runs entirely in your browser.
+      </p>
+
+      <h2>Getting help</h2>
+
+      <p>
+        <strong
+          ><a href="https://github.com/hikariNTU/canwas/issues"
+            >GitHub Issues</a
+          >
+          is the only support channel.</strong
+        >
+        There is no support email and no live chat. Reporting a problem needs a
+        free GitHub account, and every issue is public — do not paste anything
+        private into one, including screenshots of documents.
+      </p>
+
+      <p>A report is much easier to act on with these four things in it:</p>
+      <ul>
+        <li>What you did, what you expected, and what happened instead.</li>
+        <li>
+          Your browser and version, and whether it is a phone or a desktop.
+        </li>
+        <li>
+          The build identifier from the <strong>About</strong> panel — the
+          <code>i</code> button in the corner of the app. It names the exact
+          commit you are running.
+        </li>
+        <li>
+          Whether Google&nbsp;Drive is connected, if the problem involves boards
+          not matching between devices.
+        </li>
+      </ul>
+
+      <p>
+        CanWas is a personal project offered as-is, with no warranty and no
+        service level. Issues are read and answered when there is time for them.
+      </p>
+
+      <h2>Using it</h2>
+      <ul>
+        <li>
+          <strong>Add an image</strong> by pasting from the clipboard, dropping
+          a file onto the canvas, or using the add button.
+        </li>
+        <li>
+          <strong>Move around</strong> by dragging the empty canvas or
+          scrolling; zoom with pinch, or with the scroll wheel while holding
+          <code>Ctrl</code>.
+        </li>
+        <li>
+          <strong>Select text</strong> by dragging across an image once it has
+          been read. Reading starts by itself and takes a few seconds per image.
+        </li>
+        <li>
+          <strong>Undo</strong> with <code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>, redo
+          with <code>Shift</code> added. History lives in the tab and is gone
+          after a reload; the board itself is saved continuously.
+        </li>
+      </ul>
+
+      <h2>When something goes wrong</h2>
+
+      <h3>Text recognition never finishes on the first image</h3>
+      <p>
+        The first image on a new device downloads about 31&nbsp;MB of model
+        weights before anything can be read. On a slow connection that takes a
+        while, and it fails outright if <code>huggingface.co</code> is blocked
+        on your network. The About panel says whether the weights are cached.
+      </p>
+
+      <h3>Recognition read the wrong characters</h3>
+      <p>
+        Small, blurred, rotated or low-contrast text is read poorly, and that is
+        a limit of the model rather than a setting. A screenshot at its original
+        resolution reads far better than a photograph of a screen.
+      </p>
+
+      <h3>My boards vanished</h3>
+      <p>
+        Browsers may evict site storage when the disk is under pressure, and
+        clearing "site data", "cookies and site data", or browsing in a private
+        window all discard boards. CanWas asks the browser to exempt itself and
+        the About panel reports whether that request was granted. If boards
+        matter, connect Google&nbsp;Drive so a copy exists elsewhere.
+      </p>
+
+      <h3>Connecting Google Drive does nothing</h3>
+      <p>
+        Sign-in opens a Google window, so a popup blocker will stop it. Google
+        also requires the request to come from a click, so it cannot be retried
+        automatically.
+      </p>
+
+      <h3>A board on another device did not appear</h3>
+      <p>
+        Boards reconcile when a connection is established, not continuously.
+        Reloading the tab reconnects and reconciles. A board deleted on one
+        device is marked deleted and stays deleted everywhere, which is
+        deliberate.
+      </p>
+
+      <h3>It looks flat, or unreadable, in my browser</h3>
+      <p>
+        The interface uses a backdrop blur. Browsers without it fall back to a
+        solid panel, which is intended. Please report anything genuinely
+        unreadable, with the browser name.
+      </p>
+
+      <h2>Your data</h2>
+      <p>
+        What is stored, what leaves the device, and how to delete it are all in
+        the <a href="./privacy.html">privacy policy</a>. The short version:
+        boards stay in your browser, sync goes to your own Google&nbsp;Drive,
+        and there is no server in between.
+      </p>
+
+      <section class="alt-lang" lang="zh-Hant">
+        <h1>支援</h1>
+
+        <p class="lede">
+          CanWas 是一個沒有邊界的圖片白板。把截圖貼上去或拖進來，隨意排列，
+          再像選取網頁文字一樣選取圖片裡的文字。全部都在你的瀏覽器裡執行。
+        </p>
+
+        <h2>取得協助</h2>
+        <p>
+          <strong
+            ><a href="https://github.com/hikariNTU/canwas/issues"
+              >GitHub Issues</a
+            >
+            是唯一的支援管道。</strong
+          >
+          沒有客服信箱，也沒有線上客服。回報問題需要一個免費的 GitHub 帳號，
+          而且所有 issue 都是公開的，不要在裡面貼任何私人內容，包括文件的截圖。
+        </p>
+        <p>回報時盡量附上這幾樣，處理起來會快很多：</p>
+        <ul>
+          <li>你做了什麼、原本預期發生什麼、結果實際發生什麼。</li>
+          <li>用的瀏覽器和版本，還有是手機還是電腦。</li>
+          <li>
+            應用程式角落 <code>i</code> 按鈕裡「關於」面板顯示的組建識別碼，
+            這個號碼標出你目前跑的是哪個版本。
+          </li>
+          <li>
+            如果問題是裝置之間白板對不上，說明一下有沒有連結 Google 雲端硬碟。
+          </li>
+        </ul>
+        <p>CanWas 是個人專案，照現狀提供，不保固，也沒有服務水準承諾。</p>
+
+        <h2>操作方式</h2>
+        <ul>
+          <li>
+            <strong>加圖片：</strong>從剪貼簿貼上、把檔案拖進來，或按新增按鈕。
+          </li>
+          <li>
+            <strong>移動畫面：</strong>拖曳空白處或捲動來移動；用雙指或按住
+            <code>Ctrl</code> 滾滾輪來縮放。
+          </li>
+          <li>
+            <strong>選取文字：</strong>圖片辨識完之後，直接在上面拖曳選取就行。
+            辨識會自動開始，一張圖片大概需要幾秒鐘。
+          </li>
+          <li>
+            <strong>復原：</strong><code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>，加上
+            <code>Shift</code> 就是重做。這段歷史只存在分頁裡，重新整理就沒了；
+            白板本身則是持續在存的。
+          </li>
+        </ul>
+
+        <h2>常見問題</h2>
+        <h3>第一張圖片的文字辨識一直跑不完</h3>
+        <p>
+          新裝置上第一次用，得先下載大約 31 MB 的模型權重才能開始辨識。
+          網路慢的話會等比較久，如果你的網路擋掉了
+          <code>huggingface.co</code>，就會直接失敗。
+          「關於」面板會顯示權重有沒有快取好。
+        </p>
+        <h3>辨識結果錯字一堆</h3>
+        <p>
+          文字太小、模糊、傾斜或對比太低，辨識效果就是不好，這是模型本身的限制。
+          截圖用原始解析度，會比拍螢幕的照片準確很多。
+        </p>
+        <h3>白板不見了</h3>
+        <p>
+          瀏覽器在磁碟空間吃緊時可能會清掉網站的儲存空間；清「網站資料」
+          或用無痕視窗，都會讓白板跟著消失。CanWas 會請瀏覽器把自己排除在外，
+          「關於」面板會顯示這個請求有沒有成功。白板內容重要的話，建議連結
+          Google 雲端硬碟，備份一份在別的地方。
+        </p>
+        <h3>連結 Google 雲端硬碟沒反應</h3>
+        <p>
+          登入會跳出一個 Google 視窗，彈出視窗被擋掉的話就沒反應了。 Google
+          也規定這個請求一定要從點擊觸發，所以沒辦法自動重試。
+        </p>
+        <h3>另一台裝置上的白板沒同步過來</h3>
+        <p>
+          白板只會在建立連線的當下對帳，不是隨時都在對。重新整理分頁就會重新連線、重新對帳。
+          在一台裝置上刪掉的白板會被標記為刪除，然後在所有地方都保持刪除狀態，這是故意設計成這樣的。
+        </p>
+
+        <h3>介面看起來扁扁的，或根本看不清楚</h3>
+        <p>
+          介面用了背景模糊效果。不支援的瀏覽器會退回不透明的面板，這是預期中的行為。
+          但如果真的看不清楚，請回報並附上瀏覽器名稱。
+        </p>
+
+        <h2>你的資料</h2>
+        <p>
+          存了什麼、什麼會離開你的裝置、要怎麼刪掉，都寫在
+          <a href="./privacy.html">隱私權政策</a
+          >裡。講白一點就是：白板留在你的瀏覽器，同步只會進你自己的 Google
+          雲端硬碟，中間沒有伺服器。
+        </p>
+      </section>
+
+      <footer class="bottom">
+        <a href="./">Open CanWas</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./licenses.html">Licenses</a>
+        <a href="https://github.com/hikariNTU/canwas">Source</a>
+      </footer>
+    </div>
+  </body>
+</html>

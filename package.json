@@ -10,6 +10,7 @@
     "lint": "oxlint --type-aware --report-unused-disable-directives --max-warnings 0 .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
+    "licenses": "node scripts/collect-licenses.mjs && oxfmt licenses.html",
     "test:e2e": "playwright test",
     "check": "rc=0; failed=''; for s in format:check lint typecheck build; do npm run $s || { rc=1; failed=\"$failed $s\"; }; done; [ $rc -eq 0 ] && echo 'all checks passed' || echo \"FAILED:$failed\"; exit $rc",
     "preview": "vite preview"

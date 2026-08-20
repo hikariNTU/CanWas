@@ -1,0 +1,212 @@
+/* The document pages: privacy, support, licenses.
+ *
+ * Hand-written CSS rather than Tailwind utilities, and not an import of
+ * `index.css`. These pages ship no JavaScript at all (D67) — they are what
+ * someone reads when the app itself failed to start — so they must not depend
+ * on the app's stylesheet, its fonts, or anything that can fail to load. The
+ * palette is Tailwind's neutral/sky by value, copied rather than referenced,
+ * because a design token is not worth a build-graph edge here.
+ *
+ * No web font is linked. The app loads Noto Sans from Google's CDN, which is a
+ * request to a third party on every page load — and stating that in a privacy
+ * policy while making the same request to render it is the one place that
+ * would be absurd. System stack only.
+ */
+
+:root {
+  color-scheme: dark;
+  --ground: #0a0a0a;
+  --raised: #171717;
+  --rule: #262626;
+  --text: #e5e5e5;
+  --dim: #a3a3a3;
+  --faint: #737373;
+  --link: #38bdf8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--ground);
+  color: var(--text);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    "Noto Sans",
+    "Noto Sans TC",
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  /* Chinese and English sit in the same document (D67), and the Chinese half
+     is set in whatever the system supplies. `text-wrap: pretty` is what stops
+     a lone character on its own line at the end of a Chinese paragraph. */
+  text-wrap: pretty;
+}
+
+.page {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 6rem;
+}
+
+header.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+header.top .wordmark {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+header.top nav {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+a {
+  color: var(--link);
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: #7dd3fc;
+}
+
+h1 {
+  font-size: 1.75rem;
+  line-height: 1.3;
+  margin: 2rem 0 0.25rem;
+}
+
+h2 {
+  font-size: 1.125rem;
+  margin: 2.5rem 0 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 1.5rem 0 0.25rem;
+  color: var(--text);
+}
+
+p,
+li {
+  color: var(--dim);
+}
+
+strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+ul {
+  padding-left: 1.25rem;
+}
+
+li {
+  margin: 0.25rem 0;
+}
+
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.875em;
+  background-color: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+  color: var(--text);
+  /* Storage keys and scope URLs are long and unbreakable; without this they
+     push the page sideways on a phone. */
+  overflow-wrap: anywhere;
+}
+
+.lede {
+  font-size: 1.0625rem;
+  color: var(--text);
+}
+
+.stamp {
+  color: var(--faint);
+  font-size: 0.875rem;
+}
+
+/* The zh-TW half of every page. Marked as a region rather than hidden behind a
+   toggle: text a reviewer has to click to reach is text they will not read. */
+.alt-lang {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--rule);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  margin: 1rem 0;
+  display: block;
+  overflow-x: auto;
+}
+
+th,
+td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.4rem 0.75rem 0.4rem 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--dim);
+}
+
+th {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+details {
+  margin: 0.5rem 0;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background-color: var(--raised);
+}
+
+summary {
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  color: var(--dim);
+  font-size: 0.9375rem;
+}
+
+details > pre {
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+  white-space: pre-wrap;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--faint);
+}
+
+footer.bottom {
+  margin-top: 4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.875rem;
+  color: var(--faint);
+}
+
+footer.bottom a {
+  margin-right: 1rem;
+}

@@ -183,6 +183,31 @@ export function About() {
             <p className="mt-2 text-xs text-neutral-600">
               {DETECTION_MODEL.id} + {RECOGNITION_MODEL.id}
             </p>
+
+            {/* Real pages, not routes: these are static HTML built alongside
+                the app (D67), so they open without it and can be linked to
+                from outside. `BASE_URL` because the site lives under a
+                subpath, and a new tab because leaving the board to read a
+                licence is not what anyone means to do. */}
+            <div className="mt-3 flex gap-4 border-t border-white/10 pt-2 text-xs">
+              {(
+                [
+                  ["about.privacy", "privacy.html"],
+                  ["about.support", "support.html"],
+                  ["about.licenses", "licenses.html"],
+                ] as const
+              ).map(([label, file]) => (
+                <a
+                  key={file}
+                  href={`${import.meta.env.BASE_URL}${file}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-neutral-400 underline-offset-2 transition-colors hover:text-neutral-100 hover:underline focus-visible:outline-2 focus-visible:outline-sky-500"
+                >
+                  {t(label)}
+                </a>
+              ))}
+            </div>
           </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>

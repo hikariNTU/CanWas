@@ -1654,3 +1654,63 @@ The marker itself is never dropped: a grave removed from disk is a board this
 device has never seen, which is where this started.
 
 Reverses if: never, while there is a remote. Without one it would be dead weight.
+
+---
+
+## D67 — The disclosure pages are static HTML, not routes
+
+**2026-08-20 · settled**
+
+`privacy.html`, `support.html` and `licenses.html` are separate Rollup entries
+built beside the app. They are not routes, and they share no code with it — not
+its stylesheet, not its fonts, not `useTranslation()`.
+
+Three reasons, in order of weight:
+
+- **A hash is not a URL to anyone but a browser.** The app uses hash history
+  (D6), so `#/privacy` never leaves the client and is not in the request.
+  Google's OAuth consent screen wants a privacy policy URL, and their reviewer —
+  like every crawler and link unfurler — fetches it and would get the app shell.
+  A policy nothing but a browser can fetch is not a published policy.
+- **A disclosure page must not depend on the app booting.** This is what someone
+  reads when things went wrong. It ships zero JavaScript, so it renders when the
+  router, the worker or IndexedDB does not.
+- **It costs nothing against D6.** Hash history exists because Pages 404s on
+  deep-link refresh without a `404.html` shim. Real `.html` files have no such
+  problem, so these sit beside the router rather than contradicting it, and no
+  shim enters the repo.
+
+Both languages are stacked in one document rather than switched. There is no
+atom to read, and legal text behind a control is text a reviewer will not read.
+
+The pages link no web font. The app loads Noto Sans from Google's CDN, which is
+itself a disclosure the policy has to make — and making that request in order to
+render the paragraph disclosing it is the one place it would be absurd.
+
+**The licence list is generated from the build, not from the dependency list.**
+`npm ls --omit=dev` names 84 packages here; the bundle contains 21. The
+obligation attaches to what is distributed, so `scripts/collect-licenses.mjs`
+runs a real build with `write: false` and asks Rollup which modules it touched.
+The collector is installed into the worker build as well — workers are a
+separate Rollup build with their own plugin container, and without that second
+installation `onnxruntime-web`, the largest thing this app ships, is absent from
+the list. Three components are appended by hand because nothing could discover
+them: the PP-OCRv6 weights (Apache-2.0 — fetching a model at runtime and caching
+it is still redistribution) and the two Google Fonts families.
+
+Generated output is committed rather than built on deploy: a filesystem walk of
+`node_modules` has no business on the deploy path for a page that changes twice
+a year. A test asserts every runtime dependency appears in the page, which is
+what fails when someone adds a package and forgets to regenerate.
+
+Two further tests read the source rather than a copied literal: every `https://`
+host reachable from the app's own files must be named in the policy, and the
+policy must contain whatever `DRIVE_SCOPE` currently is. Widening the scope in
+code without editing the policy would turn a paragraph into a false statement —
+the one failure in this repo whose consequences are not confined to the app.
+
+Support is **GitHub Issues only**. No email is published; the page says so, and
+says that issues are public.
+
+Reverses if: the app ever moves off Pages onto something that can serve routes,
+_and_ gains a reason to want these inside the shell. Neither is likely.
