@@ -105,6 +105,44 @@ export async function requestToken(
   };
 }
 
+/**
+ * A flag, not a credential: "this browser has connected before".
+ *
+ * The token still never touches disk. What is stored is a boolean, which tells
+ * the app it is worth *asking* Google for a token silently on load rather than
+ * showing a Connect button to someone who has already connected. Google
+ * answers from a grant it holds and a session cookie on its own origin, and
+ * neither of those is anything this app could have written.
+ *
+ * Worth having because the alternative is worse than a click: sync that is off
+ * until noticed is sync that is off, and a board edited before someone thinks
+ * to reconnect is a board that has to be merged later instead of now.
+ */
+const CONNECTED_KEY = "canwas.drive.connected";
+
+export function hasConnectedBefore(): boolean {
+  try {
+    return localStorage.getItem(CONNECTED_KEY) === "1";
+  } catch {
+    // Storage can be denied outright. Not being able to remember is the same
+    // as not having connected.
+    return false;
+  }
+}
+
+export function rememberConnected(connected: boolean): void {
+  try {
+    if (connected) {
+      localStorage.setItem(CONNECTED_KEY, "1");
+    } else {
+      localStorage.removeItem(CONNECTED_KEY);
+    }
+  } catch {
+    // Nothing to do and nothing worth telling the user: the cost is one extra
+    // click next time.
+  }
+}
+
 let renewal: Promise<Session> | null = null;
 
 /**

@@ -5,6 +5,7 @@ import { authAtom } from "@/sync/auth";
 import { useGoogleAccount } from "@/sync/use-google-account";
 import { syncStatusAtom, type SyncStatus } from "@/sync/use-sync";
 import { useTranslation, type TranslationsKey } from "@/translations";
+import { DriveMark } from "@/ui/drive-mark";
 import { Icon } from "@/ui/icon";
 
 /**
@@ -91,19 +92,40 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
   const connectable = isConfigured && auth.status !== "connecting";
   const { icon, label, tone } = appearanceFor(status, connectable);
 
+  // A failed sign-in leaves no transport, which makes the status "off" — and
+  // off looks like an invitation to connect rather than like something that
+  // went wrong. Both failures wear the same mark.
+  const failure =
+    status.state === "failed"
+      ? status.message
+      : auth.status === "failed"
+        ? auth.error
+        : null;
+
   return (
     <Popover.Root>
       <Popover.Trigger
         data-testid="sync-button"
         data-sync-state={status.state}
+        data-sync-failed={failure ? "" : undefined}
         aria-label={t(label)}
         // The message, not the label: a failure that only says "failed" sends
         // whoever hits it to the console. The popup repeats it, but a tooltip
         // is cheaper than a click when all you wanted was to check.
-        title={status.state === "failed" ? status.message : t(label)}
-        className={`glass pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${tone}`}
+        title={failure ?? t(label)}
+        className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${tone}`}
       >
         <Icon name={icon} size={18} />
+        {failure && (
+          // Colour rather than a glyph, and on top rather than instead of one:
+          // the icon still has to say which state sync is in, and a badge is
+          // legible at a glance across a board without being read.
+          <span
+            data-testid="sync-error-dot"
+            aria-hidden
+            className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-400 ring-2 ring-neutral-900"
+          />
+        )}
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner sideOffset={6} align="end">
@@ -111,7 +133,8 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
             data-testid="sync-panel"
             className="glass-strong w-72 rounded-lg p-3 text-sm focus:outline-none"
           >
-            <Popover.Title className="mb-2 font-bold text-neutral-100">
+            <Popover.Title className="mb-2 flex items-center gap-2 font-bold text-neutral-100">
+              <DriveMark size={16} />
               {t("sync.title")}
             </Popover.Title>
 
@@ -127,9 +150,19 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
               </p>
             ) : state.status === "signedIn" ? (
               <div data-testid="sync-signed-in">
+                {/* Which account's Drive this is writing to. Worth stating
+                    rather than implying: a browser signed into two Google
+                    accounts will happily grant one and leave you looking for
+                    the files in the other. */}
+                <p className="text-xs text-neutral-500">
+                  {t("sync.grantedTo")}
+                </p>
                 <div className="flex items-baseline justify-between gap-4">
-                  <span className="truncate text-neutral-300">
-                    {state.session.email ?? "—"}
+                  <span
+                    data-testid="sync-account"
+                    className="truncate text-neutral-300"
+                  >
+                    {state.session.email ?? t("sync.accountUnknown")}
                   </span>
                   <button
                     data-testid="sync-sign-out"

@@ -472,3 +472,47 @@ test("a reading from a different recognizer is refused", async ({ page }) => {
   // the words actually drawn on those pixels, which is not 99.
   await expect(refused).not.toHaveAttribute("data-ocr-words", "99");
 });
+
+test("a document from a newer version is refused, loudly", async ({ page }) => {
+  await pasteImage(page, 100);
+  await expect(page.getByTestId("board-node")).toHaveCount(1);
+  await onlyAssetId(page);
+
+  // A device running a later build wrote this. Reading it with today's code
+  // would half-succeed — keep the fields it knows, drop the rest — and the
+  // write-back would destroy the evidence.
+  await page.evaluate(
+    (boardId) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("canwas-fake-remote");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const store = open.result
+            .transaction("boards", "readwrite")
+            .objectStore("boards");
+          const read = store.get(boardId);
+          read.onsuccess = () => {
+            const write = store.put({ ...read.result, _version: 99 });
+            write.onsuccess = () => resolve();
+            write.onerror = () => reject(write.error);
+          };
+        };
+      }),
+    BOARD,
+  );
+
+  await page.getByTestId("sync-button").click();
+  await page.getByTestId("sync-now").click();
+
+  const button = page.getByTestId("sync-button");
+  await expect(button).toHaveAttribute("data-sync-state", "failed");
+  // Colour, not a glyph to be read: a board is looked at, not inspected.
+  await expect(page.getByTestId("sync-error-dot")).toBeVisible();
+  // And the reason is in reach, rather than in the console.
+  await expect(page.getByTestId("sync-state")).toContainText("newer version");
+
+  // Refusing to read is also refusing to overwrite. The board that could not
+  // be understood is still there, exactly as its author left it.
+  const remote = await remoteBoard(page, BOARD);
+  expect(remote).toHaveProperty("_version", 99);
+});

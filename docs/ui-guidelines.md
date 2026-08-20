@@ -107,6 +107,18 @@ It is never hidden. The resting state says _not syncing_ rather than showing
 nothing, because nothing is indistinguishable from working. Only a failure gets
 colour.
 
+A failure — of a round, or of the connection itself — puts a red dot on the
+button. Colour rather than a glyph, and on top of the icon rather than instead
+of it: the icon still has to say which state sync is in, and a board is looked
+at rather than inspected. It is the only red in the app, which is the point.
+The two kinds of failure share the mark because a failed sign-in leaves no
+transport, and "no transport" otherwise renders as a cheerful invitation to
+connect.
+
+The panel is headed by Google Drive's own mark and names the account that
+granted access. A browser signed into two Google accounts will happily grant
+one and leave you hunting for the files in the other.
+
 The icon carries the state; the words live behind it. Opening it gives the
 account, how full that Drive is, what the last round did or why it failed, and
 sign in or sign out — everything the info panel used to say about Drive. The

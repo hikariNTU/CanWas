@@ -146,6 +146,14 @@ const translations = {
     "zh-TW": "Google 雲端硬碟",
     "en-US": "Google Drive",
   },
+  "sync.grantedTo": {
+    "zh-TW": "已授權的帳戶",
+    "en-US": "Granted by",
+  },
+  "sync.accountUnknown": {
+    "zh-TW": "帳戶名稱無法取得",
+    "en-US": "Account name unavailable",
+  },
   "sync.now": {
     "zh-TW": "立即同步",
     "en-US": "Sync now",
