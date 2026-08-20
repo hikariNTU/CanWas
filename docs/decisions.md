@@ -2020,3 +2020,58 @@ _after_ the pinch has been claimed: two fingers still zoom while reading, since
 reading mode has no zoom of its own and a screenshot is read at whatever size
 turns out to be legible. Everything else still pans, including a press on the
 read node's own margins — outside the overlay is outside the text.
+
+## D77 — A gesture paints the board itself, and words wait to be read
+
+Two changes to what a pan costs, measured on a production build under a 6x CPU
+throttle, over 40 pan frames on a board of five recognized screenshots:
+
+|              | before | after |
+| ------------ | ------ | ----- |
+| Script       | 183 ms | 8 ms  |
+| Style        | 5 ms   | 2 ms  |
+| Layout       | 0 ms   | 0 ms  |
+| DOM elements | 566    | 72    |
+
+Layout was already zero, and it is worth saying why: the scene's `transform`
+does not re-lay-out anything under it. Nodes are positioned once in world
+units, and pan and zoom are a single composited transform over the top. The
+board being "large" costs nothing.
+
+**Where the time went was React.** Every `pointermove` set the viewport atom,
+and every set re-rendered the whole canvas — each node, each badge, each word
+of each overlay — to change two numbers inside one `transform` string. A phone
+reports pointers faster than it draws, so that ran several times per frame.
+
+A gesture now keeps its viewport in a ref and writes the scene transform and
+the grid's background onto the elements itself, coalesced to one write per
+frame with `requestAnimationFrame`. The store hears once, when the gesture
+ends. `src/canvas/grid.ts` holds the single spelling of both properties, since
+they are now written from two places and a drift between them would show as a
+jump at the end of every pan.
+
+Three things fall out of that and are load-bearing:
+
+- Anything that re-renders mid-gesture — a selection change, a recognition
+  finishing, a sync round landing — writes the _committed_ transform back over
+  the live one. A layout effect re-asserts the live value after every render.
+- Everything else in the app reads the viewport from the store, so a live
+  gesture must never be the only place the truth lives for long. It is
+  committed at the end of the gesture, and a wheel — which has no end event —
+  is committed once it goes quiet, or immediately on the next `pointerdown`,
+  whichever comes first.
+- Zoom is on the same path, so scale-dependent chrome drawn in world units
+  (selection hairlines, the badge's counter-scale) holds its last committed
+  scale until the pinch ends. Visible only as a hairline that is briefly the
+  wrong thickness while pinching a selected node.
+
+**Second change:** the OCR overlay lays out its words only while its node is
+being read. A dense screenshot is several hundred spans of transparent text,
+each with its own `scaleX` correction, and they exist for exactly one purpose —
+native selection inside the node being read. Outside that they were being
+styled, laid out and painted for nobody. The overlay element itself stays
+either way; it is what says the text is there.
+
+**Reverses if:** something needs the word boxes without entering the node —
+search across a board, say. Then the spans come back, and the way to keep this
+is `content-visibility: auto` rather than rendering them all.

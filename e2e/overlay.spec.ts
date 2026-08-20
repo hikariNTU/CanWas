@@ -197,6 +197,17 @@ test("every span is stretched to the width of the box it covers", async ({
   const words = asset.ocr.words!;
   const image = await boxOf(page, "board-node");
 
+  // Entered first: the spans are only laid out while the node is being read
+  // (D77), which is the only state in which their geometry means anything.
+  await page.mouse.dblclick(
+    image.x + image.width / 2,
+    image.y + image.height / 2,
+  );
+  await expect(page.getByTestId("ocr-overlay")).toHaveAttribute(
+    "data-active",
+    "true",
+  );
+
   const spans = await page
     .locator("[data-testid=ocr-overlay] [data-word]")
     .evaluateAll((elements) =>

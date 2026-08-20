@@ -1,5 +1,11 @@
 import { useAtom } from "jotai";
-import { useCallback, useEffect, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type RefObject,
+} from "react";
 
 import {
   boxFitsIn,
@@ -12,6 +18,7 @@ import {
   type Viewport,
 } from "@/canvas/coords";
 import { currentMode } from "@/canvas/canvas-mode";
+import { paintViewport } from "@/canvas/grid";
 import { isPanKeyDown } from "@/canvas/pan-key";
 import { readViewport, viewportsAtom } from "@/canvas/viewport-atom";
 
@@ -36,10 +43,22 @@ function zoomFactorFromWheel(deltaY: number): number {
 
 interface ViewportControls {
   viewport: Viewport;
+  /** Attach to the transformed scene and the grid: a gesture writes themdirectly. */
+  sceneRef: RefObject<HTMLDivElement | null>;
+  gridRef: RefObject<HTMLDivElement | null>;
   resetViewport: () => void;
   zoomFromCenter: (factor: number) => void;
   fitIntoView: (box: Box) => void;
 }
+
+/**
+ * How long a wheel gesture is assumed to still be running.
+ *
+ * A wheel has no end event, so the committed viewport is the one thing that
+ * cannot be written on the last event — there is no way to know which one that
+ * was. It is written once the wheel goes quiet instead.
+ */
+const WHEEL_SETTLE_MS = 120;
 
 /**
  * Wires pan and zoom onto `elementRef`. Wheel and pointer listeners are
@@ -69,6 +88,95 @@ export function useViewportControls(
   // instead of being torn down and re-attached on every frame of a pan — which
   // would drop pointer events mid-gesture.
 
+  /**
+   * The viewport a live gesture is at, which React has not been told about.
+   *
+   * A pan used to set state on every `pointermove`, and every move re-rendered
+   * the whole canvas — every node, every badge, every word of every overlay —
+   * to change two numbers in one `transform` string. On a phone that is the
+   * whole frame budget spent on reconciliation before the compositor has done
+   * anything (D77).
+   *
+   * So a gesture writes the scene and the grid itself and leaves the store
+   * alone until it ends. Null when nothing is live, which is what makes
+   * `viewport` below safe to read everywhere else: outside a gesture it is
+   * always the truth.
+   */
+  const liveRef = useRef<Viewport | null>(null);
+  const committedRef = useRef(viewport);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef(0);
+  const wheelTimerRef = useRef(0);
+
+  /**
+   * Applies `update` to the live viewport, painting once per frame.
+   *
+   * Coalesced through `requestAnimationFrame` because a phone reports pointers
+   * faster than it draws: several moves per frame is normal, and writing the
+   * transform on each of them is work no one ever sees.
+   */
+  const panLive = useCallback((update: (current: Viewport) => Viewport) => {
+    liveRef.current = update(liveRef.current ?? committedRef.current);
+    if (frameRef.current !== 0) {
+      return;
+    }
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = 0;
+      if (liveRef.current) {
+        paintViewport(sceneRef.current, gridRef.current, liveRef.current);
+      }
+    });
+  }, []);
+
+  /**
+   * A viewport change that is not part of a gesture: a keypress, a reset, a
+   * paste being framed. It replaces whatever a gesture was doing rather than
+   * being overwritten by it on the next frame.
+   */
+  const setSettled = useCallback(
+    (update: Viewport | ((current: Viewport) => Viewport)) => {
+      liveRef.current = null;
+      setViewport(update);
+    },
+    [setViewport],
+  );
+
+  /** Hands the gesture's result to the store. Safe to call when none is live. */
+  const commitLive = useCallback(() => {
+    const next = liveRef.current;
+    liveRef.current = null;
+    if (frameRef.current !== 0) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+    }
+    if (next) {
+      setViewport(next);
+    }
+  }, [setViewport]);
+
+  // Keeps the gesture's starting point current, and re-asserts the live
+  // viewport after any render that happens mid-gesture —
+  // a selection change, a recognition finishing, a sync round landing. React
+  // writes the committed transform back on its way through, which without this
+  // yanks the board back to where the gesture started for one frame.
+  useLayoutEffect(() => {
+    committedRef.current = viewport;
+    if (liveRef.current) {
+      paintViewport(sceneRef.current, gridRef.current, liveRef.current);
+    }
+  });
+
+  useEffect(
+    () => () => {
+      if (frameRef.current !== 0) {
+        cancelAnimationFrame(frameRef.current);
+      }
+      clearTimeout(wheelTimerRef.current);
+    },
+    [],
+  );
+
   const anchorFromEvent = useCallback(
     (event: { clientX: number; clientY: number }): Point => {
       const rect = elementRef.current?.getBoundingClientRect();
@@ -91,20 +199,24 @@ export function useViewportControls(
       // and two-finger pan would otherwise scroll it.
       event.preventDefault();
 
+      // A wheel is a gesture too, and a trackpad sends it at pointer rates.
+      clearTimeout(wheelTimerRef.current);
+      wheelTimerRef.current = window.setTimeout(commitLive, WHEEL_SETTLE_MS);
+
       if (event.ctrlKey || event.metaKey || event.shiftKey) {
         const factor = zoomFactorFromWheel(event.deltaY);
         const anchor = anchorFromEvent(event);
-        setViewport((current) => zoomByFactor(current, anchor, factor));
+        panLive((current) => zoomByFactor(current, anchor, factor));
         return;
       }
 
       const { deltaX, deltaY } = event;
-      setViewport((current) => panBy(current, -deltaX, -deltaY));
+      panLive((current) => panBy(current, -deltaX, -deltaY));
     }
 
     element.addEventListener("wheel", handleWheel, { passive: false });
     return () => element.removeEventListener("wheel", handleWheel);
-  }, [elementRef, setViewport, anchorFromEvent]);
+  }, [anchorFromEvent, commitLive, elementRef, panLive]);
 
   useEffect(() => {
     const element = elementRef.current;
@@ -161,6 +273,12 @@ export function useViewportControls(
     }
 
     function handlePointerDown(event: PointerEvent) {
+      // Flushes a wheel that has not settled yet. Everything that reads the
+      // viewport off a press — where a double-click lands, where a drag
+      // started — reads the committed one, and a zoom still sitting in the
+      // live ref would put it in the wrong place.
+      clearTimeout(wheelTimerRef.current);
+      commitLive();
       if (event.pointerType === "touch") {
         touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
         const pair = twoFingers();
@@ -237,7 +355,7 @@ export function useViewportControls(
           // it travels, so a pinch pans and zooms in one movement — the two are
           // one gesture on a touch screen, and separating them makes the board
           // slide out from under the fingers.
-          setViewport((current) =>
+          panLive((current) =>
             panBy(zoomByFactor(current, anchor, factor), dx, dy),
           );
           return;
@@ -249,23 +367,28 @@ export function useViewportControls(
       const dx = event.clientX - last.x;
       const dy = event.clientY - last.y;
       last = { x: event.clientX, y: event.clientY };
-      setViewport((current) => panBy(current, dx, dy));
+      panLive((current) => panBy(current, dx, dy));
     }
 
     function endPan(event: PointerEvent) {
+      const wasPanning = event.pointerId === panningPointerId;
       if (touches.delete(event.pointerId) && touches.size < 2) {
         // The pinch ends with the first finger to leave. The one still down is
         // deliberately not promoted to a pan: it has been sitting still while
         // the other did the moving, and handing it the board makes it jump.
         pinching = false;
       }
-      if (event.pointerId !== panningPointerId) {
-        return;
+      if (wasPanning) {
+        panningPointerId = null;
+        element!.style.cursor = "";
+        if (element!.hasPointerCapture(event.pointerId)) {
+          element!.releasePointerCapture(event.pointerId);
+        }
       }
-      panningPointerId = null;
-      element!.style.cursor = "";
-      if (element!.hasPointerCapture(event.pointerId)) {
-        element!.releasePointerCapture(event.pointerId);
+      // The store hears about the gesture once, here — when no finger is left
+      // that could still be moving the board.
+      if (panningPointerId === null && !pinching) {
+        commitLive();
       }
     }
 
@@ -279,7 +402,7 @@ export function useViewportControls(
       element.removeEventListener("pointerup", endPan);
       element.removeEventListener("pointercancel", endPan);
     };
-  }, [anchorFromEvent, elementRef, setViewport]);
+  }, [anchorFromEvent, commitLive, elementRef, panLive]);
 
   const zoomFromCenter = useCallback(
     (factor: number) => {
@@ -288,14 +411,14 @@ export function useViewportControls(
         x: (rect?.width ?? 0) / 2,
         y: (rect?.height ?? 0) / 2,
       };
-      setViewport((current) => zoomByFactor(current, center, factor));
+      setSettled((current) => zoomByFactor(current, center, factor));
     },
-    [elementRef, setViewport],
+    [elementRef, setSettled],
   );
 
   const resetViewport = useCallback(
-    () => setViewport(IDENTITY_VIEWPORT),
-    [setViewport],
+    () => setSettled(IDENTITY_VIEWPORT),
+    [setSettled],
   );
 
   /**
@@ -311,11 +434,11 @@ export function useViewportControls(
       if (!rect) {
         return;
       }
-      setViewport((current) =>
+      setSettled((current) =>
         boxFitsIn(box, current, rect) ? current : fitBox(box, current, rect),
       );
     },
-    [elementRef, setViewport],
+    [elementRef, setSettled],
   );
 
   useEffect(() => {
@@ -338,5 +461,12 @@ export function useViewportControls(
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [resetViewport, zoomFromCenter]);
 
-  return { viewport, resetViewport, zoomFromCenter, fitIntoView };
+  return {
+    viewport,
+    sceneRef,
+    gridRef,
+    resetViewport,
+    zoomFromCenter,
+    fitIntoView,
+  };
 }

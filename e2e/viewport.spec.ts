@@ -180,3 +180,35 @@ test("space+drag pans, and left-drag alone does not", async ({ page }) => {
   expect(after.tx - before.tx).toBeCloseTo(60, 0);
   expect(after.ty - before.ty).toBeCloseTo(40, 0);
 });
+
+test("the board follows the pointer before the gesture ends", async ({
+  page,
+}) => {
+  const start = await centerOf(page, "canvas-surface");
+  const before = await readTransform(page);
+
+  // Held down deliberately: a pan paints the scene itself and tells the store
+  // nothing until it ends (D77), so the interesting moment is mid-gesture.
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down({ button: "middle" });
+  await page.mouse.move(start.x + 120, start.y + 60, { steps: 6 });
+  // One frame for the coalesced paint.
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(resolve)),
+  );
+
+  const during = await readTransform(page);
+  expect(during.tx).toBeCloseTo(before.tx + 120, 0);
+  expect(during.ty).toBeCloseTo(before.ty + 60, 0);
+
+  // A render mid-gesture must not drag the board back to where the store still
+  // thinks it is: pressing Escape re-renders through the selection.
+  await page.keyboard.press("Escape");
+  const after = await readTransform(page);
+  expect(after.tx).toBeCloseTo(during.tx, 0);
+
+  await page.mouse.up({ button: "middle" });
+  const committed = await readTransform(page);
+  expect(committed.tx).toBeCloseTo(during.tx, 0);
+  expect(committed.ty).toBeCloseTo(during.ty, 0);
+});

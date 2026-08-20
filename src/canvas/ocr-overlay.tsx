@@ -131,6 +131,9 @@ function groupIntoLines(words: readonly Word[]): number[][] {
   return lines;
 }
 
+/** Stable, so the memos below do not rebuild on every render of an idle node. */
+const EMPTY_WORDS: readonly Word[] = [];
+
 interface OcrOverlayProps {
   words: readonly Word[];
   /** Intrinsic image size, the space the boxes are expressed in. */
@@ -151,10 +154,24 @@ export function OcrOverlay({
   // Asset space to world space. Images resize with a locked aspect ratio, so
   // one factor covers both axes.
   const scale = assetWidth > 0 ? nodeWidth / assetWidth : 0;
-  const lines = useMemo(() => groupIntoLines(words), [words]);
+  /**
+   * Words are only laid out while the node is being read (D77).
+   *
+   * A dense screenshot is several hundred spans, each one transparent text
+   * with its own `scaleX` correction, and every one of them was being styled,
+   * laid out and painted on a board where nobody could select any of it. They
+   * exist for exactly one purpose — native selection inside the node being
+   * read — so outside that they are pure cost, and the whole set is measured
+   * on the way in instead.
+   *
+   * The overlay element itself stays, active or not: it is the one thing on a
+   * recognized node that says the text is there.
+   */
+  const shown = active ? words : EMPTY_WORDS;
+  const lines = useMemo(() => groupIntoLines(shown), [shown]);
   const fontSizes = useMemo(
-    () => words.map((word) => (word.y1 - word.y0) * scale),
-    [words, scale],
+    () => shown.map((word) => (word.y1 - word.y0) * scale),
+    [shown, scale],
   );
   /**
    * What each span actually renders: the word, plus the space that separates it
@@ -168,14 +185,14 @@ export function OcrOverlay({
    * the box already contains is where the space goes.
    */
   const texts = useMemo(() => {
-    const rendered = words.map((word) => word.text);
+    const rendered = shown.map((word) => word.text);
     for (const line of lines) {
       for (let i = 0; i < line.length - 1; i++) {
         rendered[line[i]] += " ";
       }
     }
     return rendered;
-  }, [lines, words]);
+  }, [lines, shown]);
   // `fontRevision` is a dependency without being an argument: it is what forces
   // the re-measure once the real font replaces the fallback.
   const widths = useMemo(
@@ -201,7 +218,7 @@ export function OcrOverlay({
       )}
     >
       {lines.map((line, lineIndex) => {
-        const head = words[line[0]];
+        const head = shown[line[0]];
         // Every word on a line shares the line's band, so the line owns the
         // font size and the vertical placement and the words only have to
         // agree on where they start horizontally.
@@ -240,7 +257,7 @@ export function OcrOverlay({
               }}
             >
               {line.map((index, positionInLine) => {
-                const word = words[index];
+                const word = shown[index];
                 const naturalWidth = widths[index];
                 const boxWidth = (word.x1 - word.x0) * scale;
                 // Without this correction the highlight drifts further right
@@ -249,7 +266,7 @@ export function OcrOverlay({
                 // below still advances by the untransformed width.
                 const stretch = naturalWidth > 0 ? boxWidth / naturalWidth : 1;
                 const previous =
-                  positionInLine === 0 ? null : words[line[positionInLine - 1]];
+                  positionInLine === 0 ? null : shown[line[positionInLine - 1]];
                 const gap = previous
                   ? (word.x0 - previous.x0) * scale -
                     widths[line[positionInLine - 1]]

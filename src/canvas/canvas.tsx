@@ -42,17 +42,20 @@ import { TouchBar } from "@/canvas/touch-controls";
 import { useTapSelect } from "@/canvas/use-tap-select";
 import { useLasso } from "@/canvas/use-lasso";
 import { useNodeGestures } from "@/canvas/use-node-gestures";
+import { gridStyle, sceneTransform } from "@/canvas/grid";
 import { useViewportControls } from "@/canvas/use-viewport-controls";
 import { useTranslation } from "@/translations";
 
-const GRID_SPACING = 24;
-/** Below this on-screen dot spacing the grid reads as noise, so it fades out. */
-const GRID_FADE_BELOW = 6;
-
 export function Canvas({ boardId }: { boardId: string }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
-  const { viewport, resetViewport, zoomFromCenter, fitIntoView } =
-    useViewportControls(boardId, surfaceRef);
+  const {
+    viewport,
+    sceneRef,
+    gridRef,
+    resetViewport,
+    zoomFromCenter,
+    fitIntoView,
+  } = useViewportControls(boardId, surfaceRef);
   const { mode, setMode, coarse } = useCanvasMode();
   const { t } = useTranslation();
 
@@ -221,7 +224,6 @@ export function Canvas({ boardId }: { boardId: string }) {
       ? nodes.find((node) => node.id === selection[0] && node.kind === "text")
       : undefined;
 
-  const gridSize = GRID_SPACING * viewport.scale;
   // Selection chrome is drawn in world space, so it is divided by the zoom to
   // keep a constant thickness on screen.
   const hairline = 2 / viewport.scale;
@@ -237,23 +239,17 @@ export function Canvas({ boardId }: { boardId: string }) {
             it fades out when the dots crowd together, and fading the surface
             would take the whole scene with it. */}
         <div
+          ref={gridRef}
           aria-hidden
           data-testid="canvas-grid"
           className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, var(--color-neutral-800) 1px, transparent 1px)",
-            backgroundSize: `${gridSize}px ${gridSize}px`,
-            backgroundPosition: `${viewport.tx}px ${viewport.ty}px`,
-            opacity: gridSize < GRID_FADE_BELOW ? 0 : 1,
-          }}
+          style={gridStyle(viewport)}
         />
         <div
+          ref={sceneRef}
           data-testid="canvas-scene"
           className="absolute top-0 left-0 origin-top-left"
-          style={{
-            transform: `translate(${viewport.tx}px, ${viewport.ty}px) scale(${viewport.scale})`,
-          }}
+          style={{ transform: sceneTransform(viewport) }}
         >
           <div
             aria-hidden
