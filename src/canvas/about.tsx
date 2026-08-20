@@ -189,9 +189,10 @@ export function About() {
                 from outside. `BASE_URL` because the site lives under a
                 subpath, and a new tab because leaving the board to read a
                 licence is not what anyone means to do. */}
-            <div className="mt-3 flex gap-4 border-t border-white/10 pt-2 text-xs">
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-white/10 pt-2 text-xs">
               {(
                 [
+                  ["about.overview", "about.html"],
                   ["about.privacy", "privacy.html"],
                   ["about.support", "support.html"],
                   ["about.licenses", "licenses.html"],

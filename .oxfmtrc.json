@@ -5,5 +5,11 @@
   "sortTailwindcss": {
     "stylesheet": "./src/index.css"
   },
-  "ignorePatterns": ["dist", ".claude", "src/routeTree.gen.ts", "test-results"]
+  "ignorePatterns": [
+    "dist",
+    ".claude",
+    "src/routeTree.gen.ts",
+    "test-results",
+    "public/google*.html"
+  ]
 }

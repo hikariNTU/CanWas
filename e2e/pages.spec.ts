@@ -16,6 +16,11 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (file: string) => readFileSync(root + file, "utf8");
 
 const PAGES = [
+  // First because it is the one Google's reviewer is sent to: the OAuth
+  // consent screen's "application home page" points here rather than at the
+  // app, which redirects into a board and explains nothing to someone who has
+  // not signed in (D80).
+  { file: "about.html", title: "About" },
   { file: "privacy.html", title: "Privacy" },
   { file: "support.html", title: "Support" },
   { file: "licenses.html", title: "Licenses" },
@@ -138,15 +143,56 @@ test("the licence list is generated and current", async () => {
   }
 });
 
-test("the about panel links out to all three", async ({ page }) => {
+test("the about panel links out to every document page", async ({ page }) => {
   await page.goto("?engine=mock#/docsboard");
   await page.getByTestId("about-open").click();
   const panel = page.getByTestId("about-panel");
 
-  for (const { file, title } of PAGES) {
-    await expect(panel.getByRole("link", { name: title })).toHaveAttribute(
-      "href",
-      new RegExp(`${file}$`),
-    );
+  for (const { file } of PAGES) {
+    await expect(
+      panel.locator(`a[href$="${file}"]`),
+      `${file} is not linked from the about panel`,
+    ).toHaveCount(1);
+  }
+});
+
+/**
+ * The three things Google rejected the last submission for, as assertions.
+ *
+ * A consent-screen review fails on the home page rather than on the code, and
+ * it fails silently weeks later. These are cheap enough to keep.
+ */
+test("the home page states its purpose, its scope, and who publishes it", async ({
+  page,
+}) => {
+  await page.goto("about.html");
+
+  // Nothing is asked of the reader before they can read it. A page that waits
+  // for a sign-in is the second thing the review objected to, and here that
+  // would show up as an empty document rather than as an error.
+  // Exact, because the zh-Hant half of the page carries its own heading.
+  await expect(
+    page.getByRole("heading", { name: "CanWas", exact: true }),
+  ).toBeVisible();
+  const text = await page.locator("body").innerText();
+  expect(text.length).toBeGreaterThan(1500);
+  expect(text).not.toMatch(/sign in to continue|please sign in/i);
+
+  // What the app is for, in the reviewer's words: an app description, the
+  // Google data it touches, and why it touches it.
+  const scope = /DRIVE_SCOPE = "([^"]+)"/.exec(read("src/sync/auth.ts"))![1]!;
+  expect(text).toContain(scope);
+  expect(text).toMatch(/only those files it has itself created/i);
+
+  // An identifiable publisher and a way to reach them.
+  expect(text).toMatch(/Dennis Chung/);
+  expect(
+    page.locator("a[href*='github.com/hikariNTU/canwas/issues']"),
+  ).toBeTruthy();
+
+  // And the two links the consent screen submits alongside this one, both of
+  // which must be reachable from it.
+  for (const file of ["privacy.html", "support.html"]) {
+    await expect(page.locator(`a[href$="${file}"]`).first()).toBeVisible();
   }
 });

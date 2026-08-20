@@ -146,6 +146,10 @@ const translations = {
     "zh-TW": "壓縮後（同步用）",
     "en-US": "WebP for sync",
   },
+  "about.overview": {
+    "zh-TW": "關於 CanWas",
+    "en-US": "About CanWas",
+  },
   "about.privacy": {
     "zh-TW": "隱私權",
     "en-US": "Privacy",

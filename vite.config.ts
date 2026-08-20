@@ -84,6 +84,7 @@ export default defineConfig({
       // so these sit beside the router without contradicting it (D67).
       input: {
         app: htmlEntry("index.html"),
+        about: htmlEntry("about.html"),
         privacy: htmlEntry("privacy.html"),
         support: htmlEntry("support.html"),
         licenses: htmlEntry("licenses.html"),
@@ -107,7 +108,7 @@ export default defineConfig({
       // session — 31 MB of weights and an initialised runtime — mid-read. The
       // app asks instead (D72).
       registerType: "prompt",
-      // The three document pages are real HTML entries (D67), so they are
+      // The four document pages are real HTML entries (D67), so they are
       // precached like any other asset and open offline. `icon.png` stays for
       // the favicon; the 192 and 512 sizes are what a home screen wants.
       includeAssets: ["icon.png", "icon-192.png", "icon-512.png"],

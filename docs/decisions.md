@@ -2159,3 +2159,34 @@ immediately, which is what the code always claimed to do.
 board shared by name before it has content. Then the placeholder needs a flag
 saying it was created _by the app_ rather than being inferred from its
 emptiness.
+
+## D80 — The home page is a document, not the app
+
+Google rejected the OAuth consent screen three times over on the same URL. The
+homepage `https://hikarintu.github.io/canwas/` "is not registered to you", it
+"must be signed in to view", and it "does not explain what the app is for" —
+and the last two are one fault, not two. That URL is the app. It boots a
+router, redirects into a board, and shows a canvas with a sign-in button on it.
+A reviewer arriving without an account sees furniture and no prose.
+
+So the consent screen points at `about.html` instead, a fourth static page
+beside privacy, support and licenses (D67). It ships no JavaScript, waits for
+nothing, and reads the same whether or not anyone has ever signed in.
+
+What it must contain is set by the review checklist rather than by taste: what
+the application is for, **which** Google data it asks for and why, the exact
+scope string, an explicit statement of what the scope does _not_ reach, how to
+withdraw access, an identifiable publisher, and links onward to the policy and
+the support channel. `e2e/pages.spec.ts` asserts each of those, including that
+the scope named on the page is the one `auth.ts` actually requests — the same
+guard the privacy policy already had, for the same reason: widening the scope
+in code turns a paragraph on a public page into a false statement.
+
+Ownership is a separate matter and not a code change: `github.io` is on the
+Public Suffix List, so `hikarintu.github.io` verifies as its own site in Search
+Console via HTML-file upload — which is a file in `public/`, from the same
+Google account that owns the OAuth project. There is no DNS to prove.
+
+**Reverses if:** the app ever gains a real landing screen — one that explains
+itself before it opens a board. Then the document and the app agree and the
+consent screen can point at the root again.

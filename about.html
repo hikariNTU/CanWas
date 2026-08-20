@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="CanWas is an infinite board for images and text. Paste a screenshot, arrange it, and read the text back out of it. No account required; optional sync to your own Google Drive."
+    />
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="stylesheet" href="/src/pages.css" />
+    <title>About · CanWas</title>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <a class="wordmark" href="./">CanWas</a>
+        <nav>
+          <a href="./about.html">About</a>
+          <a href="./privacy.html">Privacy</a>
+          <a href="./support.html">Support</a>
+          <a href="./licenses.html">Licenses</a>
+        </nav>
+      </header>
+
+      <h1>CanWas</h1>
+      <p class="stamp">
+        An infinite board for images and the text inside them.
+      </p>
+
+      <p class="lede">
+        CanWas is a free web application for collecting screenshots and photos
+        on an unbounded canvas. Images may be pasted, dropped, or taken with the
+        device camera; they may be moved and arranged freely; and the text
+        printed inside each one becomes selectable and copyable, as though it
+        were text on a page. The application runs entirely within the browser.
+        No account is required to use it.
+      </p>
+
+      <p>
+        <a href="./">Open CanWas</a> &nbsp;·&nbsp;
+        <a href="https://github.com/hikariNTU/canwas">Source code on GitHub</a>
+      </p>
+
+      <h2>1. What it does</h2>
+
+      <ul>
+        <li>
+          <strong>Collects images on one surface.</strong> Screenshots, photos
+          and image files are placed on a canvas that has no edges, and are
+          positioned by dragging. The board is saved continuously as it is
+          edited.
+        </li>
+        <li>
+          <strong>Reads the text inside them.</strong> Optical character
+          recognition runs automatically on every image, in the browser itself,
+          using open-source models downloaded on first use. Recognised text may
+          then be selected with the cursor or a finger and copied. Both English
+          and Chinese are recognised. No image is ever uploaded to a recognition
+          service; nothing leaves the device for this purpose.
+        </li>
+        <li>
+          <strong>Works offline and installs.</strong> After its first
+          successful load the application opens without a network connection,
+          and it may be installed to a home screen or desktop like a native
+          application.
+        </li>
+        <li>
+          <strong>Synchronises across devices, optionally.</strong> Connecting a
+          Google&nbsp;Drive account copies boards between the user's own
+          devices. This is entirely optional, and is described in full below.
+        </li>
+      </ul>
+
+      <h2>2. What the Google account is used for</h2>
+
+      <p>
+        CanWas has <strong>no server and no database of its own</strong>. There
+        is nowhere for the developer to store a user's boards, and so the only
+        way to carry a board from one device to another is to place it in
+        storage the user already owns. Google&nbsp;Drive is offered for that
+        purpose. Signing in is <strong>optional</strong>; every feature except
+        cross-device synchronisation works without it.
+      </p>
+
+      <p>When Google&nbsp;Drive is connected, CanWas requests one scope:</p>
+
+      <table>
+        <tr>
+          <th><code>https://www.googleapis.com/auth/drive.file</code></th>
+          <td>
+            Permits the application to create files in Google&nbsp;Drive, and to
+            read and modify
+            <strong>only those files it has itself created</strong>. CanWas uses
+            it to write one file per board, into a folder it creates for that
+            purpose, and to read those files back on another device.
+          </td>
+        </tr>
+      </table>
+
+      <p>
+        This scope grants
+        <strong>no access to any other file in the account</strong>. Documents,
+        photographs, spreadsheets and folders that CanWas did not create are not
+        visible to it and cannot be read, altered or deleted by it. The scope
+        also grants no access to email, contacts, calendar, or profile
+        information beyond the address used to sign in.
+      </p>
+
+      <p>
+        Access tokens are held in memory for the duration of a session, expire
+        after one hour, and are not written to disk. Access may be withdrawn at
+        any time at
+        <a href="https://myaccount.google.com/permissions"
+          >myaccount.google.com/permissions</a
+        >; boards already on the device remain there afterwards, and the files
+        in Drive remain the user's own to keep or delete.
+      </p>
+
+      <p>
+        The
+        <a href="./privacy.html">privacy policy</a> sets out precisely what is
+        stored, where, and how to remove it.
+      </p>
+
+      <h2>3. Terms of use</h2>
+
+      <p>
+        CanWas is a personal, non-commercial project, published free of charge
+        and provided <strong>as-is, without warranty of any kind</strong>. No
+        service-level commitment is offered and availability is not guaranteed.
+        Users are responsible for retaining their own copies of anything they
+        cannot afford to lose. Nothing is sold, no payment is taken, and no data
+        is sold, shared, or transferred to any third party for any purpose.
+      </p>
+
+      <p>
+        The source code is published under the terms stated in the
+        <a href="https://github.com/hikariNTU/canwas">repository</a>.
+        Third-party components and model weights are credited on the
+        <a href="./licenses.html">licenses page</a>.
+      </p>
+
+      <h2>4. Who publishes it</h2>
+
+      <p>
+        CanWas is developed and published by <strong>Dennis Chung</strong> (<a
+          href="https://github.com/hikariNTU"
+          >hikariNTU</a
+        >) as an individual, and is hosted on GitHub&nbsp;Pages at
+        <code>https://hikarintu.github.io/canwas/</code>.
+      </p>
+
+      <p>
+        Questions, problem reports and requests are handled through
+        <a href="https://github.com/hikariNTU/canwas/issues">GitHub Issues</a>,
+        which is the sole support channel. The
+        <a href="./support.html">support page</a> describes what to include in a
+        report.
+      </p>
+
+      <section class="alt-lang" lang="zh-Hant">
+        <h1>關於 CanWas</h1>
+        <p class="stamp">無邊界圖片白板，並可選取圖中文字。</p>
+
+        <p class="lede">
+          CanWas
+          為免費網頁應用程式，供使用者於無邊界畫布上蒐集截圖與照片。圖片可透過貼上、拖入或裝置相機取得，
+          並可自由移動排列；圖片中所印之文字將可如網頁文字般選取與複製。本應用程式完全於瀏覽器端執行，
+          使用上無須註冊帳號。
+        </p>
+
+        <p>
+          <a href="./">開啟 CanWas</a> &nbsp;·&nbsp;
+          <a href="https://github.com/hikariNTU/canwas">GitHub 原始碼</a>
+        </p>
+
+        <h2>一、功能說明</h2>
+        <ul>
+          <li>
+            <strong>於單一畫面蒐集圖片：</strong
+            >截圖、照片與圖片檔案將置於無邊界之畫布上，以拖曳方式調整位置。白板於編輯過程中持續儲存。
+          </li>
+          <li>
+            <strong>辨識圖片內文字：</strong
+            >所有圖片將自動進行光學字元辨識（OCR），該作業於瀏覽器端執行，
+            所使用之開源模型於首次使用時下載。辨識完成之文字可以游標或手指選取並複製，支援中文與英文。
+            圖片不會上傳至任何辨識服務，過程中亦無任何資料離開本機裝置。
+          </li>
+          <li>
+            <strong>可離線使用並安裝：</strong
+            >首次成功載入後即可於無網路連線之情況下開啟，
+            並可如原生應用程式般安裝至主畫面或桌面。
+          </li>
+          <li>
+            <strong>可選用之跨裝置同步：</strong>連結 Google
+            雲端硬碟帳號後，白板將於使用者自有之各裝置間同步。此功能純屬選用，詳如下述。
+          </li>
+        </ul>
+
+        <h2>二、Google 帳號之使用目的</h2>
+        <p>
+          CanWas
+          <strong>並無自有伺服器與資料庫</strong
+          >，開發者無處可儲存使用者之白板資料，
+          因此將白板由甲裝置攜至乙裝置之唯一方式，即為存放於使用者本已擁有之儲存空間。Google
+          雲端硬碟即為此用途所提供。登入為<strong>選用</strong>，除跨裝置同步外之所有功能，
+          未登入亦可正常使用。
+        </p>
+
+        <p>連結 Google 雲端硬碟時，CanWas 僅要求下列單一權限範圍：</p>
+
+        <table>
+          <tr>
+            <th><code>https://www.googleapis.com/auth/drive.file</code></th>
+            <td>
+              允許本應用程式於 Google
+              雲端硬碟建立檔案，並<strong>僅能</strong>讀取及修改<strong>其自身所建立之檔案</strong>。
+              CanWas
+              以此為每一白板寫入一份檔案，置於其自行建立之資料夾中，並於其他裝置讀回。
+            </td>
+          </tr>
+        </table>
+
+        <p>
+          此權限範圍<strong>不授予存取帳號內任何其他檔案之權利</strong>。 非由
+          CanWas 建立之文件、相片、試算表與資料夾，本應用程式均無法看見，
+          亦無法讀取、變更或刪除。該範圍亦不授予存取郵件、聯絡人、日曆之權利，
+          或登入所用電子郵件位址以外之個人資料。
+        </p>
+
+        <p>
+          存取權杖僅於連線期間保存於記憶體中，效期一小時，不寫入磁碟。使用者得隨時於
+          <a href="https://myaccount.google.com/permissions"
+            >myaccount.google.com/permissions</a
+          >
+          撤銷授權；撤銷後已存於裝置之白板仍予保留，雲端硬碟中之檔案亦仍屬使用者所有，得自行保存或刪除。
+        </p>
+
+        <p>
+          有關儲存內容、儲存位置及刪除方式之完整說明，請參閱<a
+            href="./privacy.html"
+            >隱私權政策</a
+          >。
+        </p>
+
+        <h2>三、使用條款</h2>
+        <p>
+          CanWas
+          為個人非商業性專案，免費發布，並<strong>依現狀提供，不提供任何形式之保固</strong>。
+          本服務不提供服務水準承諾，亦不保證可用性。使用者應自行保存其無法承受遺失之任何資料。
+          本服務不販售任何商品、不收取任何費用，亦不會為任何目的販售、分享或移轉任何資料予第三方。
+        </p>
+        <p>
+          原始碼依<a href="https://github.com/hikariNTU/canwas">程式庫</a
+          >所載條款發布。 第三方元件與模型權重之出處，載於<a
+            href="./licenses.html"
+            >授權頁面</a
+          >。
+        </p>
+
+        <h2>四、發布者</h2>
+        <p>
+          CanWas 由 <strong>Dennis Chung</strong>（<a
+            href="https://github.com/hikariNTU"
+            >hikariNTU</a
+          >）以個人身分開發並發布，託管於 GitHub Pages
+          <code>https://hikarintu.github.io/canwas/</code>。
+        </p>
+        <p>
+          問題回報、疑難詢問與需求建議，一律透過
+          <a href="https://github.com/hikariNTU/canwas/issues">GitHub Issues</a>
+          處理，此為唯一支援管道。回報時應附之資訊，請參閱<a
+            href="./support.html"
+            >支援頁面</a
+          >。
+        </p>
+      </section>
+
+      <footer class="bottom">
+        <a href="./">Open CanWas</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./support.html">Support</a>
+        <a href="./licenses.html">Licenses</a>
+        <a href="https://github.com/hikariNTU/canwas">Source</a>
+      </footer>
+    </div>
+  </body>
+</html>
