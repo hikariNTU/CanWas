@@ -502,7 +502,7 @@ export function Canvas({ boardId }: { boardId: string }) {
                 data-testid="zoom-reset"
                 aria-label={t("canvas.resetView")}
                 onClick={resetViewport}
-                className="h-8 min-w-14 rounded-md px-2 font-mono text-xs text-neutral-300 tabular-nums transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+                className="h-8 min-w-14 rounded-full px-3 font-mono text-xs text-neutral-300 tabular-nums transition-colors duration-150 hover:bg-white/10 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none pointer-coarse:h-11"
               >
                 {Math.round(viewport.scale * 100)}%
               </button>
@@ -546,9 +546,9 @@ export function Canvas({ boardId }: { boardId: string }) {
                       )
                     }
                     className={clsx(
-                      "grid h-8 w-8 place-items-center rounded-md transition-colors duration-150 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none",
+                      "grid h-8 w-8 place-items-center rounded-full transition-colors duration-150 pointer-coarse:h-11 pointer-coarse:w-11 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none",
                       selectedText.fontSize === size
-                        ? "bg-neutral-800 text-sky-400"
+                        ? "bg-white/10 text-sky-400"
                         : "text-neutral-400 hover:text-neutral-100",
                     )}
                     style={{ fontSize: 8 + size / 4 }}
@@ -594,7 +594,7 @@ export function Canvas({ boardId }: { boardId: string }) {
 /** A floating chrome group. Excalidraw calls these islands; so do we. */
 export function Island({ children }: { children: React.ReactNode }) {
   return (
-    <div className="glass pointer-events-auto flex items-center gap-0.5 rounded-lg p-1">
+    <div className="glass pointer-events-auto flex items-center gap-0.5 rounded-full p-1">
       {children}
     </div>
   );
@@ -620,7 +620,7 @@ function IconButton({
       data-testid={testId}
       onClick={onClick}
       disabled={disabled}
-      className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-30"
+      className="grid h-8 w-8 place-items-center rounded-full text-neutral-400 transition-colors duration-150 hover:bg-white/10 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-30 pointer-coarse:h-11 pointer-coarse:w-11"
     >
       {children}
     </button>

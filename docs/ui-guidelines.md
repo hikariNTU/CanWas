@@ -112,9 +112,20 @@ No Unicode glyphs standing in for icons.
 
 - Canvas is full-bleed. Chrome floats over it, never reserves layout space.
 - Floating panels: `.glass-strong`; controls: `.glass`. See above.
-- Radius `rounded-lg` on panels, `rounded-md` on controls. Consistent, not zero —
+- Radius `rounded-lg` on panels and popups; **`rounded-full` on every floating
+  control and on the island that holds it.** A capsule of circles, not a row of
+  lozenges — the chrome is a layer of pebbles over the board, and it is the
+  shape that reads least like a second board. Panels keep the rectangle: a
+  capsule around a paragraph is a pill, not a sheet. Consistent, not zero —
   this is not homepage's Modernist system.
-- Hit targets at least 32px square.
+- Hit targets at least 32px square on a fine pointer, **44px on a coarse one** —
+  the minimum in Apple's Human Interface Guidelines, and the size a thumb
+  actually lands on. Use the `pointer-coarse:` variant rather than a hook: it is
+  the same question `(pointer: coarse)` answers for the touch bar
+  ([D70](decisions.md)), asked in CSS where no component has to know.
+- **Icon-only on touch.** The mode bar carries no text labels. A hand and a
+  marquee are the two most-drawn icons in this category of app, and a label in
+  two languages costs more width on a 412px screen than it explains.
 - **Conditional controls go at the end of a row.** A control that appears with
   the selection must never move the permanent ones — undo and redo shifting
   sideways as you select a node makes them feel unreliable to aim at.

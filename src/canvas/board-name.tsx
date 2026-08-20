@@ -79,7 +79,7 @@ export function BoardName({ boardId }: { boardId: string }) {
           // Shortcuts like Delete and Cmd+A belong to the text field here.
           event.stopPropagation();
         }}
-        className="glass pointer-events-auto h-9 w-52 rounded-lg px-2.5 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+        className="glass pointer-events-auto h-9 w-52 rounded-full px-3.5 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none pointer-coarse:h-11"
       />
     );
   }
@@ -91,7 +91,7 @@ export function BoardName({ boardId }: { boardId: string }) {
         data-testid="board-name"
         aria-label={t("board.rename")}
         onClick={startEditing}
-        className="pointer-events-auto h-9 max-w-52 truncate rounded-lg px-2 text-sm text-neutral-400 transition-colors duration-150 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+        className="pointer-events-auto h-9 max-w-52 truncate rounded-full px-3 text-sm text-neutral-400 transition-colors duration-150 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none pointer-coarse:h-11"
       >
         {name}
       </button>

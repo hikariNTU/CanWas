@@ -347,3 +347,53 @@ test("in select mode a finger on empty canvas lassos, and only lassos", async ({
     grid,
   );
 });
+
+test("every control a finger can hit is round and at least 44px", async ({
+  page,
+}) => {
+  await pasteImage(page, 240, 160);
+  const node = page.getByTestId("board-node");
+  await page.touchscreen.tap(
+    (await centreOf(node)).x,
+    (await centreOf(node)).y,
+  );
+  await expect(page.getByTestId("delete-selection")).toBeVisible();
+
+  // 44pt is the minimum touch target in Apple's Human Interface Guidelines,
+  // and the number every phone-sized control here is built around. The desktop
+  // islands are 32px and stay that way — `pointer-coarse:` is what separates
+  // them, so this is measurable only on a coarse pointer.
+  const controls = [
+    "board-menu",
+    "board-name",
+    "sync-button",
+    "about-open",
+    "undo",
+    "redo",
+    "zoom-reset",
+    "mode-pan",
+    "mode-select",
+    "add-image",
+    "delete-selection",
+  ];
+
+  for (const id of controls) {
+    const measured = await page.getByTestId(id).evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const radius = parseFloat(getComputedStyle(element).borderTopLeftRadius);
+      return { width: rect.width, height: rect.height, radius };
+    });
+    expect(measured.height, `${id} is under 44px tall`).toBeGreaterThanOrEqual(
+      44,
+    );
+    expect(measured.width, `${id} is under 44px wide`).toBeGreaterThanOrEqual(
+      44,
+    );
+    // Fully rounded: a pill's radius is half its height, and Tailwind's
+    // `rounded-full` resolves to a number far larger, which the browser clamps.
+    expect(
+      measured.radius,
+      `${id} is not fully rounded`,
+    ).toBeGreaterThanOrEqual(measured.height / 2);
+  }
+});

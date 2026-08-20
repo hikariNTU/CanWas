@@ -202,7 +202,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
             aria-label={reconnectLabel}
             disabled={state.status === "connecting"}
             onClick={() => void signIn()}
-            className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-lg pr-2.5 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50"
+            className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-full pr-3 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11"
           >
             <Avatar account={remembered} size={22} />
             {t(
@@ -224,7 +224,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
             data-sync-state={status.state}
             data-sync-failed={failure ? "" : undefined}
             aria-label={failure ?? t(label)}
-            className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${tone}`}
+            className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11 ${tone}`}
           >
             <Icon name={icon} size={18} />
             {failure && (

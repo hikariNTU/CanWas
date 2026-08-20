@@ -1801,7 +1801,8 @@ exists to hold it.
 The bar sits one row above the zoom and undo islands rather than beside them,
 for the same 412px reason.
 
-The active segment is `bg-white/10`, not a fixed grey. Inside glass the surface
+The segments are icon-only — a hand and a marquee, no text. The active one is
+`bg-white/10`, not a fixed grey. Inside glass the surface
 is tinted and the board moves behind it, so a flat neutral is the one thing in
 the bar that does not move with it and it reads as a seam
 (docs/ui-guidelines.md).

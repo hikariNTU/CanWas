@@ -55,10 +55,12 @@ export function TouchBar({
           aria-pressed={mode === option.mode}
           onClick={() => onChange(option.mode)}
           className={clsx(
-            // 44px, not the 32px the desktop islands use: a finger cannot
-            // reliably hit anything smaller, and this is the control that
-            // exists precisely because there is no pointer.
-            "flex h-11 items-center gap-1.5 rounded-full px-4 text-xs transition-colors duration-150",
+            // 44x44, the minimum touch target Apple's HIG asks for, and
+            // square so the pill reads as a row of circles rather than a row
+            // of lozenges. No text: a hand and a marquee are the two most
+            // drawn icons in this category of app, and a label in two
+            // languages costs more width than it explains.
+            "grid h-11 w-11 place-items-center rounded-full transition-colors duration-150",
             // White at a low alpha, never a fixed grey. Inside glass the
             // surface is tinted and the board moves behind it, so a flat
             // neutral is the one thing in the bar that does not move with it
@@ -68,8 +70,7 @@ export function TouchBar({
               : "text-neutral-400",
           )}
         >
-          <Icon name={option.icon} />
-          {option.label}
+          <Icon name={option.icon} size={22} />
         </button>
       ))}
 
