@@ -128,11 +128,17 @@ export function createDriveTransport(getSession: SessionSource): SyncTransport {
   return {
     name: "drive",
 
-    async listBoardIds() {
+    async listBoards() {
       const { boards } = await open();
-      return [...boards.keys()]
-        .filter((name) => name.endsWith(".json"))
-        .map((name) => name.slice(0, -".json".length));
+      return [...boards.entries()]
+        .filter(([name]) => name.endsWith(".json"))
+        .map(([name, file]) => ({
+          id: name.slice(0, -".json".length),
+          name: file.appProperties?.name,
+          // Written by `putBoard` as a decimal string. A file from an older
+          // build has none, and `undefined` is read as "ask", not as "skip".
+          updatedAt: Number(file.appProperties?.updatedAt) || undefined,
+        }));
     },
 
     async getBoard(id) {
@@ -160,6 +166,13 @@ export function createDriveTransport(getSession: SessionSource): SyncTransport {
           body: new Blob([JSON.stringify(stamped(board, BOARD_VERSION))], {
             type: "application/json",
           }),
+          // Repeated into Drive's own metadata so a listing — one request,
+          // already made — answers "which boards, called what, changed when"
+          // without opening a single file.
+          appProperties: {
+            name: board.name,
+            updatedAt: String(board.updatedAt),
+          },
         }),
       );
       state.boards.set(name, { ...written, name });

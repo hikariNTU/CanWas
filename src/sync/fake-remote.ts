@@ -69,11 +69,17 @@ interface StoredAsset extends RemoteAsset {
 export const fakeRemote: SyncTransport = {
   name: "fake",
 
-  async listBoardIds() {
-    const keys = await run<IDBValidKey[]>(BOARD_STORE, "readonly", (store) =>
-      store.getAllKeys(),
+  async listBoards() {
+    // Drive answers this from file metadata it already had; here the whole
+    // record is to hand, so the same three fields are read off it.
+    const records = await run<SyncBoard[]>(BOARD_STORE, "readonly", (store) =>
+      store.getAll(),
     );
-    return keys.map(String);
+    return records.map((board) => ({
+      id: board.id,
+      name: board.name,
+      updatedAt: board.updatedAt,
+    }));
   },
 
   async getBoard(id) {

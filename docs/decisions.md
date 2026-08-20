@@ -1450,3 +1450,39 @@ write.
 Reverses if: readings grow large enough to be worth compressing or chunking. A
 dense page is a few hundred words of JSON today, which is smaller than the image
 it describes by a wide margin.
+
+## D61 — Every board reconciles once per connection, in records mode
+
+**2026-08-20 · settled**
+
+`reconcileBoards` walks the union of local and remote boards when a transport
+appears. Connecting had meant "back up the board I am looking at", and a board
+made elsewhere never appeared here at all.
+
+Once per _connection_, not per navigation: it is the one operation that touches
+everything, and running it each time a board is opened would make browsing
+expensive.
+
+Boards that are not open sync in `records` mode — push the record, push the
+images, download nothing but the record. Images are the only thing in this app
+that cannot be recomputed, so they go up straight away; pulling them down for a
+board nobody is looking at is speculative traffic, and the missing-asset
+placeholder already handles a node whose picture has not arrived.
+
+The skip is the part that makes it affordable. `putBoard` repeats the board's
+`updatedAt` into Drive `appProperties`, so the folder listing taken at session
+start answers "which of these changed" for every board at once, and an unchanged
+board costs zero requests. Agreement must be unanimous across local, remote and
+base; an absent stamp means ask, because a board written before this existed has
+none and would otherwise be skipped forever.
+
+The open board is excluded, and the exclusion is re-checked for every board
+rather than captured once — the pass outlives a navigation, and two writers on
+one board, one from atoms and one from disk, is exactly the race it exists to
+avoid.
+
+Reverses if: boards get large enough that a listing no longer settles the
+question, or a change feed becomes available.
+
+See `docs/sync-limits.md` for what this costs in Drive quota units and where it
+still breaks.

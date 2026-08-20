@@ -36,10 +36,25 @@ export interface RemoteText {
   words: Word[];
 }
 
+/**
+ * What the remote can say about a board without the board being fetched.
+ *
+ * `updatedAt` is the whole point: it is what lets a device with fifty boards
+ * decide, from one listing it already had to make, that forty-nine of them are
+ * untouched and need no request at all. Optional because a board written by an
+ * older build carries no such stamp — and an absent stamp must mean "ask",
+ * never "skip".
+ */
+export interface RemoteBoardMeta {
+  id: string;
+  name?: string;
+  updatedAt?: number;
+}
+
 export interface SyncTransport {
   readonly name: TransportName;
-  /** Board ids the remote holds, deleted ones included — a tombstone is data. */
-  listBoardIds(): Promise<string[]>;
+  /** Boards the remote holds, deleted ones included — a tombstone is data. */
+  listBoards(): Promise<RemoteBoardMeta[]>;
   getBoard(id: string): Promise<SyncBoard | null>;
   putBoard(board: SyncBoard): Promise<void>;
   hasAsset(id: string): Promise<boolean>;

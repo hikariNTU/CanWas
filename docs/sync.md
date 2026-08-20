@@ -291,20 +291,57 @@ original, so a round trip through two devices is lossy exactly once.
 
 ## What is still missing
 
-- **Board _lists_ do not sync**, only the board that is open. A board created on
-  the phone does not appear on the laptop's menu at all; opening it by id does
-  work, and pulls the whole board down.
-- **Nothing uploads in bulk.** On first connecting, only the open board goes up.
-  Every other board waits until it is opened. `listBoardIds()` is implemented on
-  both transports and called by nothing.
 - **There is no periodic pull.** Rounds fire on board open, 2.5s after edits
-  stop, and on the button. Two devices open on the same board do not converge
-  on their own.
+  stop, on the button, and once per connection for every other board. Two
+  devices open on the same board do not converge on their own.
+- **The folder listing is cached for the whole session.** A tab left open never
+  sees anything another device added.
+- **Nothing backs off.** A `403` or `429` from Drive fails that board's round;
+  the documented truncated exponential backoff is not implemented.
+
+`docs/sync-limits.md` has the numbers and the longer list of ways data can still
+go wrong — clock skew, two tabs, a rename dropping tombstones.
+
 - **Board deletion does not sync.** `deletedAt` is merged and honoured, but
   nothing sets it — `removeBoard` still drops the row locally.
 - **Tombstones are never reclaimed.** They are small, and a wrong reclamation
   resurrects a deleted node, so the bet is not worth taking until there is a
   reason.
+
+## Every board, once per connection
+
+`useSync` keeps the open board in step. That was the whole of sync for a while,
+and it left two holes of the same shape: connecting for the first time uploaded
+one board out of however many exist, and a board made on another device never
+appeared here, because the menu is fed from local IndexedDB and nothing ever
+asked the remote what it had.
+
+`reconcileBoards` walks the union of both sides once per connection — not per
+navigation, since it is the one thing that should not run every time a board is
+opened.
+
+- **The open board is skipped**, and the check is repeated for every board
+  rather than taken once at the start. The pass outlives a navigation, and the
+  board that was safe to touch when it began may be the one on screen by the
+  time it is reached. Two writers on one board, one working from atoms and one
+  from disk, is the bug that check exists to prevent.
+- **Boards that have not moved cost nothing.** Each board's `updatedAt` is
+  repeated into Drive's `appProperties`, so one folder listing — already made —
+  answers "which of these changed" for all of them. Agreement is only believed
+  when all three stamps line up: local, remote and base. An absent stamp means
+  _ask_, never _skip_, or a board written by an older build would be skipped
+  forever.
+- **Other boards sync in `records` mode**: their record and their images go up,
+  and nothing but the record comes down. Images cannot be recomputed, so they
+  belong on the remote immediately; downloading the images of a board nobody has
+  opened is speculative traffic, and the missing-asset placeholder already
+  covers a node whose picture has not arrived.
+- **Blobs are read from disk one at a time**, and only after the remote has said
+  it does not have that image. Holding fifty boards of images in memory to
+  upload the few that are missing is a way to run a phone out of memory doing
+  housekeeping.
+- **One bad board does not stop the pass.** A failure is counted and the walk
+  continues.
 
 ## Opening a board this device has never seen
 

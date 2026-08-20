@@ -21,6 +21,7 @@ import { fakeRemote } from "@/sync/fake-remote";
 import type { SyncBoard } from "@/sync/merge";
 import { selectedTransport, type SyncTransport } from "@/sync/transport";
 import { settleRound } from "@/sync/settle";
+import { reconcileBoards } from "@/sync/reconcile";
 import { syncBoard } from "@/sync/sync-board";
 
 /** How long the board must sit still before a push. Longer than the local save. */
@@ -226,6 +227,45 @@ export function useSync(boardId: string): {
       running.current = false;
     }
   }, [boardId, commit, setStatus, store, transport]);
+
+  // Everything that is not the open board, once per connection.
+  //
+  // Keyed on the transport rather than on the board, so switching boards does
+  // not run it again: it walks every board either side has, which is the one
+  // thing that should not happen on every navigation. A reload or a fresh
+  // sign-in is a new transport, and that is when it is worth doing.
+  const reconciled = useRef<SyncTransport | null>(null);
+  // Read through a ref so the pass sees navigations that happen while it runs,
+  // rather than the board that was open when it started. Written in an effect
+  // rather than during render, which is the only time a ref is allowed to move.
+  const openBoard = useRef(boardId);
+  useEffect(() => {
+    openBoard.current = boardId;
+  }, [boardId]);
+  useEffect(() => {
+    if (!transport || reconciled.current === transport) {
+      return;
+    }
+    reconciled.current = transport;
+    void reconcileBoards({
+      transport,
+      skip: () => openBoard.current,
+      engine: selectedEngine(),
+      onBoard: (meta) => {
+        // The menu fills in as the pass runs rather than at the end of it, so
+        // a board that arrives from another device is reachable immediately.
+        store.set(boardsMetaAtom, {
+          ...store.get(boardsMetaAtom),
+          [meta.id]: meta,
+        });
+      },
+      // Deliberately not surfaced as a sync failure. The status belongs to the
+      // open board, and telling someone their board failed to sync because a
+      // different board did would send them looking in the wrong place.
+    }).catch(() => {});
+    // `boardId` is deliberately not a dependency: the pass runs once per
+    // connection, and the ref above is what keeps it current.
+  }, [store, transport]);
 
   // Pull when the board opens or a transport appears.
   useEffect(() => {

@@ -21,6 +21,16 @@ export interface BoardSnapshot {
   board: SyncBoard;
   /** Assets this device holds, by id. Only their bytes are wanted here. */
   assets: Record<string, Asset>;
+  /**
+   * Fetches an asset this device holds on disk but not in memory.
+   *
+   * The open board keeps its assets in the store, so `assets` answers for it.
+   * A pass over every board cannot: fifty boards of image blobs held at once
+   * to upload the few that are missing is a way to run a phone out of memory
+   * doing housekeeping. This is consulted only after the remote has said it
+   * does not have the asset, so nothing is read off disk to be thrown away.
+   */
+  loadAsset?: (id: string) => Promise<Asset | undefined>;
 }
 
 export interface SyncResult {
@@ -66,6 +76,17 @@ export async function syncBoard(options: {
   onText: (id: string, words: readonly Word[]) => Promise<void>;
   /** This build's recognizer. Results from another one are not interchangeable. */
   engine: EngineName;
+  /**
+   * `"records"` pushes but never downloads.
+   *
+   * For boards the user is not looking at. Their board record and their images
+   * belong on the remote — that is what connecting was for, and an image is
+   * the one thing here that cannot be recomputed. Pulling *down* the images of
+   * a board nobody has opened is speculative traffic, and the board renders
+   * with placeholders until it is opened, which is machinery that already
+   * exists.
+   */
+  mode?: "full" | "records";
 }): Promise<SyncResult> {
   const { transport, local, base } = options;
 
@@ -78,7 +99,7 @@ export async function syncBoard(options: {
   // remote does not have yet is a board another device renders with a hole in
   // it, and the window between the two writes is exactly when a phone is most
   // likely to be closed.
-  const uploaded = await pushAssets(transport, merged.nodes, local.assets);
+  const uploaded = await pushAssets(transport, merged.nodes, local);
 
   const unchanged =
     remote !== null &&
@@ -93,19 +114,16 @@ export async function syncBoard(options: {
   // in the store and the local pipeline would start on it the moment React saw
   // it — spending the 21 MB and the seconds this exchange exists to save, and
   // then overwriting the arriving reading with its own.
-  const readings = await pullText(
-    transport,
-    merged.nodes,
-    local.assets,
-    options,
-  );
+  const records = options.mode === "records";
+  const readings = records
+    ? new Map<string, readonly Word[]>()
+    : await pullText(transport, merged.nodes, local.assets, options);
 
-  const downloaded = await pullAssets(
-    transport,
-    merged.nodes,
-    local.assets,
-    (id, blob) => options.onAsset(id, blob, readings.get(id)),
-  );
+  const downloaded = records
+    ? []
+    : await pullAssets(transport, merged.nodes, local.assets, (id, blob) =>
+        options.onAsset(id, blob, readings.get(id)),
+      );
 
   // An asset this device already held takes its reading on its own: no
   // download is coming to carry it.
@@ -173,12 +191,18 @@ async function pullText(
 async function pushAssets(
   transport: SyncTransport,
   nodes: readonly BoardNode[],
-  held: Record<string, Asset>,
+  local: BoardSnapshot,
 ): Promise<number> {
   let uploaded = 0;
   for (const id of new Set(assetIdsOf(nodes))) {
-    const asset = held[id];
-    if (!asset || (await transport.hasAsset(id))) {
+    // Asked before the bytes are looked for, rather than after. On Drive this
+    // costs nothing — the folder listing is already in hand — and it means a
+    // board whose images are all uploaded reads no blobs at all.
+    if (await transport.hasAsset(id)) {
+      continue;
+    }
+    const asset = local.assets[id] ?? (await local.loadAsset?.(id));
+    if (!asset) {
       continue;
     }
     await transport.putAsset(id, uploadableBytes(asset));
