@@ -2,6 +2,13 @@ node_modules
 dist
 .DS_Store
 *.local
+
+# Local Google client id. Not a secret, but this file is where a real one
+# would land by accident — and a Vite build inlines every VITE_ variable into
+# public JavaScript.
+.env
+.env.*
+!.env.example
 test-results
 playwright-report
 blob-report
