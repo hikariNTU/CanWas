@@ -170,6 +170,15 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
   // nothing to an attacker: it opens no door, it only names one.
   const remembered = state.status === "signedIn" ? null : lastAccount();
 
+  // Said in words, because the tooltip says it in a picture and a screen reader
+  // gets none of it. Base UI keeps the popup out of the accessibility tree, so
+  // the label on the control is the only place this exists.
+  const reconnectLabel = remembered
+    ? [t("sync.reconnectAs"), remembered.name, remembered.email]
+        .filter(Boolean)
+        .join(" ")
+    : t("sync.reconnect");
+
   return (
     <>
       {/* Beside the icon rather than inside the popup. Reconnecting is not a
@@ -192,6 +201,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
         >
           <button
             data-testid="sync-reconnect"
+            aria-label={reconnectLabel}
             disabled={state.status === "connecting"}
             onClick={() => void signIn()}
             className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-lg pr-2.5 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50"
@@ -215,7 +225,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
             data-testid="sync-button"
             data-sync-state={status.state}
             data-sync-failed={failure ? "" : undefined}
-            aria-label={t(label)}
+            aria-label={failure ?? t(label)}
             className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${tone}`}
           >
             <Icon name={icon} size={18} />

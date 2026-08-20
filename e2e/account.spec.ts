@@ -115,10 +115,18 @@ test("the reconnect tooltip names the whole account, in the app's own style", as
   await expect(pill).not.toHaveAttribute("title");
   await expect(page.getByTestId("sync-button")).not.toHaveAttribute("title");
 
+  // Base UI keeps the popup out of the accessibility tree on purpose: a tooltip
+  // is a second rendering of what the trigger already means. So the trigger has
+  // to say it, and say the same thing.
+  await expect(pill).toHaveAttribute(
+    "aria-label",
+    "Reconnect as Some One someone@example.com",
+  );
+
   await pill.hover();
   // The button says "Reconnect"; what it has no room to say is who that would
   // be, which is the only question on a machine with two accounts signed in.
-  const tip = page.getByRole("tooltip");
+  const tip = page.getByTestId("tooltip");
   await expect(tip).toBeVisible();
   await expect(tip).toContainText("Some One");
   await expect(tip).toContainText("someone@example.com");

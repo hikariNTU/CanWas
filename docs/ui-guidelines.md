@@ -122,9 +122,14 @@ belonged to a different program. One provider covers the whole chrome, so the
 delay applies to a pointer passing through a control and not to the second
 label after you have already read the first.
 
-The role is set explicitly: Base UI does not put `role="tooltip"` on the popup,
-and without it a screen reader is handed a box of text with no relationship to
-the control it describes.
+The popup carries no `role="tooltip"` and no `aria-describedby`. Base UI leaves
+it out of the accessibility tree deliberately, and its documentation gives the
+rule that replaces it: _"the tooltip's trigger must have an `aria-label`
+attribute that closely matches the tooltip's content"_. A tooltip is a second
+rendering of what the control already means, so the control carries it and the
+popup is decoration. Every `Tip` is therefore paired with a matching
+`aria-label` — including the sync button, whose label is the failure message
+when there is one rather than the name of the state.
 
 A tooltip may hold more than a line. The reconnect button shows the whole
 account — face, name, address — because the button has room to say "Reconnect"

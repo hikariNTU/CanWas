@@ -68,6 +68,7 @@ export function BoardName({ boardId }: { boardId: string }) {
       <button
         type="button"
         data-testid="board-name"
+        aria-label={t("board.rename")}
         onClick={startEditing}
         className="pointer-events-auto h-9 max-w-52 truncate rounded-lg px-2 text-sm text-neutral-400 transition-colors duration-150 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
       >

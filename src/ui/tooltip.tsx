@@ -27,11 +27,13 @@ export function Tip({
       <Tooltip.Trigger render={children} />
       <Tooltip.Portal>
         <Tooltip.Positioner sideOffset={6}>
-          {/* Base UI does not put the role on the popup itself, and without it
-              a screen reader is handed a box of text with no relationship to
-              the control it describes. */}
+          {/* No `role="tooltip"` and no `aria-describedby`: Base UI leaves the
+              popup out of the accessibility tree on purpose. A tooltip is a
+              second rendering of something the trigger already means, so the
+              trigger carries it — every `Tip` here is paired with an
+              `aria-label` on the control that says the same thing the popup
+              says. Announcing both would read it twice. */}
           <Tooltip.Popup
-            role="tooltip"
             data-testid="tooltip"
             className="glass-strong pointer-events-none max-w-64 rounded-md px-2 py-1 text-xs text-neutral-200"
           >
