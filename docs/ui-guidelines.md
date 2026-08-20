@@ -112,6 +112,24 @@ but here — and green is read at the edge of vision where grey has to be looked
 at. Syncing stays neutral, because a state that lasts two seconds does not need
 announcing.
 
+## Tooltips
+
+Every hover label in the chrome is a Base UI tooltip, never the native `title`
+attribute. The browser draws `title` in its own style at its own speed, in the
+OS's colours rather than the app's, and never at all on a touch screen — on a
+canvas made of floating glass panels it was the one element that looked like it
+belonged to a different program. One provider covers the whole chrome, so the
+delay applies to a pointer passing through a control and not to the second
+label after you have already read the first.
+
+The role is set explicitly: Base UI does not put `role="tooltip"` on the popup,
+and without it a screen reader is handed a box of text with no relationship to
+the control it describes.
+
+A tooltip may hold more than a line. The reconnect button shows the whole
+account — face, name, address — because the button has room to say "Reconnect"
+and no room to say who that would be.
+
 A failure — of a round, or of the connection itself — puts a red dot on the
 button. Colour rather than a glyph, and on top of the icon rather than instead
 of it: the icon still has to say which state sync is in, and a board is looked

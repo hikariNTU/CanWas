@@ -30,6 +30,7 @@ import { OcrOverlay } from "@/canvas/ocr-overlay";
 import { useOcr } from "@/ocr/use-ocr";
 import { useCompression } from "@/image/use-compression";
 import { SyncButton } from "@/sync/sync-button";
+import { TipProvider } from "@/ui/tooltip";
 import { useSync } from "@/sync/use-sync";
 import { Icon } from "@/ui/icon";
 import { screenToWorld } from "@/canvas/coords";
@@ -424,110 +425,115 @@ export function Canvas({ boardId }: { boardId: string }) {
       </div>
 
       {/* Chrome floats over the canvas and never reserves layout space, so the
-          board reaches every edge of the window. */}
-      <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1">
-        <BoardMenu boardId={boardId} onResetView={resetViewport} />
-        <BoardName boardId={boardId} />
-      </div>
+          board reaches every edge of the window. One tooltip provider covers
+          all of it: the delay is for a pointer passing through a control, and
+          having already read one label, the next should not make you wait
+          again. */}
+      <TipProvider>
+        <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1">
+          <BoardMenu boardId={boardId} onResetView={resetViewport} />
+          <BoardName boardId={boardId} />
+        </div>
 
-      {/* Opposite corner from the menu, so the two never crowd a narrow
+        {/* Opposite corner from the menu, so the two never crowd a narrow
           window, and away from the zoom and undo controls that get used. */}
-      <div className="pointer-events-none absolute top-3 right-3 flex items-center gap-1">
-        <SyncButton onSync={syncNow} />
-        <About />
-      </div>
+        <div className="pointer-events-none absolute top-3 right-3 flex items-center gap-1">
+          <SyncButton onSync={syncNow} />
+          <About />
+        </div>
 
-      {/* Bottom right: the only corner left, and the reachable one on a phone
+        {/* Bottom right: the only corner left, and the reachable one on a phone
           held in either hand. */}
-      <div className="pointer-events-none absolute right-3 bottom-3">
-        <AddImage
-          onFiles={(files) => {
-            // No cursor to place against, so it lands in the middle of the
-            // view — the same fallback a paste uses when the pointer has never
-            // been over the canvas.
-            void ingestFiles(files, null);
-          }}
-        />
-      </div>
+        <div className="pointer-events-none absolute right-3 bottom-3">
+          <AddImage
+            onFiles={(files) => {
+              // No cursor to place against, so it lands in the middle of the
+              // view — the same fallback a paste uses when the pointer has never
+              // been over the canvas.
+              void ingestFiles(files, null);
+            }}
+          />
+        </div>
 
-      {nodes.length === 0 && (
-        <p className="pointer-events-none absolute inset-x-0 top-1/2 text-center text-sm text-neutral-600">
-          {t("canvas.empty")}
-        </p>
-      )}
-
-      {/* Conditional controls sit at the end of the row: a control that comes
-          and goes must never shift the position of the permanent ones. */}
-      <div className="pointer-events-none absolute bottom-3 left-3 flex gap-2">
-        <Island>
-          <IconButton
-            label={t("canvas.zoomOut")}
-            onClick={() => zoomFromCenter(1 / 1.2)}
-          >
-            <Icon name="remove" />
-          </IconButton>
-          <button
-            type="button"
-            data-testid="zoom-reset"
-            aria-label={t("canvas.resetView")}
-            onClick={resetViewport}
-            className="h-8 min-w-14 rounded-md px-2 font-mono text-xs text-neutral-300 tabular-nums transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
-          >
-            {Math.round(viewport.scale * 100)}%
-          </button>
-          <IconButton
-            label={t("canvas.zoomIn")}
-            onClick={() => zoomFromCenter(1.2)}
-          >
-            <Icon name="add" />
-          </IconButton>
-        </Island>
-        <Island>
-          <IconButton
-            label={t("canvas.undo")}
-            testId="undo"
-            onClick={undo}
-            disabled={!canUndo}
-          >
-            <Icon name="undo" />
-          </IconButton>
-          <IconButton
-            label={t("canvas.redo")}
-            testId="redo"
-            onClick={redo}
-            disabled={!canRedo}
-          >
-            <Icon name="redo" />
-          </IconButton>
-        </Island>
-        {selectedText?.kind === "text" && (
-          <Island>
-            {FONT_SIZES.map((size) => (
-              <button
-                key={size}
-                type="button"
-                data-testid={`font-size-${size}`}
-                aria-label={t("text.size")}
-                aria-pressed={selectedText.fontSize === size}
-                onClick={() =>
-                  commit((current) =>
-                    setFontSize(current, selectedText.id, size),
-                  )
-                }
-                className={clsx(
-                  "grid h-8 w-8 place-items-center rounded-md transition-colors duration-150 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none",
-                  selectedText.fontSize === size
-                    ? "bg-neutral-800 text-sky-400"
-                    : "text-neutral-400 hover:text-neutral-100",
-                )}
-                style={{ fontSize: 8 + size / 4 }}
-              >
-                A
-              </button>
-            ))}
-          </Island>
+        {nodes.length === 0 && (
+          <p className="pointer-events-none absolute inset-x-0 top-1/2 text-center text-sm text-neutral-600">
+            {t("canvas.empty")}
+          </p>
         )}
-      </div>
+
+        {/* Conditional controls sit at the end of the row: a control that comes
+          and goes must never shift the position of the permanent ones. */}
+        <div className="pointer-events-none absolute bottom-3 left-3 flex gap-2">
+          <Island>
+            <IconButton
+              label={t("canvas.zoomOut")}
+              onClick={() => zoomFromCenter(1 / 1.2)}
+            >
+              <Icon name="remove" />
+            </IconButton>
+            <button
+              type="button"
+              data-testid="zoom-reset"
+              aria-label={t("canvas.resetView")}
+              onClick={resetViewport}
+              className="h-8 min-w-14 rounded-md px-2 font-mono text-xs text-neutral-300 tabular-nums transition-colors duration-150 hover:bg-neutral-800 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+            >
+              {Math.round(viewport.scale * 100)}%
+            </button>
+            <IconButton
+              label={t("canvas.zoomIn")}
+              onClick={() => zoomFromCenter(1.2)}
+            >
+              <Icon name="add" />
+            </IconButton>
+          </Island>
+          <Island>
+            <IconButton
+              label={t("canvas.undo")}
+              testId="undo"
+              onClick={undo}
+              disabled={!canUndo}
+            >
+              <Icon name="undo" />
+            </IconButton>
+            <IconButton
+              label={t("canvas.redo")}
+              testId="redo"
+              onClick={redo}
+              disabled={!canRedo}
+            >
+              <Icon name="redo" />
+            </IconButton>
+          </Island>
+          {selectedText?.kind === "text" && (
+            <Island>
+              {FONT_SIZES.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  data-testid={`font-size-${size}`}
+                  aria-label={t("text.size")}
+                  aria-pressed={selectedText.fontSize === size}
+                  onClick={() =>
+                    commit((current) =>
+                      setFontSize(current, selectedText.id, size),
+                    )
+                  }
+                  className={clsx(
+                    "grid h-8 w-8 place-items-center rounded-md transition-colors duration-150 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none",
+                    selectedText.fontSize === size
+                      ? "bg-neutral-800 text-sky-400"
+                      : "text-neutral-400 hover:text-neutral-100",
+                  )}
+                  style={{ fontSize: 8 + size / 4 }}
+                >
+                  A
+                </button>
+              ))}
+            </Island>
+          )}
+        </div>
+      </TipProvider>
     </div>
   );
 }

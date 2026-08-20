@@ -99,3 +99,37 @@ test("a live sync is green", async ({ page }) => {
   await expect(button).toHaveAttribute("data-sync-state", "idle");
   await expect(button).toHaveClass(/emerald/);
 });
+
+test("the reconnect tooltip names the whole account, in the app's own style", async ({
+  page,
+}) => {
+  await remember(page, {
+    email: "someone@example.com",
+    name: "Some One",
+    photo: "https://example.invalid/never-loads.png",
+  });
+
+  const pill = page.getByTestId("sync-reconnect");
+  // The native `title` was doing this and doing it badly: drawn by the browser
+  // in the OS's colours, at the OS's speed, and invisible on a touch screen.
+  await expect(pill).not.toHaveAttribute("title");
+  await expect(page.getByTestId("sync-button")).not.toHaveAttribute("title");
+
+  await pill.hover();
+  // The button says "Reconnect"; what it has no room to say is who that would
+  // be, which is the only question on a machine with two accounts signed in.
+  const tip = page.getByRole("tooltip");
+  await expect(tip).toBeVisible();
+  await expect(tip).toContainText("Some One");
+  await expect(tip).toContainText("someone@example.com");
+});
+
+test("signing out is not offered to a browser that is not signed in", async ({
+  page,
+}) => {
+  // It lives last and behind a rule, below the status line — not between the
+  // account and Sync now, where it read as another step in using sync.
+  await page.getByTestId("sync-button").click();
+  await expect(page.getByTestId("sync-panel")).toBeVisible();
+  await expect(page.getByTestId("sync-sign-out")).toHaveCount(0);
+});

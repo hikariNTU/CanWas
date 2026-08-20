@@ -2,6 +2,7 @@ import { useId, useRef } from "react";
 
 import { useTranslation } from "@/translations";
 import { Icon } from "@/ui/icon";
+import { Tip } from "@/ui/tooltip";
 
 /**
  * The third way an image gets onto a board, after paste and drop.
@@ -39,16 +40,17 @@ export function AddImage({ onFiles }: { onFiles: (files: File[]) => void }) {
           event.target.value = "";
         }}
       />
-      <button
-        type="button"
-        data-testid="add-image"
-        aria-label={t("image.add")}
-        title={t("image.add")}
-        onClick={() => inputRef.current?.click()}
-        className="glass pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500"
-      >
-        <Icon name="add_photo_alternate" size={22} />
-      </button>
+      <Tip label={t("image.add")}>
+        <button
+          type="button"
+          data-testid="add-image"
+          aria-label={t("image.add")}
+          onClick={() => inputRef.current?.click()}
+          className="glass pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500"
+        >
+          <Icon name="add_photo_alternate" size={22} />
+        </button>
+      </Tip>
     </>
   );
 }

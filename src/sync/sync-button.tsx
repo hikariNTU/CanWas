@@ -8,6 +8,7 @@ import { syncStatusAtom, type SyncStatus } from "@/sync/use-sync";
 import { useTranslation, type TranslationsKey } from "@/translations";
 import { DriveMark } from "@/ui/drive-mark";
 import { Icon } from "@/ui/icon";
+import { Tip } from "@/ui/tooltip";
 
 /**
  * Sync: one floating button, and everything sync has to say behind it.
@@ -176,46 +177,60 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
           click to reach, then a click to press, is a tax on the most common
           thing that happens after a reload. */}
       {isConfigured && remembered && (
-        <button
-          data-testid="sync-reconnect"
-          disabled={state.status === "connecting"}
-          onClick={() => void signIn()}
-          title={remembered.email ?? t("sync.reconnect")}
-          className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-lg pr-2.5 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50"
+        <Tip
+          label={
+            // The whole account, not just the address. The button already says
+            // "Reconnect"; what it cannot show in the width available is who
+            // that would be, which is the only question worth asking on a
+            // machine with two Google accounts signed in.
+            <Identity
+              account={remembered}
+              caption={t("sync.reconnectAs")}
+              unknown={t("sync.accountUnknown")}
+            />
+          }
         >
-          <Avatar account={remembered} size={22} />
-          {t(
-            state.status === "connecting"
-              ? "sync.connecting"
-              : "sync.reconnect",
-          )}
-        </button>
+          <button
+            data-testid="sync-reconnect"
+            disabled={state.status === "connecting"}
+            onClick={() => void signIn()}
+            className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-lg pr-2.5 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50"
+          >
+            <Avatar account={remembered} size={22} />
+            {t(
+              state.status === "connecting"
+                ? "sync.connecting"
+                : "sync.reconnect",
+            )}
+          </button>
+        </Tip>
       )}
 
       <Popover.Root>
-        <Popover.Trigger
-          data-testid="sync-button"
-          data-sync-state={status.state}
-          data-sync-failed={failure ? "" : undefined}
-          aria-label={t(label)}
-          // The message, not the label: a failure that only says "failed" sends
-          // whoever hits it to the console. The popup repeats it, but a tooltip
-          // is cheaper than a click when all you wanted was to check.
-          title={failure ?? t(label)}
-          className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${tone}`}
-        >
-          <Icon name={icon} size={18} />
-          {failure && (
-            // Colour rather than a glyph, and on top rather than instead of
-            // one: the icon still has to say which state sync is in, and a
-            // badge is legible at a glance across a board without being read.
-            <span
-              data-testid="sync-error-dot"
-              aria-hidden
-              className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-400 ring-2 ring-neutral-900"
-            />
-          )}
-        </Popover.Trigger>
+        {/* The message, not the label: a failure that only says "failed" sends
+            whoever hits it to the console. The popup repeats it, but a tooltip
+            is cheaper than a click when all you wanted was to check. */}
+        <Tip label={failure ?? t(label)}>
+          <Popover.Trigger
+            data-testid="sync-button"
+            data-sync-state={status.state}
+            data-sync-failed={failure ? "" : undefined}
+            aria-label={t(label)}
+            className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 ${tone}`}
+          >
+            <Icon name={icon} size={18} />
+            {failure && (
+              // Colour rather than a glyph, and on top rather than instead of
+              // one: the icon still has to say which state sync is in, and a
+              // badge is legible at a glance across a board without being read.
+              <span
+                data-testid="sync-error-dot"
+                aria-hidden
+                className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-400 ring-2 ring-neutral-900"
+              />
+            )}
+          </Popover.Trigger>
+        </Tip>
         <Popover.Portal>
           <Popover.Positioner sideOffset={6} align="end">
             <Popover.Popup
@@ -248,13 +263,6 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                     used={state.session.storageUsed}
                     limit={state.session.storageLimit}
                   />
-                  <button
-                    data-testid="sync-sign-out"
-                    className="mt-3 text-xs text-neutral-500 underline-offset-2 hover:text-neutral-200 hover:underline"
-                    onClick={() => void signOut()}
-                  >
-                    {t("sync.signOut")}
-                  </button>
                 </div>
               ) : (
                 <>
@@ -335,6 +343,25 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                       ? status.message
                       : t("sync.off")}
               </p>
+
+              {/* Last, behind a rule, and the only thing below it. It was
+                  sitting between the account and Sync now, where it read as
+                  another step in using sync rather than as the end of it — and
+                  a bare underlined word directly above the primary action is a
+                  misclick waiting to revoke a token. */}
+              {state.status === "signedIn" && (
+                <>
+                  <hr className="my-3 border-neutral-800" />
+                  <button
+                    data-testid="sync-sign-out"
+                    onClick={() => void signOut()}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-800/60 hover:text-neutral-200 focus-visible:outline-2 focus-visible:outline-sky-500"
+                  >
+                    <Icon name="logout" size={16} />
+                    {t("sync.signOut")}
+                  </button>
+                </>
+              )}
             </Popover.Popup>
           </Popover.Positioner>
         </Popover.Portal>
