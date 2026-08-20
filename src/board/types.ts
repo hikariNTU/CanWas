@@ -152,3 +152,24 @@ export interface Tombstone {
   id: NodeId;
   deletedAt: number;
 }
+
+/**
+ * Whether one copy of a board counts as deleted.
+ *
+ * The record is kept rather than dropped, so that the deletion itself can
+ * travel — a board simply removed from disk is indistinguishable from a board
+ * this device has not heard of yet, and the next round would fetch it back.
+ * This is the predicate that decides whether such a record is a grave or a
+ * board, and *everything* must ask it: the menu, the merge, the reconcile
+ * pass. A menu filtering on `deletedAt !== undefined` while the merge compares
+ * stamps would hide a board here that is alive everywhere else.
+ *
+ * An edit *after* the deletion revives it. That is the only way back, and it
+ * is deliberate: editing a grave is a thing you can only do on purpose.
+ */
+export function isBoardDeleted(board: {
+  deletedAt?: number;
+  updatedAt: number;
+}): boolean {
+  return board.deletedAt !== undefined && board.deletedAt >= board.updatedAt;
+}

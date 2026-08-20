@@ -27,9 +27,15 @@ export function PanelRule({ className }: { className?: string }) {
 /**
  * A full-width action inside a panel.
  *
- * The icon leads and the label follows, both centred: with no border, a bare
- * line of text in the middle of a panel is indistinguishable from a caption
- * until the pointer is over it, and on a touch screen there is no such moment.
+ * The icon leads and the label follows, both against the left edge. Centring
+ * them looked deliberate in isolation and wrong in place: everything else in
+ * these panels — the account, the captions, the menu items — starts at the
+ * same left margin, and a centred row breaks the column the eye is already
+ * following. The button is still full width, so the target is unchanged.
+ *
+ * The icon is not optional. With no border, a bare line of text in the middle
+ * of a panel is indistinguishable from a caption until the pointer is over it,
+ * and on a touch screen there is no such moment.
  */
 export function PanelButton({
   icon,
@@ -43,7 +49,7 @@ export function PanelButton({
     <button
       {...rest}
       className={clsx(
-        "flex w-full items-center justify-center gap-2 rounded-md px-2 py-1.5",
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left",
         "text-neutral-300 transition-colors",
         "hover:bg-white/10 hover:text-neutral-50",
         "focus-visible:outline-2 focus-visible:outline-sky-500",

@@ -8,7 +8,11 @@ import {
 
 import { routeTree } from "@/routeTree.gen";
 import { KNOWN_MODEL_IDS } from "@/ocr/paddle/models";
-import { sweepOrphanedAssets, sweepUnknownModels } from "@/storage/db";
+import {
+  sweepOrphanedAssets,
+  sweepUnknownModels,
+  trimDeletedBoards,
+} from "@/storage/db";
 
 import "@/index.css";
 
@@ -50,6 +54,22 @@ void sweepOrphanedAssets().catch(() => {
 // The same argument for the weights, which have no owner to be reachable from
 // at all: a retired model id is dead the moment the build stops naming it.
 void sweepUnknownModels(KNOWN_MODEL_IDS).catch(() => {
+  // Costs disk, not correctness.
+});
+
+/**
+ * How long a deleted board keeps its contents (D66).
+ *
+ * The marker outlives this and everything else — it is what stops the board
+ * being downloaded again — but the nodes are only kept so that a revive brings
+ * the work back, and a revive that has not happened in a month is not going to.
+ * Emptying the board is also what releases its images to the asset sweep.
+ */
+const GRAVE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+// Ordered after the asset sweep on purpose: trimming now frees images for the
+// *next* start rather than this one, which is a day's delay in reclaiming
+// bytes and avoids a sweep racing a trim over the same records.
+void trimDeletedBoards(GRAVE_RETENTION_MS).catch(() => {
   // Costs disk, not correctness.
 });
 

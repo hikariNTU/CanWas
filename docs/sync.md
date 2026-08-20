@@ -302,8 +302,6 @@ original, so a round trip through two devices is lossy exactly once.
 `docs/sync-limits.md` has the numbers and the longer list of ways data can still
 go wrong — clock skew, two tabs, a rename dropping tombstones.
 
-- **Board deletion does not sync.** `deletedAt` is merged and honoured, but
-  nothing sets it — `removeBoard` still drops the row locally.
 - **Tombstones are never reclaimed.** They are small, and a wrong reclamation
   resurrects a deleted node, so the bet is not worth taking until there is a
   reason.
@@ -373,7 +371,8 @@ the next round on the strength of having been received.
   latter.)
 - What does the info panel show when signed in — quota used, last sync, pending
   uploads?
-- Does a board deleted on one device go to a trash the user can reach, or is
-  the tombstone the whole story?
+- Does a board deleted on one device go to a trash the user can reach? The
+  grave keeps its contents for thirty days (D66), so an undelete is a button
+  away and nobody has asked for one.
 - Does WebP cost recognition accuracy? Measurable now, with the suite that
   already exists.

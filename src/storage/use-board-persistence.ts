@@ -14,7 +14,7 @@ import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { readViewport, viewportsAtom } from "@/canvas/viewport-atom";
 import { getAsset, getBoard, putBoard, type StoredBoard } from "@/storage/db";
 import { announce, listen } from "@/storage/tab-channel";
-import { listBoards } from "@/storage/board-actions";
+import { listBoards, metaOf } from "@/storage/board-actions";
 import { boardsMetaAtom, type BoardMeta } from "@/storage/boards-atom";
 
 /** Content edits settle quickly; viewport writes are pure churn, so they wait. */
@@ -195,12 +195,11 @@ export function useBoardPersistence(boardId: string) {
       setBoardsMeta((previous) => ({
         ...previous,
         ...Object.fromEntries(everyBoard.map((meta) => [meta.id, meta])),
-        [boardId]: {
-          id: stored.id,
-          name: stored.name,
-          createdAt: stored.createdAt,
-          updatedAt: stored.updatedAt,
-        },
+        // `metaOf`, not a literal: this is the third place a board's metadata
+        // was assembled by hand, and every one of them dropped whatever field
+        // was added last. `deletedAt` dropped here means opening a deleted
+        // board revives it, silently, from the back button.
+        [boardId]: metaOf(stored),
       }));
       setHydratedBoardId(boardId);
       setHydrated((previous) => ({ ...previous, [boardId]: true }));
@@ -268,12 +267,7 @@ export function useBoardPersistence(boardId: string) {
           }
           setBoardsMeta((previous) => ({
             ...previous,
-            [stored.id]: {
-              id: stored.id,
-              name: stored.name,
-              createdAt: stored.createdAt,
-              updatedAt: stored.updatedAt,
-            },
+            [stored.id]: metaOf(stored),
           }));
         });
         return;
@@ -321,12 +315,7 @@ export function useBoardPersistence(boardId: string) {
         }));
         setBoardsMeta((previous) => ({
           ...previous,
-          [boardId]: {
-            id: stored.id,
-            name: stored.name,
-            createdAt: stored.createdAt,
-            updatedAt: stored.updatedAt,
-          },
+          [boardId]: metaOf(stored),
         }));
       })();
     });

@@ -1,5 +1,6 @@
 import {
   assetIdsOf,
+  isBoardDeleted,
   type BoardNode,
   type OcrState,
   type Tombstone,
@@ -39,6 +40,11 @@ export interface StoredBoard {
   viewport: Viewport;
   createdAt: number;
   updatedAt: number;
+  /**
+   * When this board was deleted, if it was (D66). The record stays so the
+   * deletion can travel; `isBoardDeleted` decides whether it is a grave.
+   */
+  deletedAt?: number;
 }
 
 let connection: Promise<IDBDatabase> | null = null;
@@ -222,11 +228,46 @@ export async function storageBreakdown(): Promise<StorageBreakdown> {
       0,
     ),
     modelCount: models.length,
-    boardCount: boards.length,
+    boardCount: boards.filter((board) => !isBoardDeleted(board)).length,
     quotaUsed: estimate?.usage,
     quota: estimate?.quota,
     persisted,
   };
+}
+
+/**
+ * Empties graves older than the retention window, keeping the marker.
+ *
+ * A deleted board keeps its nodes so that reviving it — which the merge allows,
+ * when another device edited it after the deletion — brings the work back
+ * rather than an empty board. That is worth a month and not worth forever, and
+ * the images are the expensive part: they stay reachable from the dead board's
+ * nodes, so the asset sweep will not touch them while the nodes are there.
+ *
+ * The marker itself is never dropped. A grave removed from disk is
+ * indistinguishable from a board this device has never seen, and the next
+ * reconcile would fetch the whole thing back — so the record is emptied, not
+ * deleted, and it costs a few hundred bytes forever.
+ *
+ * Neither stamp moves. Bumping `updatedAt` here would read as an edit, and an
+ * edit after a deletion is exactly how a board comes back from the dead.
+ */
+export async function trimDeletedBoards(retentionMs: number): Promise<number> {
+  const boards = await getAllBoards();
+  const cutoff = Date.now() - retentionMs;
+  let trimmed = 0;
+  for (const board of boards) {
+    if (
+      !isBoardDeleted(board) ||
+      board.deletedAt! > cutoff ||
+      (board.nodes.length === 0 && (board.tombstones?.length ?? 0) === 0)
+    ) {
+      continue;
+    }
+    await putBoard({ ...board, nodes: [], tombstones: [] });
+    trimmed++;
+  }
+  return trimmed;
 }
 
 /** Drops the cached weights. They cost nothing but a re-download. */

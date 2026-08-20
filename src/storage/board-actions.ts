@@ -1,14 +1,15 @@
 import { atom, type Atom } from "jotai";
 
 import { boardNodesAtom, tombstonesAtom } from "@/board/store";
+import { isBoardDeleted } from "@/board/types";
 import { createId } from "@/lib/id";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { viewportsAtom } from "@/canvas/viewport-atom";
 import { boardsMetaAtom, type BoardMeta } from "@/storage/boards-atom";
 import { announce } from "@/storage/tab-channel";
 import {
-  deleteBoard,
   getAllBoards,
+  getBoard,
   putBoard,
   type StoredBoard,
 } from "@/storage/db";
@@ -19,13 +20,26 @@ export function metaOf(board: StoredBoard): BoardMeta {
     name: board.name,
     createdAt: board.createdAt,
     updatedAt: board.updatedAt,
+    // Spread, not assigned: an explicit `deletedAt: undefined` on the metadata
+    // survives every `{...meta}` downstream and lands in IndexedDB as a real
+    // key holding `undefined`, which is not the same shape as a board that was
+    // never deleted.
+    ...(board.deletedAt === undefined ? {} : { deletedAt: board.deletedAt }),
   };
 }
 
-/** Most recently edited first — the order the board list is shown in. */
+/**
+ * Most recently edited first — the order the board list is shown in.
+ *
+ * Graves are left out. They stay on disk so the deletion can travel (D66), and
+ * every reader of this list is a reader that wants boards.
+ */
 export async function listBoards(): Promise<BoardMeta[]> {
   const boards = await getAllBoards();
-  return boards.map(metaOf).sort((a, b) => b.updatedAt - a.updatedAt);
+  return boards
+    .filter((board) => !isBoardDeleted(board))
+    .map(metaOf)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 export async function createBoard(name: string): Promise<StoredBoard> {
@@ -44,11 +58,52 @@ export async function createBoard(name: string): Promise<StoredBoard> {
   return board;
 }
 
-export async function removeBoard(id: string): Promise<void> {
-  await deleteBoard(id);
+/**
+ * Deletes a board by marking it, never by dropping the record (D66).
+ *
+ * A board removed from disk was resurrected on the next sync round, every
+ * time: the reconcile pass walks the union of both sides, finds a board the
+ * remote has and this device does not, and cannot tell "deleted here" from
+ * "never seen here" — so it downloads it again. With Drive connected, deleting
+ * a board was simply not possible.
+ *
+ * The content is kept as well as the marker. The merge lets an edit on another
+ * device revive a board deleted here, and reviving it to an empty canvas would
+ * be a worse answer than either device asked for. `trimDeletedBoards` empties
+ * it after the retention window, which is when the images become collectable.
+ */
+export async function removeBoard(id: string): Promise<BoardMeta> {
+  const now = Date.now();
+  // A board with no local record still gets a grave. That is not a hypothetical
+  // — a board can be on screen before its first debounced save has landed, and
+  // it can exist only on the remote and in the menu — and refusing to bury what
+  // is not on disk means the reconcile pass hands it straight back.
+  const existing = (await getBoard(id)) ?? {
+    id,
+    name: id,
+    nodes: [],
+    tombstones: [],
+    viewport: IDENTITY_VIEWPORT,
+    createdAt: now,
+    updatedAt: now,
+  };
+  // Both stamps, and the same value. `isBoardDeleted` compares them, so a
+  // deletion that did not move `updatedAt` would be a grave that every later
+  // edit stamp outranks — and a board that came back on its own.
+  const grave = { ...existing, updatedAt: now, deletedAt: now };
+  await putBoard(grave);
   announce({ kind: "boards" });
   // Orphaned assets are reclaimed by the startup sweep (D14), not here:
-  // sweeping now could take bytes a still-open board is using.
+  // sweeping now could take bytes a still-open board is using — and the
+  // board's own images stay reachable until it is trimmed.
+  //
+  // Returned so the caller can put the grave into `boardsMetaAtom` rather than
+  // dropping the entry. A missing entry makes `save` a no-op, which looks like
+  // the same thing and is not: the board's debounced save can already be in
+  // flight, and it reads the atom when the timer fires. Dropping the key means
+  // that save writes nothing; keeping the grave means it writes the grave. Only
+  // the second is true whichever order they land in.
+  return metaOf(grave);
 }
 
 /**
@@ -118,18 +173,38 @@ export const adoptBoardMetaAtom = atom(
     get,
     set,
     boardId: string,
-    incoming: { name: string; createdAt: number; updatedAt: number },
+    incoming: {
+      name: string;
+      createdAt: number;
+      updatedAt: number;
+      /** Absent means alive — including "no longer deleted", after a revive. */
+      deletedAt?: number;
+    },
   ) => {
     const meta = get(boardsMetaAtom)[boardId];
     if (
       !meta ||
       (meta.name === incoming.name &&
         meta.createdAt === incoming.createdAt &&
-        meta.updatedAt === incoming.updatedAt)
+        meta.updatedAt === incoming.updatedAt &&
+        meta.deletedAt === incoming.deletedAt)
     ) {
       return;
     }
-    const next = { ...meta, ...incoming };
+    // Rebuilt rather than spread over the old metadata: a merge that decided
+    // the board is alive again says so by *not* carrying a `deletedAt`, and
+    // spreading would leave the old one in place — a board revived on one
+    // device and still buried on this one, disagreeing forever.
+    const next: BoardMeta = {
+      ...meta,
+      name: incoming.name,
+      createdAt: incoming.createdAt,
+      updatedAt: incoming.updatedAt,
+    };
+    delete next.deletedAt;
+    if (incoming.deletedAt !== undefined) {
+      next.deletedAt = incoming.deletedAt;
+    }
     set(boardsMetaAtom, { ...get(boardsMetaAtom), [boardId]: next });
     writeBoard(recordFor(get, next));
   },

@@ -1613,3 +1613,44 @@ stale version number: it is the first thing anyone reads when recognition looks
 wrong.
 
 Reverses if: never.
+
+## D66 — Deleting a board marks the record; it never removes it
+
+With Drive connected, deleting a board did not work. `removeBoard` dropped the
+row from IndexedDB, the reconcile pass then walked the union of local and remote
+boards, found one the remote had and this device did not — and there is no way
+to tell "deleted here" from "never seen here". So it downloaded it again. Every
+round, forever.
+
+The record therefore stays, carrying `deletedAt`. `isBoardDeleted` decides
+whether such a record is a grave or a board, and **every** reader asks it: the
+menu, the merge, the reconcile pass, the board screen. A menu filtering on
+`deletedAt !== undefined` while the merge compared stamps would hide a board
+here that is alive everywhere else.
+
+An edit stamped after the deletion revives the board. That falls out of the same
+comparison and is the rule the merge already used across two devices: deleting
+on the laptop and pasting on the phone is a real disagreement, and keeping the
+board is the answer that can still be undone by hand.
+
+Three things had to be true, and each was a bug on the way:
+
+- **The grave goes into `boardsMetaAtom`, it does not vacate the row.** The
+  board's own debounced save reads that atom when its timer fires, and a save
+  landing after the deletion would write a board with no `deletedAt` on top of
+  the grave. An absent entry makes the save a no-op, which is the same outcome
+  only if the timing goes one way.
+- **A board with no local record still gets a grave.** A board can be on screen
+  before its first save has landed, and it can exist only on the remote and in
+  the menu. Refusing to bury what is not on disk hands it straight back.
+- **`deletedAt` lives on `BoardMeta`.** Every writer that replaces a stored
+  board builds it by spreading a `BoardMeta`, so a field that lives there is
+  carried by all of them. This is exactly how node tombstones were lost: three
+  hand-written record literals, one of which forgot.
+
+Graves keep their contents for thirty days, then `trimDeletedBoards` empties
+them at startup — which is also what releases their images to the asset sweep.
+The marker itself is never dropped: a grave removed from disk is a board this
+device has never seen, which is where this started.
+
+Reverses if: never, while there is a remote. Without one it would be dead weight.

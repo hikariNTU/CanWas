@@ -314,10 +314,17 @@ test("the board is renamable, and the name persists", async ({ page }) => {
   await input.press("Enter");
   await expect(name).toHaveText("Reference sheet");
 
+  // The window is named after the board, and follows the rename. Several of
+  // these end up open at once — in tabs, in history, in a bookmark — and every
+  // one of them read "CanWas" before this, which makes the tab strip useless
+  // exactly where it is needed.
+  await expect.poll(() => page.title()).toBe("Reference sheet - CanWas");
+
   // The write is async, and a reload can abort a transaction still in flight.
   await expect.poll(() => storedName(page, "renameme")).toBe("Reference sheet");
   await page.reload();
   await expect(page.getByTestId("board-name")).toHaveText("Reference sheet");
+  await expect.poll(() => page.title()).toBe("Reference sheet - CanWas");
 });
 
 test("escape abandons a rename, and an empty name is refused", async ({

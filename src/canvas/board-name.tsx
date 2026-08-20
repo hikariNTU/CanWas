@@ -30,6 +30,27 @@ export function BoardName({ boardId }: { boardId: string }) {
 
   const name = meta?.name ?? boardId;
 
+  // The window's title, from the component that owns the name.
+  //
+  // Worth doing because this app is a set of boards and the browser is where
+  // several of them end up at once — in tabs, in the history, in a bookmark.
+  // All of them read "CanWas" without this, which makes the tab strip useless
+  // exactly when it is needed. Cleared on unmount rather than left behind, so
+  // a board closed does not go on naming the window.
+  //
+  // `meta` is briefly absent while the board loads, and `name` falls back to
+  // the raw id — a title of "a7f3c2… - CanWas" flashing past is worse than no
+  // title, so that case waits.
+  useEffect(() => {
+    if (!meta) {
+      return;
+    }
+    document.title = `${meta.name} - CanWas`;
+    return () => {
+      document.title = "CanWas";
+    };
+  }, [meta]);
+
   function startEditing() {
     setDraft(name);
     setEditing(true);

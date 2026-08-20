@@ -109,12 +109,24 @@ What remains is last-writer-wins between two tabs both actively editing. That is
 the same rule the app already had, but both tabs now agree on what happened
 rather than one silently flattening the other.
 
-### A board deleted while the pass is running
+### A board deleted while the pass is running — fixed
 
-The pass takes one snapshot of local boards at the start. A board deleted
-between then and the pass reaching it is written back out — `removeBoard` drops
-the row, and the pass still holds the record it read. The board returns from the
-dead, on this device and on the remote.
+The pass takes one snapshot of local boards at the start, and a board deleted
+between then and the pass reaching it was written back out: `removeBoard`
+dropped the row, and the pass still held the record it had read. That was the
+narrow version of a much wider bug — a board dropped from disk is
+indistinguishable from a board this device has never seen, so the pass
+downloaded it again on _every_ round, snapshot or no snapshot. With Drive
+connected, deleting a board was not something the app could do.
+
+Deletion is now a marker on the record rather than the record's removal (D66).
+The grave is what the pass finds instead of an absence, and the grave is what
+travels to the remote so the other devices bury it too.
+
+What is left of the race is benign. A board deleted while the pass is mid-round
+can still be pushed as live by that round; the deletion is on disk, the next
+round reads it, and the board goes back to being deleted. The window costs one
+extra round rather than a resurrection.
 
 ### Renaming dropped tombstones — fixed
 

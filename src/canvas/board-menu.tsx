@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAtom } from "jotai";
 import { useState } from "react";
 
+import { isBoardDeleted } from "@/board/types";
 import { boardSlug } from "@/lib/slug";
 import { Icon } from "@/ui/icon";
 import { boardsMetaAtom } from "@/storage/boards-atom";
@@ -25,7 +26,7 @@ const languages: { value: ProvidedLang; label: string }[] = [
 ];
 
 const itemClass =
-  "flex w-full cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-neutral-300 select-none data-[highlighted]:bg-neutral-800 data-[highlighted]:text-neutral-100";
+  "flex w-full cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-neutral-300 select-none data-[highlighted]:bg-white/10 data-[highlighted]:text-neutral-100";
 
 /**
  * The board screen's only menu. With no home screen (D31), everything that is
@@ -45,9 +46,14 @@ export function BoardMenu({
   const [boardsMeta, setBoardsMeta] = useAtom(boardsMetaAtom);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const boards = Object.values(boardsMeta).sort(
-    (a, b) => b.updatedAt - a.updatedAt,
-  );
+  // Graves are in the atom — they have to be, so a deletion heard about from
+  // another device can replace the live row it arrives on top of — and they
+  // are not boards. Filtered here rather than kept out of the atom, so there
+  // is one copy of each board's metadata and every reader asks the same
+  // question of it.
+  const boards = Object.values(boardsMeta)
+    .filter((board) => !isBoardDeleted(board))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
   const current = boardsMeta[boardId];
 
   async function openNewBoard() {
@@ -60,12 +66,13 @@ export function BoardMenu({
   }
 
   async function deleteCurrentBoard() {
-    await removeBoard(boardId);
-    setBoardsMeta((previous) => {
-      const next = { ...previous };
-      delete next[boardId];
-      return next;
-    });
+    const grave = await removeBoard(boardId);
+    // The grave replaces the row rather than removing it. The board's own
+    // debounced save may still be in flight, and it builds its record by
+    // spreading whatever is in this atom when the timer fires — so an entry
+    // that is merely absent lets a save land a board with no `deletedAt` on
+    // top of the grave, and the deletion is undone by a timer.
+    setBoardsMeta((previous) => ({ ...previous, [boardId]: grave }));
     // Never leave the user on a board that no longer exists: fall through to
     // the next most recent, or a fresh one if that was the last.
     const remaining = (await listBoards()).filter(
@@ -125,7 +132,7 @@ export function BoardMenu({
                 {t("board.delete")}
               </Menu.Item>
 
-              <Menu.Separator className="my-1 h-px bg-neutral-800" />
+              <Menu.Separator className="my-1 h-px bg-white/10" />
               <Menu.RadioGroup
                 value={boardId}
                 onValueChange={(value) => {
@@ -156,7 +163,7 @@ export function BoardMenu({
                 ))}
               </Menu.RadioGroup>
 
-              <Menu.Separator className="my-1 h-px bg-neutral-800" />
+              <Menu.Separator className="my-1 h-px bg-white/10" />
               <Menu.RadioGroup
                 value={lang}
                 onValueChange={(value) => setLang(value as ProvidedLang)}

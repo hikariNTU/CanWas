@@ -14,7 +14,13 @@
  */
 
 import { sortNodes } from "@/board/order";
-import type { BoardNode, NodeId, TextNode, Tombstone } from "@/board/types";
+import {
+  isBoardDeleted,
+  type BoardNode,
+  type NodeId,
+  type TextNode,
+  type Tombstone,
+} from "@/board/types";
 
 /** World units. Enough that a rescued copy is visibly beside its winner. */
 const CONFLICT_OFFSET = 24;
@@ -263,12 +269,16 @@ function pickName(a: SyncBoard, b: SyncBoard): string {
  * Deleting on the laptop and pasting on the phone is a real disagreement, and
  * of the two answers, keeping the board is the one that can still be undone by
  * hand.
+ *
+ * The same rule as `isBoardDeleted`, across two copies: a side that is itself
+ * deleted offers no live edit, so its stamp does not count against the other
+ * side's deletion.
  */
 function isDeleted(a: SyncBoard, b: SyncBoard): boolean {
   const deletion = Math.max(a.deletedAt ?? 0, b.deletedAt ?? 0);
   const liveEdit = Math.max(
-    a.deletedAt === undefined ? a.updatedAt : 0,
-    b.deletedAt === undefined ? b.updatedAt : 0,
+    isBoardDeleted(a) ? 0 : a.updatedAt,
+    isBoardDeleted(b) ? 0 : b.updatedAt,
   );
   return deletion > 0 && deletion >= liveEdit;
 }

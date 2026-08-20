@@ -23,7 +23,7 @@
  * has not arrived.
  */
 
-import type { Asset } from "@/board/types";
+import { isBoardDeleted, type Asset } from "@/board/types";
 import type { EngineName } from "@/ocr/types";
 import type { BoardMeta } from "@/storage/boards-atom";
 import {
@@ -41,8 +41,10 @@ import { syncBoard } from "@/sync/sync-board";
 import type { SyncTransport } from "@/sync/transport";
 
 export interface ReconcileReport {
-  /** Boards the remote had that this device did not. */
+  /** Boards the remote had that this device did not. Graves are not arrivals. */
   arrived: string[];
+  /** Boards that turned out to be deleted, on either side. */
+  buried: string[];
   /** Boards this device pushed, whether new to the remote or merged into it. */
   pushed: string[];
   /** Boards both sides already agreed on, settled without a single request. */
@@ -59,6 +61,9 @@ function asSyncBoard(stored: StoredBoard): SyncBoard {
     tombstones: stored.tombstones ?? [],
     createdAt: stored.createdAt,
     updatedAt: stored.updatedAt,
+    // Spread rather than assigned, so a board that was never deleted does not
+    // acquire a `deletedAt` key holding `undefined` on its way to the remote.
+    ...(stored.deletedAt === undefined ? {} : { deletedAt: stored.deletedAt }),
   };
 }
 
@@ -75,12 +80,20 @@ export async function reconcileBoards(options: {
    */
   skip: () => string | null;
   engine: EngineName;
-  /** Called as each board settles, so the menu fills in as the pass runs. */
+  /**
+   * Called as each board settles, so the menu fills in as the pass runs.
+   *
+   * Graves are reported too, carrying their `deletedAt`. The caller has to ask
+   * `isBoardDeleted` rather than assume a callback means a board — a board
+   * deleted on another device arrives through here, and adding it to the menu
+   * is precisely the bug this is meant to fix.
+   */
   onBoard: (meta: BoardMeta) => void;
 }): Promise<ReconcileReport> {
   const { transport } = options;
   const report: ReconcileReport = {
     arrived: [],
+    buried: [],
     pushed: [],
     skipped: 0,
     failed: [],
@@ -116,7 +129,14 @@ export async function reconcileBoards(options: {
           tombstones: pulled.tombstones,
         });
         await putSyncBase({ boardId: id, board: pulled, syncedAt: Date.now() });
-        report.arrived.push(id);
+        // The record lands either way — a grave has to be written down here or
+        // this device forgets the deletion and downloads the board again on
+        // every round, forever. Only what it *is* differs.
+        if (isBoardDeleted(pulled)) {
+          report.buried.push(id);
+        } else {
+          report.arrived.push(id);
+        }
         options.onBoard(metaOf(pulled));
         // A board that did not exist a moment ago: every tab's menu is stale.
         announce({ kind: "boards" });
@@ -171,7 +191,14 @@ export async function reconcileBoards(options: {
         board: result.merged,
         syncedAt: Date.now(),
       });
-      report.pushed.push(id);
+      if (isBoardDeleted(result.merged)) {
+        report.buried.push(id);
+        // The menu is one row longer than the truth in every open tab: this
+        // board was deleted somewhere else and has only now been heard about.
+        announce({ kind: "boards" });
+      } else {
+        report.pushed.push(id);
+      }
       options.onBoard(metaOf(result.merged));
       announce({
         kind: "board",
@@ -195,5 +222,6 @@ function metaOf(board: SyncBoard): BoardMeta {
     name: board.name,
     createdAt: board.createdAt,
     updatedAt: board.updatedAt,
+    ...(board.deletedAt === undefined ? {} : { deletedAt: board.deletedAt }),
   };
 }

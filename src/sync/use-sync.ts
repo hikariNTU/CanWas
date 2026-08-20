@@ -119,6 +119,10 @@ export function useSync(boardId: string): {
         tombstones: store.get(tombstonesAtom)[boardId] ?? [],
         createdAt: meta.createdAt,
         updatedAt: meta.updatedAt,
+        // Carried, so that deleting the board on screen actually reaches the
+        // remote. Dropping it here would push the board back up as live on the
+        // very next round and undelete it everywhere.
+        ...(meta.deletedAt === undefined ? {} : { deletedAt: meta.deletedAt }),
       };
       const storedBase = await getSyncBase(boardId);
 
@@ -200,6 +204,7 @@ export function useSync(boardId: string): {
         name: settled.name,
         createdAt: settled.createdAt,
         updatedAt: settled.updatedAt,
+        deletedAt: settled.deletedAt,
       });
       store.set(tombstonesAtom, {
         ...store.get(tombstonesAtom),
