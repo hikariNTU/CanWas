@@ -5,7 +5,7 @@ import {
   authAtom,
   hasConnectedBefore,
   isConfigured,
-  rememberConnected,
+  rememberAccount,
   requestToken,
   revoke,
   type Session,
@@ -41,14 +41,19 @@ export function useGoogleAccount() {
       const session = await requestToken(returning ? "" : "consent");
       // Who signed in, and how full their Drive is. Failing this is not failing
       // the sign-in: the token is valid either way, and the name is decoration.
-      const account = await fetchAccount(session).catch(() => ({}));
-      rememberConnected(true);
+      const account: Awaited<ReturnType<typeof fetchAccount>> =
+        await fetchAccount(session).catch(() => ({}));
+      rememberAccount({
+        email: account.email,
+        name: account.name,
+        photo: account.photo,
+      });
       setState({ status: "signedIn", session: { ...session, ...account } });
     } catch (error) {
       // A silent attempt that failed means the grant is not what this browser
       // remembered. Forgetting it makes the next click ask properly rather than
       // failing the same way again.
-      rememberConnected(false);
+      rememberAccount(null);
       setState({
         status: "failed",
         error: error instanceof Error ? error.message : String(error),
@@ -62,7 +67,9 @@ export function useGoogleAccount() {
       // session on Google's side as well as ours.
       await revoke(state.session).catch(() => undefined);
     }
-    rememberConnected(false);
+    // Signing out erases who was here. It is ordinary personal data, and this
+    // is a browser someone else may use next.
+    rememberAccount(null);
     setState({ status: "signedOut" });
   }, [setState, state]);
 

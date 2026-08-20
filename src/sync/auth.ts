@@ -30,8 +30,27 @@ export interface Session {
   /** Epoch ms. */
   expiresAt: number;
   email?: string;
+  name?: string;
+  /** URL of the account picture, hosted by Google. */
+  photo?: string;
   storageUsed?: number;
   storageLimit?: number;
+}
+
+/**
+ * What is remembered about the last account between sessions.
+ *
+ * Not a credential and not usable as one — it opens nothing and proves nothing.
+ * It exists so a signed-out browser can say *who* it would reconnect as, which
+ * turns a generic Connect button into a recognisable one, and matters most on
+ * the machine where two Google accounts are both plausible.
+ *
+ * It is ordinary personal data on a shared computer, so signing out erases it.
+ */
+export interface RememberedAccount {
+  email?: string;
+  name?: string;
+  photo?: string;
 }
 
 export type AuthState =
@@ -127,28 +146,54 @@ export async function requestToken(
  * until noticed is sync that is off, and a board edited before someone thinks
  * to reconnect is a board that has to be merged later instead of now.
  */
-const CONNECTED_KEY = "canwas.drive.connected";
+const ACCOUNT_KEY = "canwas.drive.account";
 
-export function hasConnectedBefore(): boolean {
+/**
+ * The last account this browser connected with, if any.
+ *
+ * Its presence is also the answer to "has this browser connected before",
+ * which decides two things: whether the button offers to *reconnect* rather
+ * than connect, and whether the token request can pass `prompt: ""` and skip
+ * the consent screen. Neither grants anything — at worst a request is refused.
+ */
+export function lastAccount(): RememberedAccount | null {
   try {
-    return localStorage.getItem(CONNECTED_KEY) === "1";
+    const raw = localStorage.getItem(ACCOUNT_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed: unknown = JSON.parse(raw);
+    // Anything could be under that key — another version of this app, or a
+    // hand-edited value. Only strings survive.
+    if (parsed === null || typeof parsed !== "object") {
+      return null;
+    }
+    const { email, name, photo } = parsed as Record<string, unknown>;
+    return {
+      email: typeof email === "string" ? email : undefined,
+      name: typeof name === "string" ? name : undefined,
+      photo: typeof photo === "string" ? photo : undefined,
+    };
   } catch {
-    // Storage can be denied outright. Not being able to remember is the same
-    // as not having connected.
-    return false;
+    // Storage can be denied outright, and the value can be malformed. Not
+    // remembering costs one consent screen.
+    return null;
   }
 }
 
-export function rememberConnected(connected: boolean): void {
+export function hasConnectedBefore(): boolean {
+  return lastAccount() !== null;
+}
+
+export function rememberAccount(account: RememberedAccount | null): void {
   try {
-    if (connected) {
-      localStorage.setItem(CONNECTED_KEY, "1");
+    if (account) {
+      localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
     } else {
-      localStorage.removeItem(CONNECTED_KEY);
+      localStorage.removeItem(ACCOUNT_KEY);
     }
   } catch {
-    // Nothing to do and nothing worth telling the user: the cost is one extra
-    // click next time.
+    // Nothing to do and nothing worth saying: the cost is one extra dialog.
   }
 }
 

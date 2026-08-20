@@ -70,15 +70,24 @@ export function isExpired(error: unknown): boolean {
 /** The signed-in account, and how full their Drive is. */
 export async function fetchAccount(session: Session): Promise<{
   email?: string;
+  name?: string;
+  photo?: string;
   storageUsed?: number;
   storageLimit?: number;
 }> {
   const about = await call<{
-    user?: { emailAddress?: string };
+    user?: { emailAddress?: string; displayName?: string; photoLink?: string };
     storageQuota?: { usage?: string; limit?: string };
-  }>(session, `${ABOUT}?fields=user(emailAddress),storageQuota(usage,limit)`);
+  }>(
+    session,
+    // Name and picture come from the same request as the address, so knowing
+    // who is connected costs nothing beyond the fields asked for.
+    `${ABOUT}?fields=user(emailAddress,displayName,photoLink),storageQuota(usage,limit)`,
+  );
   return {
     email: about.user?.emailAddress,
+    name: about.user?.displayName,
+    photo: about.user?.photoLink,
     storageUsed: about.storageQuota?.usage
       ? Number(about.storageQuota.usage)
       : undefined,

@@ -83,13 +83,31 @@ Three things follow, and none of them are preferences:
 - **Every token request lives inside a click**, and there is exactly one such
   place: the Connect button.
 
-What _is_ kept is a boolean, `canwas.drive.connected`: this browser has connected
-before. It stores no credential and grants nothing — at worst it causes a request
-that is refused. It buys two things. The button reads **Reconnect** rather than
-Connect, so a signed-out state looks like one click rather than like setting the
-whole thing up again. And the request passes `prompt: ""`, so the popup opens and
-closes with no account chooser and no consent screen. If that fails, the flag is
-cleared and the next click asks properly rather than failing the same way twice.
+What _is_ kept is `canwas.drive.account`: the address, display name and picture
+of the last account this browser connected with. All three come from the same
+`about` request that already reported the storage quota, so knowing them costs
+nothing. None of it is a credential — it opens no door, it only names one — and
+signing out erases it, because it is ordinary personal data on a machine
+somebody else may use next.
+
+Its presence is also the answer to "has this browser connected before", which
+buys three things:
+
+- The request passes `prompt: ""`. That does not remove the popup, but it
+  removes what the popup shows: no account chooser, no consent screen, a window
+  that opens and closes. If it fails the record is cleared, so the next click
+  asks properly rather than failing the same way twice.
+- The button reads **Reconnect** rather than Connect, so a signed-out state
+  looks like one click rather than like setting the whole thing up again.
+- Reconnect sits _beside_ the sync icon, wearing the face of the account it
+  would reconnect as. Putting it inside the popup made the most likely action
+  after a reload cost two clicks, and on a machine signed into two Google
+  accounts the question was never "connect?" but "connect as whom?".
+
+The stored record is parsed defensively — anything can be under a `localStorage`
+key, including another version of this app or a hand-edited value — and a
+picture that fails to load falls back to an initial. A broken image where a face
+should be reads as a broken connection.
 
 An automatic resume on page load was built first, and cannot work. Worth writing
 down, because the code for it reads as though it should.

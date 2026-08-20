@@ -107,6 +107,12 @@ It is never hidden. The resting state says _not syncing_ rather than showing
 nothing, because nothing is indistinguishable from working. Only a failure gets
 colour.
 
+Synced is the one status worth colour: **emerald**, and the only green in the
+app. It answers the question people ask without meaning to — is my work anywhere
+but here — and green is read at the edge of vision where grey has to be looked
+at. Syncing stays neutral, because a state that lasts two seconds does not need
+announcing.
+
 A failure — of a round, or of the connection itself — puts a red dot on the
 button. Colour rather than a glyph, and on top of the icon rather than instead
 of it: the icon still has to say which state sync is in, and a board is looked

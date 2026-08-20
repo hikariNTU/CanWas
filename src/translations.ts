@@ -159,6 +159,10 @@ const translations = {
     "en-US":
       "Google tokens last an hour and can only be obtained from a click.",
   },
+  "sync.lastConnected": {
+    "zh-TW": "上次連線的帳戶",
+    "en-US": "Last connected",
+  },
   "sync.grantedTo": {
     "zh-TW": "已授權的帳戶",
     "en-US": "Granted by",
