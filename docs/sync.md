@@ -54,7 +54,15 @@ https://hikarintu.github.io
 http://localhost:5173
 ```
 
-The client ID is not a secret and can live in the repo.
+The client ID is not a secret. Locally it lives in `.env`, which is gitignored
+— not because the id needs hiding, but because that file is where a real secret
+lands by accident, and Vite inlines every `VITE_` variable into public
+JavaScript. In CI it is a repository **variable**, `VITE_GOOGLE_CLIENT_ID`, and
+the deploy fails if it is missing: an absent one is not a build error, it is a
+build that silently ships with sync disabled.
+
+The token flow uses no client secret at all. If one exists for this project, it
+has no business in this repo or in any `VITE_` variable.
 
 Access tokens last an hour. There is no refresh token in a browser flow, so the
 app re-requests silently with `prompt: ""`, which Google answers from the

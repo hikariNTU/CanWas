@@ -31,9 +31,28 @@ jobs:
           cache: "npm"
       - name: Install dependencies
         run: npm ci
+      # A missing client id is not a build error: Vite substitutes an empty
+      # string and the deployed app quietly reports itself unconfigured. The
+      # only symptom would be a sync button that does nothing, on the one build
+      # nobody runs locally — so this fails the deploy instead.
+      #
+      # A repository *variable*, not a secret. The id identifies the app rather
+      # than authenticating it, Google enforces which origins may present it,
+      # and it is inlined into public JavaScript either way. Marking it secret
+      # would only hide it from the log that prints it.
+      - name: Require a Google client id
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+        run: |
+          if [ -z "$VITE_GOOGLE_CLIENT_ID" ]; then
+            echo "::error::VITE_GOOGLE_CLIENT_ID repository variable is not set — Drive sync would ship disabled"
+            exit 1
+          fi
       # Runs format, lint, typecheck and build. Every one of them runs even if
       # an earlier one fails, so a single run reports every problem at once.
       - name: Check
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
         run: npm run check
       - name: Setup Pages
         uses: actions/configure-pages@v6
