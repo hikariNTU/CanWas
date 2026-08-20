@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { applyPatch, tombstonesAfter, type Change } from "@/board/patch";
 import { boardNodesAtom, tombstonesAtom } from "@/board/store";
 import type { BoardNode, NodeId, Tombstone } from "@/board/types";
+import { useEditGuard } from "@/sync/edit-guard";
 
 const MAX_DEPTH = 200;
 
@@ -177,21 +178,39 @@ export function useBoardHistory(boardId: string) {
   const undoChange = useSetAtom(undoAtom);
   const redoChange = useSetAtom(redoAtom);
   const stack = useAtomValue(historyAtom)[boardId] ?? EMPTY;
+  const guard = useEditGuard(boardId);
 
   /**
    * A gesture must call this exactly once, at its end — committing per
    * pointermove would bury every real action under hundreds of entries (D17).
+   *
+   * Every edit the user makes passes through here, which is why the sync guard
+   * hangs off it (D74): one place to hold a change made on a board that has a
+   * remote nobody can currently reach. `preserve` is exempt, because that is
+   * how a sync round lands its own merged result — guarding the round would
+   * hold the very thing the dialog exists to start.
    */
   const commit = useCallback(
-    (build: ChangeBuilder, stamps: "now" | "preserve" = "now") =>
-      commitChange(boardId, build, stamps),
-    [boardId, commitChange],
+    (build: ChangeBuilder, stamps: "now" | "preserve" = "now") => {
+      if (stamps === "preserve") {
+        commitChange(boardId, build, stamps);
+        return;
+      }
+      guard(() => commitChange(boardId, build, stamps));
+    },
+    [boardId, commitChange, guard],
   );
 
   return {
     commit,
-    undo: useCallback(() => undoChange(boardId), [boardId, undoChange]),
-    redo: useCallback(() => redoChange(boardId), [boardId, redoChange]),
+    undo: useCallback(
+      () => guard(() => undoChange(boardId)),
+      [boardId, guard, undoChange],
+    ),
+    redo: useCallback(
+      () => guard(() => redoChange(boardId)),
+      [boardId, guard, redoChange],
+    ),
     canUndo: stack.past.length > 0,
     canRedo: stack.future.length > 0,
   };

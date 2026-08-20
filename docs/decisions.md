@@ -1922,3 +1922,46 @@ board makes it jump.
 **Reverses if:** the platform ever offers a `touch-action` that allows pinch
 while suppressing pan and scroll. `pinch-zoom` exists but restores the visual
 viewport, which zooms the chrome too and is not what this needs.
+
+## D74 — A board that cannot reach its remote holds the first edit
+
+**2026-08-20 · settled**
+
+A board that has synced before carries a sync base, which is proof a remote copy
+exists. On a reload where nothing can reach that remote, this device edits
+blind: it has not read what the other devices did, and every change it makes is
+a change the merge has to guess about later. The window is not rare — a Drive
+token lasts an hour, so most reloads of a board that has been open a while land
+in it, and the sync status reads "off", which looks like an invitation rather
+than like something that stopped working.
+
+So the first edit is **held** and the choice is put to the user: _Reconnect and
+sync_, or _Edit anyway_. Held rather than dropped, because a mutation here is a
+function of the current nodes — replaying it after a pull is correct rather
+than stale, and a delete of a node the remote had already deleted replays as
+nothing. A paste that silently vanished would read as a bug.
+
+The guard hangs off `useBoardHistory.commit`, which every user edit already
+passes through, plus `renameBoardAtom`, which does not go through the history
+stack and would otherwise be the one hole — the same hole that let renames skip
+sync entirely until the commit before this one. `commit(..., "preserve")` is
+exempt: that is how a sync round lands its own merged result, and guarding the
+round would hold the very thing the dialog exists to start.
+
+Asked **once per board per session**. "Edit anyway" is remembered in memory and
+cleared by a reload, because the next reload is a new chance to be up to date.
+
+**Offline is not one of these states.** No click fixes it, and this app ships a
+service worker that promises the board works offline (D72). Only a remote that
+is unreachable _while the network is fine_ — expired, signed out, sign-in
+failed — raises anything.
+
+Reconnecting has to happen from the dialog's own button, because Google issues
+a token only from inside a click; the held edit is released when a round
+completes with a timestamp later than the reconnect, not merely when one is
+found idle.
+
+**Reverses if:** the interruption grates in daily use. The narrowing that keeps
+most of the value is to guard destructive changes only — deletes and renames —
+and let moves and pastes through, since a move that merges wrongly is visible
+and fixable in a way a delete is not.

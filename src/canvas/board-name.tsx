@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import { renameBoardAtom } from "@/storage/board-actions";
+import { useEditGuard } from "@/sync/edit-guard";
 import { useTranslation } from "@/translations";
 import { Tip } from "@/ui/tooltip";
 
@@ -16,6 +17,9 @@ import { Tip } from "@/ui/tooltip";
 export function BoardName({ boardId }: { boardId: string }) {
   const meta = useAtomValue(boardsMetaAtom)[boardId];
   const rename = useSetAtom(renameBoardAtom);
+  // A rename does not go through the history stack, so it does not pass the
+  // guard that hangs off `commit` and has to ask for itself (D74).
+  const guard = useEditGuard(boardId);
   const { t } = useTranslation();
 
   const [editing, setEditing] = useState(false);
@@ -57,7 +61,7 @@ export function BoardName({ boardId }: { boardId: string }) {
   }
 
   function commit() {
-    rename(boardId, draft);
+    guard(() => rename(boardId, draft));
     setEditing(false);
   }
 

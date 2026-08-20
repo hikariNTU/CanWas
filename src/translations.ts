@@ -187,6 +187,32 @@ const translations = {
     "zh-TW": "帳戶名稱無法取得",
     "en-US": "Account name unavailable",
   },
+  "guard.title": {
+    "zh-TW": "這個板子還沒讀到雲端的版本",
+    "en-US": "This board has not read its remote copy",
+  },
+  "guard.body": {
+    "zh-TW":
+      "此板子曾同步過，但目前連不上雲端硬碟。現在編輯的內容，會是在沒看過其他裝置修改的情況下做出的。",
+    "en-US":
+      "This board syncs, but Drive cannot be reached right now. Anything you change now is changed without having seen what your other devices did.",
+  },
+  "guard.reconnect": {
+    "zh-TW": "重新連線並同步",
+    "en-US": "Reconnect and sync",
+  },
+  "guard.anyway": {
+    "zh-TW": "仍要編輯",
+    "en-US": "Edit anyway",
+  },
+  "guard.held": {
+    "zh-TW": "你剛才的操作會保留，選擇後就會套用。",
+    "en-US": "Your last action is being held, and lands as soon as you choose.",
+  },
+  "guard.syncing": {
+    "zh-TW": "同步中…",
+    "en-US": "Syncing…",
+  },
   "sync.now": {
     "zh-TW": "立即同步",
     "en-US": "Sync now",

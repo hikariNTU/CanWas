@@ -15,7 +15,12 @@ import { loadGoogleOAuth, type TokenClient } from "@/sync/gis";
  */
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
+// Read through `?.` because this module is also loaded outside Vite: the sync
+// tests that run in Node import it directly, and there `import.meta.env` does
+// not exist at all — a plain read throws at module scope, before any test can
+// say what it wanted to test. In a real build the field is always there.
+const CLIENT_ID =
+  (import.meta.env as ImportMetaEnv | undefined)?.VITE_GOOGLE_CLIENT_ID ?? "";
 
 /**
  * Tokens live in memory and nowhere else.

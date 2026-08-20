@@ -31,6 +31,8 @@ import { useOcr } from "@/ocr/use-ocr";
 import { useCompression } from "@/image/use-compression";
 import { SyncButton } from "@/sync/sync-button";
 import { TipProvider } from "@/ui/tooltip";
+import { useKnownRemote } from "@/sync/edit-guard";
+import { StaleEditDialog } from "@/sync/stale-edit-dialog";
 import { useSync } from "@/sync/use-sync";
 import { Icon } from "@/ui/icon";
 import { screenToWorld } from "@/canvas/coords";
@@ -141,6 +143,9 @@ export function Canvas({ boardId }: { boardId: string }) {
   // Best effort and never blocking: a failed round leaves the board exactly as
   // it was, which is what the app already does offline.
   const { syncNow } = useSync(boardId);
+  // Whether this board has a remote at all, which is the first half of the
+  // question the edit guard asks (D74).
+  useKnownRemote(boardId);
   useBoardShortcuts(boardId, readingId === null);
 
   // A press on empty canvas clears the selection. Registered natively so it
@@ -450,6 +455,8 @@ export function Canvas({ boardId }: { boardId: string }) {
           all of it: the delay is for a pointer passing through a control, and
           having already read one label, the next should not make you wait
           again. */}
+      <StaleEditDialog />
+
       <TipProvider>
         {/* One padded layer holds every island. An absolutely positioned child
             is laid out against its containing block's padding box, so the

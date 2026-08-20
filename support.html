@@ -172,6 +172,20 @@
         and remains deleted on all devices; this behavior is intentional.
       </p>
 
+      <h3>A dialog reports that the board has not read its remote copy</h3>
+      <p>
+        The board in question has synchronized previously, but Google Drive
+        cannot be reached at present — most commonly because the Drive session
+        has expired, as sessions last one hour. The edit that prompted the
+        dialog is retained, not discarded, and is applied as soon as a choice is
+        made. Selecting <em>Reconnect and sync</em> restores the connection,
+        retrieves any changes made on other devices, and then applies the
+        retained edit; selecting <em>Edit anyway</em> applies it immediately and
+        suppresses further prompts for that board until the page is reloaded.
+        The dialog does not appear while offline, nor for boards that have never
+        been synchronized.
+      </p>
+
       <h3>The interface appears flat or is difficult to read</h3>
       <p>
         The interface uses a backdrop blur effect. Browsers lacking support for
@@ -295,6 +309,15 @@
         <p>
           白板僅於連線建立時進行對帳，非持續性同步。重新整理分頁將重新建立連線並執行對帳。
           於單一裝置刪除之白板將標記為已刪除，並於所有裝置維持刪除狀態，此為系統既定設計。
+        </p>
+        <h3>畫面提示白板尚未讀取雲端版本</h3>
+        <p>
+          該白板曾完成同步，但目前無法連線至 Google 雲端硬碟，
+          多因連線階段逾期所致（每次連線效期為一小時）。
+          觸發此提示之編輯動作將予保留而非捨棄，並於選擇後立即套用。
+          選擇「重新連線並同步」將重建連線、取得其他裝置之變更，再套用該編輯；
+          選擇「仍要編輯」則立即套用，並於本次瀏覽期間不再就該白板提示。
+          離線狀態不會出現此提示，未曾同步之白板亦不會。
         </p>
         <h3>介面顯示扁平或難以辨識</h3>
         <p>
