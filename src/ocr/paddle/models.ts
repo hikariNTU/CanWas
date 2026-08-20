@@ -26,11 +26,17 @@ export interface ModelSource {
 /**
  * PP-OCRv6, at the *small* size.
  *
- * The family comes in three, and the middle of them is the interesting one on
- * paper and unusable here: `medium` is 62 MB of detection and 77 MB of
- * recognition, and 138 MB is not a thing to make someone download to read a
- * screenshot. `tiny` is 6 MB all in — smaller than the v5 pair this replaces —
- * and is the fallback if 31 MB turns out to be too much.
+ * The family comes in three. `medium` is 62 MB of detection and 77 MB of
+ * recognition — 138 MB is not a thing to make someone download to read a
+ * screenshot, but it shares this one's character dictionary exactly, so it is
+ * the only other tier that could be offered as a choice without shipping a
+ * second charset.
+ *
+ * `tiny` is 6 MB all in, smaller than the v5 pair this replaces, and is *not*
+ * a drop-in: its dictionary holds 6,904 characters against this one's 18,708.
+ * Decoding tiny's output against the wrong table does not fail, it returns
+ * fluent nonsense, so it is not a fallback that can be reached by changing a
+ * URL.
  *
  * `small` costs 10 MB more than PP-OCRv5 mobile did and is a much larger model
  * than that name suggests.
@@ -49,6 +55,30 @@ export const RECOGNITION_MODEL: ModelSource = {
 
 export const MODEL_BYTES =
   DETECTION_MODEL.approximateBytes + RECOGNITION_MODEL.approximateBytes;
+
+/**
+ * What to call this pair in front of a user.
+ *
+ * Written down once, here, beside the URLs it describes. The About panel used
+ * to carry its own copy as a literal, and it went on saying "PP-OCRv5 mobile"
+ * for a whole release after the weights underneath it changed — a version
+ * number nobody can trust is worse than no version number, because it is the
+ * first thing anyone reads when recognition looks wrong.
+ */
+export const MODEL_LABEL = "PP-OCRv6 small";
+
+/**
+ * Every model id this build can still load.
+ *
+ * The cache is swept against this at startup. A retired id is never named
+ * again by any code path, so without a list of the live ones its bytes stay
+ * forever: the move to v6 left the v5 pair sitting in IndexedDB and the About
+ * panel truthfully reported 50 MB of weights for a 31 MB model.
+ */
+export const KNOWN_MODEL_IDS: readonly string[] = [
+  DETECTION_MODEL.id,
+  RECOGNITION_MODEL.id,
+];
 
 export type ProgressReporter = (loadedBytes: number) => void;
 

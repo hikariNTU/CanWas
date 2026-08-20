@@ -80,7 +80,7 @@ export function OcrBadge({
   }
   const downloading = ocr.status === "running" && ocr.phase === "download";
   const progress = ocr.status === "running" ? ocr.progress : undefined;
-  // The first image on a fresh browser spends most of its wait fetching 21 MB
+  // The first image on a fresh browser spends most of its wait fetching 31 MB
   // of weights. Saying so is the difference between a slow app and a stuck one.
   const label: TranslationsKey = downloading
     ? "ocr.downloading"

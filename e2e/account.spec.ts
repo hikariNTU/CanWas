@@ -31,7 +31,11 @@ test("a browser that has never connected is not offered a reconnect", async ({
   await expect(page.getByTestId("sync-reconnect")).toHaveCount(0);
   // And the panel asks to connect, not to reconnect.
   await page.getByTestId("sync-button").click();
-  await expect(page.getByTestId("sync-sign-in")).toHaveText(
+  // `toContainText`, not `toHaveText`: the button leads with a Material
+  // Symbols ligature, whose text content *is* the glyph name. It is
+  // `aria-hidden`, so it stays out of the accessible name — but not out of
+  // `textContent`.
+  await expect(page.getByTestId("sync-sign-in")).toContainText(
     "Connect Google Drive",
   );
 });

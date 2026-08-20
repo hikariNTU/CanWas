@@ -77,7 +77,7 @@ export function useOcr(nodes: readonly BoardNode[]) {
       // so for the first job in an idle queue `onRunning` fires *inside* the
       // call. Marking queued afterwards would overwrite the running state with
       // a staler one, and nothing would correct it until the first progress
-      // event — which, on a cold start, is behind a 21 MB download. The job
+      // event — which, on a cold start, is behind a 31 MB download. The job
       // ran the whole time; only the label was wrong.
       //
       // The check also stops a stored `failed` from retrying in a loop: it is

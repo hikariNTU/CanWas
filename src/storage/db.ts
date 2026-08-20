@@ -110,8 +110,8 @@ export function deleteAsset(id: string): Promise<undefined> {
 }
 
 /**
- * A downloaded model file. Cached because the recognizer's weights are 21 MB
- * and the browser's HTTP cache is not something to bet a 21 MB download on —
+ * A downloaded model file. Cached because the recognizer's weights are 31 MB
+ * and the browser's HTTP cache is not something to bet a 31 MB download on —
  * it is evictable, and on a cache miss the download happens again with no way
  * to tell that it did.
  */
@@ -232,6 +232,35 @@ export async function storageBreakdown(): Promise<StorageBreakdown> {
 /** Drops the cached weights. They cost nothing but a re-download. */
 export async function clearModels(): Promise<void> {
   await run(MODEL_STORE, "readwrite", (store) => store.clear());
+}
+
+/**
+ * Drops every cached weight the app can no longer load.
+ *
+ * Model ids are versioned so that a device holding an older graph does not read
+ * it out of the cache by mistake — but the old rows were never deleted, so
+ * moving from PP-OCRv5 to v6 left 21 MB of dead bytes in IndexedDB behind the
+ * 31 MB of live ones, and the panel honestly reported 50 MB. Nothing would have
+ * ever collected them: no code path names the retired id again.
+ *
+ * `keep` is the whole catalogue and not the selected tier, because a tier the
+ * user has downloaded and switched away from is worth keeping for the switch
+ * back. Only ids the build no longer knows at all are swept.
+ */
+export async function sweepUnknownModels(
+  keep: readonly string[],
+): Promise<number> {
+  const known = new Set(keep);
+  const ids = await run<string[]>(
+    MODEL_STORE,
+    "readonly",
+    (store) => store.getAllKeys() as IDBRequest<string[]>,
+  );
+  const stale = ids.filter((id) => !known.has(id));
+  for (const id of stale) {
+    await run(MODEL_STORE, "readwrite", (store) => store.delete(id));
+  }
+  return stale.length;
 }
 
 /**

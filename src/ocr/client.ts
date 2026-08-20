@@ -5,7 +5,7 @@ import type { EngineName, OcrRequest, OcrResponse } from "@/ocr/types";
  * Which engine the worker should build.
  *
  * `?engine=mock` selects the fake one. It exists for the end-to-end suite,
- * which must not pull 21 MB of weights on every run, and for looking at the
+ * which must not pull 31 MB of weights on every run, and for looking at the
  * overlay without waiting for a download. Anything else, including no
  * parameter at all, gets the real engine.
  */

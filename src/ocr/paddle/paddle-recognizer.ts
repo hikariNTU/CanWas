@@ -27,7 +27,7 @@ import {
 import type { Recognizer, RecognizeOptions } from "@/ocr/types";
 
 /**
- * PP-OCRv5 mobile, detection then recognition, on ONNX Runtime's WASM backend.
+ * PP-OCRv6 small, detection then recognition, on ONNX Runtime's WASM backend.
  *
  * Two graphs, run in sequence: DBNet finds where the text is and outputs one
  * probability channel; a CRNN with a CTC head reads each box it found. Neither

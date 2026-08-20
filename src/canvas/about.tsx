@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   DETECTION_MODEL,
   MODEL_BYTES,
+  MODEL_LABEL,
   RECOGNITION_MODEL,
 } from "@/ocr/paddle/models";
 import {
@@ -13,11 +14,12 @@ import {
 } from "@/storage/db";
 import { useTranslation, type TranslationsKey } from "@/translations";
 import { Icon } from "@/ui/icon";
+import { PanelButton } from "@/ui/panel";
 
 /**
  * What this build is and what it has put on the user's disk.
  *
- * Worth a panel because this app quietly downloads 21 MB of weights and keeps
+ * Worth a panel because this app quietly downloads 31 MB of weights and keeps
  * them, alongside every image ever pasted. Somewhere that is stated plainly,
  * with a way to take the weights back, is the difference between caching and
  * helping yourself.
@@ -110,7 +112,7 @@ export function About() {
                 {__BUILD_TIME__.slice(0, 10)}
               </span>
             </Row>
-            <Row label="about.engine">PP-OCRv5 mobile</Row>
+            <Row label="about.engine">{MODEL_LABEL}</Row>
             <Row label="about.runtime">onnxruntime-web {__ORT_VERSION__}</Row>
             <Row label="about.weights">
               {formatBytes(MODEL_BYTES)}
@@ -119,7 +121,7 @@ export function About() {
               </span>
             </Row>
 
-            <div className="mt-2 mb-1 border-t border-neutral-800 pt-2 font-bold text-neutral-100">
+            <div className="mt-2 mb-1 border-t border-white/10 pt-2 font-bold text-neutral-100">
               {t("about.storage")}
             </div>
             <Row label="about.images" testId="about-images">
@@ -166,15 +168,16 @@ export function About() {
             </p>
 
             {weightsCached && (
-              <button
+              <PanelButton
                 data-testid="about-clear-models"
-                className="mt-3 w-full rounded-md border border-neutral-800 px-2 py-1.5 text-neutral-300 transition-colors hover:border-neutral-700 hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500"
+                icon="delete_sweep"
+                className="mt-3"
                 onClick={() => {
                   void clearModels().then(refresh);
                 }}
               >
                 {t("about.clearModels")}
-              </button>
+              </PanelButton>
             )}
 
             <p className="mt-2 text-xs text-neutral-600">

@@ -23,7 +23,7 @@ const scope = self as unknown as DedicatedWorkerGlobalScope;
 /**
  * The real engine is kept alive between jobs; the mock is not worth keeping.
  *
- * A `PaddleRecognizer` holds two ONNX sessions and 21 MB of weights, so
+ * A `PaddleRecognizer` holds two ONNX sessions and 31 MB of weights, so
  * building a new one per image would re-download and re-compile them every
  * time. `MockRecognizer` is seeded per asset by design and holds nothing.
  *

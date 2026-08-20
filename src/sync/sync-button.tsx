@@ -8,6 +8,7 @@ import { syncStatusAtom, type SyncStatus } from "@/sync/use-sync";
 import { useTranslation, type TranslationsKey } from "@/translations";
 import { DriveMark } from "@/ui/drive-mark";
 import { Icon } from "@/ui/icon";
+import { PanelButton, PanelRule } from "@/ui/panel";
 import { Tip } from "@/ui/tooltip";
 
 /**
@@ -141,9 +142,6 @@ function Avatar({
     </span>
   );
 }
-
-const action =
-  "w-full rounded-md border border-neutral-800 px-2 py-1.5 text-neutral-300 transition-colors hover:border-neutral-700 hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50";
 
 export function SyncButton({ onSync }: { onSync: () => void }) {
   const { t } = useTranslation();
@@ -288,11 +286,11 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                       />
                     </div>
                   )}
-                  <button
+                  <PanelButton
                     data-testid="sync-sign-in"
+                    icon="login"
                     disabled={state.status === "connecting"}
                     onClick={() => void signIn()}
-                    className={action}
                   >
                     {t(
                       state.status === "connecting"
@@ -301,7 +299,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                           ? "sync.reconnect"
                           : "sync.connect",
                     )}
-                  </button>
+                  </PanelButton>
                   {auth.status === "expired" && (
                     <p className="mt-1 text-xs text-neutral-500">
                       {t("sync.expiredWhy")}
@@ -324,14 +322,15 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                   laptop. Gating this on the account left a build with working
                   sync and no way to ask for one. */}
               {status.state !== "off" && (
-                <button
+                <PanelButton
                   data-testid="sync-now"
+                  icon="sync"
+                  className="mt-3"
                   disabled={status.state === "syncing"}
                   onClick={onSync}
-                  className={`mt-3 ${action}`}
                 >
                   {t("sync.now")}
-                </button>
+                </PanelButton>
               )}
 
               {/* Where the last round got to. A failure is worth colour;
@@ -361,15 +360,15 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                   misclick waiting to revoke a token. */}
               {state.status === "signedIn" && (
                 <>
-                  <hr className="my-3 border-neutral-800" />
-                  <button
+                  <PanelRule />
+                  <PanelButton
                     data-testid="sync-sign-out"
+                    icon="logout"
                     onClick={() => void signOut()}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-800/60 hover:text-neutral-200 focus-visible:outline-2 focus-visible:outline-sky-500"
+                    className="text-xs text-neutral-500"
                   >
-                    <Icon name="logout" size={16} />
                     {t("sync.signOut")}
-                  </button>
+                  </PanelButton>
                 </>
               )}
             </Popover.Popup>
@@ -422,7 +421,7 @@ function Quota({ used, limit }: { used?: number; limit?: number }) {
   return (
     <div className="mt-3">
       {fraction !== null && (
-        <div className="h-1 overflow-hidden rounded-full bg-neutral-800">
+        <div className="h-1 overflow-hidden rounded-full bg-white/10">
           <div
             data-testid="sync-quota-bar"
             // Amber rather than red near the top: a full Drive is not an error

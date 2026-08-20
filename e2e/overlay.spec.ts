@@ -270,3 +270,40 @@ test("escape leaves reading mode and gives the board its keys back", async ({
     page.locator("[data-testid=ocr-overlay][data-active]"),
   ).toHaveCount(0);
 });
+
+test("an indented line lays nothing over the space to its left", async ({
+  page,
+}) => {
+  await pasteTextImage(page, LINES);
+  const node = await recognizedNode(page);
+  const box = (await node.boundingBox())!;
+  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByTestId("ocr-overlay")).toHaveAttribute(
+    "data-active",
+    "true",
+  );
+
+  const line = page.locator("[data-testid=ocr-overlay] [data-line='0']");
+  const lineBox = (await line.boundingBox())!;
+  const firstWord = (await line.locator("[data-word]").first().boundingBox())!;
+  const overlayBox = (await boxOf(page, "ocr-overlay"))!;
+
+  // The indent is real — the text does not start at the overlay's edge — and
+  // the box starts where the text does. It was padding, which is *inside* the
+  // element: the box began at the overlay's left edge and its empty half sat
+  // over whatever else was on that band. On a two-column form that is another
+  // line of text, unreachable behind a slab holding no text position of its
+  // own.
+  expect(firstWord.x - overlayBox.x).toBeGreaterThan(4);
+  expect(Math.abs(lineBox.x - firstWord.x)).toBeLessThan(2);
+
+  // Said again as the pointer sees it, since that is where it went wrong.
+  const covering = await page.evaluate(
+    ([x, y]) =>
+      document
+        .elementsFromPoint(x, y)
+        .some((element) => element.getAttribute("data-line") === "0"),
+    [overlayBox.x + 2, firstWord.y + firstWord.height / 2] as const,
+  );
+  expect(covering).toBe(false);
+});

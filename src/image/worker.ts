@@ -6,7 +6,7 @@ import type { CompressRequest, CompressResponse } from "@/image/types";
  * Re-encodes an image to WebP, off the main thread.
  *
  * Its own worker rather than a job on the OCR one: that queue is deliberately
- * one deep and its first job can spend a minute fetching 21 MB of weights.
+ * one deep and its first job can spend a minute fetching 31 MB of weights.
  * Compression is seconds of work at most and nothing waits on it, so putting it
  * behind that queue would mean the first image on a fresh browser stays
  * uncompressed until the model finishes downloading.

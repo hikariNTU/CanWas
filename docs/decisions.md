@@ -1542,10 +1542,15 @@ structural headings probed:
 Twice the text off the same pixels. The three headings v5 lost were body-weight
 text in paragraphs, which is most of what a document is.
 
-`medium` is the better model and is not an option: 62 MB of detection and 77 MB
-of recognition is not a thing to make someone download to read a screenshot.
-`tiny` is 6 MB all in — smaller than what we had — and is the fallback if 31 MB
-proves too much.
+`medium` is the better model and is not the default: 62 MB of detection and 77
+MB of recognition is not a thing to make someone download to read a screenshot.
+It does share this tier's character dictionary exactly, so it is the only other
+tier that could be offered as a choice without shipping a second charset.
+
+`tiny` is 6 MB all in, smaller than what we had, and is **not** a fallback that
+can be reached by changing a URL: its dictionary holds 6,904 characters against
+small's 18,708. Decoding tiny's output against the wrong table does not fail, it
+returns fluent nonsense.
 
 The swap is close to drop-in because the architecture did not change: DB
 detection, CTC recognition, ImageNet normalization, recognition height 48. Two
@@ -1565,4 +1570,46 @@ marginally fewer characters, 20% more time. Reverted. The number stays where
 PaddleOCR put it, and the comment there now says it was tried.
 
 Reverses if: 31 MB proves too heavy on a phone, in which case `tiny` is the
-next thing to measure rather than a return to v5.
+next thing to measure rather than a return to v5 — and measuring it means
+shipping its dictionary alongside, not swapping a URL.
+
+## D64 — The overlay's line boxes are indented with margin, never padding
+
+Each line of the recognition overlay is one absolutely positioned box, stretched
+from its first word to the right edge of the image. The stretch is deliberate
+(D-overlay, above): a drag that ends past the last glyph has to land on
+something holding a text position, or the selection collapses.
+
+The indent has to be a _margin_. It was padding, which is inside the box — so a
+line beginning halfway across an image laid an empty but hit-testable slab over
+everything to its left. On a two-column form that is another line of text: the
+slab holds no text position of its own, so a press on it selected nothing, and
+the line underneath could not be reached at all. Selection was impossible on
+exactly the documents this feature exists for.
+
+A margin puts that space outside the box. Nothing else changes — the box still
+reaches the right edge, so the overshoot behaviour D-overlay bought is intact.
+
+Reverses if: never. The two are not interchangeable here.
+
+## D65 — Retired model weights are swept at startup
+
+Model ids carry their version so a device holding an older graph cannot read it
+out of the cache by mistake (D63). The retired rows were never deleted, and
+after v6 landed no code path named the v5 ids again — so nothing would ever have
+collected them. A device that had used v5 carried 21 MB of unreachable bytes
+behind 31 MB of live ones, and the About panel truthfully reported 50 MB of
+weights for a 31 MB model.
+
+`sweepUnknownModels` runs beside the asset mark-and-sweep at startup (D14),
+against `KNOWN_MODEL_IDS` — the catalogue, not the selected pair. A tier the
+user downloaded and switched away from is worth keeping for the switch back;
+only ids the build no longer knows at all are swept.
+
+The engine's name in the About panel is now taken from the same module. It was a
+literal in the component and went on reading "PP-OCRv5 mobile" for a release
+after the weights beneath it changed, which is the worst possible place for a
+stale version number: it is the first thing anyone reads when recognition looks
+wrong.
+
+Reverses if: never.

@@ -15,7 +15,7 @@ export interface Word {
 
 /**
  * What a running job is busy with. The first image on a fresh browser spends
- * most of its wait fetching 21 MB of weights, and a bar labelled "reading"
+ * most of its wait fetching 31 MB of weights, and a bar labelled "reading"
  * through that is a bar that looks stuck.
  */
 export type OcrPhase = "download" | "read";

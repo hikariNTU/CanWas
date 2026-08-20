@@ -57,6 +57,31 @@ Pick `.glass-strong` whenever the widget can end up over content rather than
 over the canvas. The recognition badge is the case: at the thin tint, a
 screenshot of a white page shows through and leaves a pale smudge.
 
+Never hand-write a `-webkit-` twin of a property. Lightning CSS, which Tailwind
+v4 runs, treats the prefixed and unprefixed forms as one logical property and
+emits whichever the build targets call for. Writing both by hand made it keep
+only the prefix, so every production build shipped `-webkit-backdrop-filter`
+alone — accepted by Chrome and Safari, ignored by Firefox, where the glass was
+simply flat. It adds the prefix itself.
+
+### Inside a panel
+
+Nothing inside a glass panel gets a fixed grey. The surface is tinted and the
+board moves behind it, so `border-neutral-800` on a rule or a button outline is
+the one thing in the panel that does not move with it, and it reads as a seam.
+Divisions are white at a low alpha and tint with whatever is behind them.
+
+| Role                  | Class             |
+| --------------------- | ----------------- |
+| Rule between sections | `border-white/10` |
+| Track behind a bar    | `bg-white/10`     |
+| Control hover         | `bg-white/10`     |
+
+Panel buttons carry no border at all — `PanelButton` in `ui/panel.tsx`. That
+costs the resting state its outline, so the icon is not optional: a bare line
+of text in the middle of a panel is a caption until the pointer is over it, and
+on a touch screen there is no such moment.
+
 ## Icons
 
 Material Symbols Rounded, via the `<Icon name="menu" />` wrapper. No icon

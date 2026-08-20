@@ -7,7 +7,8 @@ import {
 } from "@tanstack/react-router";
 
 import { routeTree } from "@/routeTree.gen";
-import { sweepOrphanedAssets } from "@/storage/db";
+import { KNOWN_MODEL_IDS } from "@/ocr/paddle/models";
+import { sweepOrphanedAssets, sweepUnknownModels } from "@/storage/db";
 
 import "@/index.css";
 
@@ -44,6 +45,12 @@ void requestPersistentStorage();
 // entry still needs.
 void sweepOrphanedAssets().catch(() => {
   // A failed sweep only means orphaned bytes linger until the next start.
+});
+
+// The same argument for the weights, which have no owner to be reachable from
+// at all: a retired model id is dead the moment the build stops naming it.
+void sweepUnknownModels(KNOWN_MODEL_IDS).catch(() => {
+  // Costs disk, not correctness.
 });
 
 const rootElement = document.getElementById("root")!;

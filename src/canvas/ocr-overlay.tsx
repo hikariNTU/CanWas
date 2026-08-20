@@ -212,21 +212,29 @@ export function OcrOverlay({
           // what a copied selection turns into a line break; the inner block
           // does the placing.
           <div key={lineIndex}>
-            {/* One block per line, stretched across the whole overlay and pushed
-              in with padding rather than positioned at the first word.
-
+            {/* One block per line, stretched from the first word to the right
+              edge of the overlay.
 
               The width is what makes selection behave. With each word its own
               absolutely positioned box there were no line boxes to extend
               along: a drag that ended five pixels past the last glyph landed
               on an element holding no text position and the whole selection
               collapsed. Nobody releases the mouse exactly on the final
-              letter. */}
+              letter.
+
+              The indent is a margin and not padding. Padding is inside the
+              box, so a line starting halfway across the image laid an empty
+              but *hit-testable* half-width slab over everything to its left —
+              which, on a form with two columns, is another line of text. The
+              slab holds no text position of its own, so a press landing on it
+              selected nothing and the line underneath could not be reached at
+              all. A margin leaves that space outside the box entirely. */}
             <div
+              data-line={lineIndex}
               className="absolute right-0 left-0 whitespace-nowrap"
               style={{
                 top: head.y0 * scale,
-                paddingLeft: head.x0 * scale,
+                marginLeft: head.x0 * scale,
                 fontSize,
                 lineHeight: 1,
               }}

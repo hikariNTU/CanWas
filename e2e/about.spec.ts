@@ -16,9 +16,22 @@ test("the info panel reports the build and what is on disk", async ({
 
   // The build identity is inlined at build time, so it is never "unknown" in a
   // checkout with git available.
-  await expect(panel).toContainText("PP-OCRv5 mobile");
   await expect(panel).toContainText("onnxruntime-web");
   await expect(panel).not.toContainText("unknown");
+
+  // The engine's name against the ids of the weights actually configured,
+  // rather than against a literal copied into the test. This row was a literal
+  // in the component and went on reading "PP-OCRv5 mobile" for a release after
+  // the weights became v6 — and the version shown in the panel is the first
+  // thing anyone checks when recognition looks wrong, so a stale one sends
+  // them somewhere else entirely. Pinning it to a string here would only have
+  // moved the staleness into the suite.
+  const text = (await panel.textContent()) ?? "";
+  const named = /PP-OCRv(\d+)/.exec(text);
+  const weights = /ppocrv(\d+)-/.exec(text);
+  expect(named, "the panel names no engine").not.toBeNull();
+  expect(weights, "the panel names no model ids").not.toBeNull();
+  expect(named![1]).toBe(weights![1]);
 
   // Nothing pasted yet: no images, and the mock engine downloads no weights.
   await expect(panel).toContainText("not downloaded yet");
