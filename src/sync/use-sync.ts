@@ -12,6 +12,7 @@ import {
 import { readIntrinsicSize } from "@/board/ingest";
 import type { OcrState } from "@/board/types";
 import { ocrClient, selectedEngine } from "@/ocr/client";
+import { adoptBoardMetaAtom } from "@/storage/board-actions";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import { getSyncBase, putAsset, putSyncBase } from "@/storage/db";
 import { authAtom, isLive } from "@/sync/auth";
@@ -191,6 +192,14 @@ export function useSync(boardId: string): {
       // still means something (D16), and with stamps preserved so the nodes
       // keep the times the devices that edited them recorded.
       commit((nodes) => replaceNodes(nodes, settled.nodes, "sync"), "preserve");
+      // The board's own fields too. They were being merged, pushed to the
+      // remote, and then thrown away here — so a rename never crossed between
+      // devices, and a board opened from a link kept its raw id for a name.
+      store.set(adoptBoardMetaAtom, boardId, {
+        name: settled.name,
+        createdAt: settled.createdAt,
+        updatedAt: settled.updatedAt,
+      });
       store.set(tombstonesAtom, {
         ...store.get(tombstonesAtom),
         [boardId]: settled.tombstones,

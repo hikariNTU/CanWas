@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 
-import { boardNodesAtom } from "@/board/store";
+import { boardNodesAtom, tombstonesAtom } from "@/board/store";
 import { createId } from "@/lib/id";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { viewportsAtom } from "@/canvas/viewport-atom";
@@ -67,6 +67,48 @@ export async function resolveLandingBoard(
  * (D26): `putBoard` replaces the whole record, so writing a stale list here
  * would silently discard content.
  */
+/**
+ * Takes the board's own fields from a sync round.
+ *
+ * Separate from renaming because it is the opposite of an edit: renaming says
+ * *this device decided this*, and stamps the time to prove it. Adopting says
+ * this device was told, and must not stamp anything — a merge result that
+ * announced itself as a fresh local edit would win the next round's
+ * last-writer-wins on the strength of having been received.
+ *
+ * Without this the name merged correctly, travelled to the remote, and was
+ * then dropped on the floor: nothing above `boardNodesAtom` was ever written
+ * back, so a board renamed on the laptop kept its old name on the phone
+ * forever, and a board opened from a link showed its raw id as its name.
+ */
+export const adoptBoardMetaAtom = atom(
+  null,
+  (
+    get,
+    set,
+    boardId: string,
+    incoming: { name: string; createdAt: number; updatedAt: number },
+  ) => {
+    const meta = get(boardsMetaAtom)[boardId];
+    if (
+      !meta ||
+      (meta.name === incoming.name &&
+        meta.createdAt === incoming.createdAt &&
+        meta.updatedAt === incoming.updatedAt)
+    ) {
+      return;
+    }
+    const next = { ...meta, ...incoming };
+    set(boardsMetaAtom, { ...get(boardsMetaAtom), [boardId]: next });
+    void putBoard({
+      ...next,
+      nodes: get(boardNodesAtom)[boardId] ?? [],
+      tombstones: get(tombstonesAtom)[boardId] ?? [],
+      viewport: get(viewportsAtom)[boardId] ?? IDENTITY_VIEWPORT,
+    });
+  },
+);
+
 export const renameBoardAtom = atom(
   null,
   (get, set, boardId: string, name: string) => {

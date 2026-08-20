@@ -83,6 +83,17 @@ export function useBoardPersistence(boardId: string) {
 
     void (async () => {
       const now = Date.now();
+      // An id this device has never seen. That is a real case — a link to a
+      // board another device made — so it is materialised rather than refused,
+      // and the sync round that follows fills it in.
+      //
+      // `updatedAt: 0`, because nothing has edited it. Stamping it with the
+      // current time makes an empty placeholder the most recently touched copy
+      // of that board anywhere, and the merge believes it twice over: its name
+      // (the raw id, for want of anything better) wins over the real one and is
+      // pushed to every other device, and a board deleted elsewhere comes back
+      // from the dead. Zero says what is true — this side has no edit to offer
+      // — and every field it lacks is taken from the remote on the first round.
       const stored: StoredBoard = (await getBoard(boardId)) ?? {
         id: boardId,
         name: boardId,
@@ -90,7 +101,7 @@ export function useBoardPersistence(boardId: string) {
         tombstones: [],
         viewport: IDENTITY_VIEWPORT,
         createdAt: now,
-        updatedAt: now,
+        updatedAt: 0,
       };
 
       // Assets are content-addressed, so one already in memory is

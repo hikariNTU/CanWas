@@ -516,3 +516,108 @@ test("a document from a newer version is refused, loudly", async ({ page }) => {
   const remote = await remoteBoard(page, BOARD);
   expect(remote).toHaveProperty("_version", 99);
 });
+
+test("opening someone else's board by id keeps its name", async ({ page }) => {
+  // A link to a board this device has never seen. The id is all the URL
+  // carries, so the board is materialised locally and filled in by the round
+  // that follows.
+  const shared = "sharedboardfromanotherdevice";
+  await page.evaluate(
+    (board) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("canwas-fake-remote");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const write = open.result
+            .transaction("boards", "readwrite")
+            .objectStore("boards")
+            .put(board);
+          write.onsuccess = () => resolve();
+          write.onerror = () => reject(write.error);
+        };
+      }),
+    {
+      id: shared,
+      _version: 1,
+      name: "Research Notes",
+      nodes: [
+        {
+          id: "theirs",
+          kind: "text",
+          order: "a1",
+          updatedAt: Date.now() - 60_000,
+          x: 100,
+          y: 100,
+          w: 200,
+          h: 60,
+          text: "written elsewhere",
+          fontSize: 16,
+        },
+      ],
+      tombstones: [],
+      createdAt: Date.now() - 600_000,
+      updatedAt: Date.now() - 60_000,
+    },
+  );
+
+  await page.goto(`?engine=mock&sync=fake#/${shared}`);
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+
+  // The content arrives: an empty local side against no base is a union, not a
+  // deletion.
+  await expect(page.locator('[data-node-id="theirs"]')).toBeVisible({
+    timeout: 15000,
+  });
+
+  // And the name survives. A placeholder has never been edited, so it has no
+  // business winning a last-writer-wins comparison against the device that
+  // actually named the board — least of all with the raw id for a name.
+  await expect(page.getByTestId("board-name")).toHaveText("Research Notes");
+  await expect
+    .poll(async () => (await remoteBoard(page, shared))?.name, {
+      timeout: 15000,
+    })
+    .toBe("Research Notes");
+});
+
+test("a rename on another device arrives here", async ({ page }) => {
+  await pasteImage(page, 140);
+  await onlyAssetId(page);
+
+  // The other device renamed the board a minute ago. This one has not touched
+  // it since, so there is nothing to disagree about.
+  await page.evaluate(
+    (boardId) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("canwas-fake-remote");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const store = open.result
+            .transaction("boards", "readwrite")
+            .objectStore("boards");
+          const read = store.get(boardId);
+          read.onsuccess = () => {
+            const write = store.put({
+              ...read.result,
+              name: "Renamed Elsewhere",
+              updatedAt: Date.now() + 60_000,
+            });
+            write.onsuccess = () => resolve();
+            write.onerror = () => reject(write.error);
+          };
+        };
+      }),
+    BOARD,
+  );
+
+  await page.getByTestId("sync-button").click();
+  await page.getByTestId("sync-now").click();
+  await page.keyboard.press("Escape");
+
+  await expect(page.getByTestId("board-name")).toHaveText("Renamed Elsewhere", {
+    timeout: 15000,
+  });
+  // And it outlives a reload, rather than living only in the atom.
+  await page.reload();
+  await expect(page.getByTestId("board-name")).toHaveText("Renamed Elsewhere");
+});

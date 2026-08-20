@@ -291,15 +291,43 @@ original, so a round trip through two devices is lossy exactly once.
 
 ## What is still missing
 
-- **Drive has never run.** Every line of `drive-transport.ts` is untested
-  against the real API. Expect the first real sign-in to find something.
 - **Board _lists_ do not sync**, only the board that is open. A board created on
-  the phone does not appear on the laptop until the laptop opens it by id.
+  the phone does not appear on the laptop's menu at all; opening it by id does
+  work, and pulls the whole board down.
+- **Nothing uploads in bulk.** On first connecting, only the open board goes up.
+  Every other board waits until it is opened. `listBoardIds()` is implemented on
+  both transports and called by nothing.
+- **There is no periodic pull.** Rounds fire on board open, 2.5s after edits
+  stop, and on the button. Two devices open on the same board do not converge
+  on their own.
 - **Board deletion does not sync.** `deletedAt` is merged and honoured, but
   nothing sets it — `removeBoard` still drops the row locally.
 - **Tombstones are never reclaimed.** They are small, and a wrong reclamation
   resurrects a deleted node, so the bet is not worth taking until there is a
   reason.
+
+## Opening a board this device has never seen
+
+A URL carries an id, so a link to another device's board reaches a device that
+has never heard of it. That board is materialised locally rather than refused,
+and the round that follows fills it in: an empty local side against no base is
+read as a union, not as a deletion, so every remote node arrives.
+
+The placeholder is created with `updatedAt: 0`. Stamping it with the current
+time — which is what it used to do — made an empty shell the most recently
+touched copy of that board anywhere, and the merge believed it twice: the
+placeholder's name (the raw id, for want of anything better) beat the real one
+under last-writer-wins and was pushed to every other device, and a board deleted
+elsewhere came back from the dead. Zero says the true thing: this side has no
+edit to offer.
+
+The board's own fields — name, `createdAt`, `updatedAt` — are then taken from
+the merge result and written back locally. They were being merged and pushed
+correctly and then dropped on the floor, which is why a rename never crossed
+between devices even though the merge had always computed it. Adopting is
+deliberately not renaming: a rename stamps the time to say _this device decided
+this_, and a merge result that announced itself as a fresh local edit would win
+the next round on the strength of having been received.
 
 ## Open questions
 
