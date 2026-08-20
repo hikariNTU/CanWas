@@ -146,6 +146,19 @@ const translations = {
     "zh-TW": "Google 雲端硬碟",
     "en-US": "Google Drive",
   },
+  "sync.reconnect": {
+    "zh-TW": "重新連線",
+    "en-US": "Reconnect",
+  },
+  "sync.expired": {
+    "zh-TW": "連線階段已過期，請重新連線",
+    "en-US": "The Drive session has expired. Reconnect to keep syncing.",
+  },
+  "sync.expiredWhy": {
+    "zh-TW": "Google 的權杖只有一小時，且必須由點擊取得。",
+    "en-US":
+      "Google tokens last an hour and can only be obtained from a click.",
+  },
   "sync.grantedTo": {
     "zh-TW": "已授權的帳戶",
     "en-US": "Granted by",

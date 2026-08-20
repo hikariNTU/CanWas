@@ -64,20 +64,35 @@ build that silently ships with sync disabled.
 The token flow uses no client secret at all. If one exists for this project, it
 has no business in this repo or in any `VITE_` variable.
 
-Access tokens last an hour. There is no refresh token in a browser flow, so the
-app re-requests silently with `prompt: ""`, which Google answers from the
-existing grant without showing anything.
+Access tokens last an hour, and there is no way to get another one quietly.
 
-Renewal is driven from two places, and both are needed. The transport checks the
-recorded expiry before each call, which catches the ordinary case without a
-wasted round trip; and it retries once on a 401, which catches everything the
-clock cannot see — a revoked grant, a token rotated on Google's side, a device
-whose clock is wrong. Renewals are de-duplicated, or one lapsed hour would fire
-a token request per Drive call in the round that discovered it.
+Google's token model has no silent path. From its own documentation: _"Due to
+security concerns, only the dialog UX is supported"_, and _"a user gesture
+triggers the token flow"_. Every token comes from a popup, and a popup that no
+click opened is a popup the browser blocks. There is no refresh token in a
+browser flow either — nothing exists to exchange in the background. `prompt: ""`
+does not remove the popup; it removes what the popup _shows_.
 
-A renewal that fails means the grant is gone. The app drops to signed out rather
-than retrying: the button goes back to offering a connection, which is the only
-thing that can actually fix it.
+Three things follow, and none of them are preferences:
+
+- **A reload signs you out.** The token is memory-only by choice, and no code
+  could obtain a new one without asking.
+- **There is no hourly renewal.** An expired session is marked `expired` and the
+  round fails with a message saying so. Requesting a token from a sync timer
+  would open a window the browser blocks — a failure that is also invisible.
+- **Every token request lives inside a click**, and there is exactly one such
+  place: the Connect button.
+
+What _is_ kept is a boolean, `canwas.drive.connected`: this browser has connected
+before. It stores no credential and grants nothing — at worst it causes a request
+that is refused. It buys two things. The button reads **Reconnect** rather than
+Connect, so a signed-out state looks like one click rather than like setting the
+whole thing up again. And the request passes `prompt: ""`, so the popup opens and
+closes with no account chooser and no consent screen. If that fails, the flag is
+cleared and the next click asks properly rather than failing the same way twice.
+
+An automatic resume on page load was built first, and cannot work. Worth writing
+down, because the code for it reads as though it should.
 
 ## Landing a round on a board that moved
 

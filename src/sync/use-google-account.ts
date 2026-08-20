@@ -1,5 +1,5 @@
 import { useAtom } from "jotai";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 
 import {
   authAtom,
@@ -17,8 +17,11 @@ import { fetchAccount } from "@/sync/drive";
  *
  * What to do with the token afterwards belongs to `useSync`; keeping the two
  * apart is what lets sync be tested against a fake remote with no Google in
- * sight. Renewal is not here either — it happens under the transport, where a
- * 401 is visible (`renewToken`).
+ * sight.
+ *
+ * There is no renewal, here or anywhere: Google's token model has no silent
+ * path, so a token can only ever be asked for from inside a click. An expired
+ * session becomes a Reconnect button rather than a background request.
  */
 export function useGoogleAccount() {
   const [state, setState] = useAtom(authAtom);
@@ -26,66 +29,32 @@ export function useGoogleAccount() {
   const signIn = useCallback(async () => {
     setState({ status: "connecting" });
     try {
-      // Consent is asked for explicitly here. A silent request works only once
-      // the account has already agreed, and this is the moment it has not.
-      // It is also the only call in a real user gesture, which is what lets it
-      // open a window at all.
-      const session = await requestToken("consent");
+      // A browser that has connected before has a grant already, so Google can
+      // answer without an account chooser or a consent screen: the popup opens
+      // and closes. The first time, there is nothing to answer from and the
+      // consent screen is the point.
+      //
+      // Either way this runs inside the click. It has to — Google's token model
+      // supports no other UX, so a token requested anywhere else is a popup the
+      // browser blocks.
+      const returning = hasConnectedBefore();
+      const session = await requestToken(returning ? "" : "consent");
       // Who signed in, and how full their Drive is. Failing this is not failing
       // the sign-in: the token is valid either way, and the name is decoration.
       const account = await fetchAccount(session).catch(() => ({}));
       rememberConnected(true);
       setState({ status: "signedIn", session: { ...session, ...account } });
     } catch (error) {
+      // A silent attempt that failed means the grant is not what this browser
+      // remembered. Forgetting it makes the next click ask properly rather than
+      // failing the same way again.
+      rememberConnected(false);
       setState({
         status: "failed",
         error: error instanceof Error ? error.message : String(error),
       });
     }
   }, [setState]);
-
-  /**
-   * Picks the connection back up on load, without a dialog and without a click.
-   *
-   * `prompt: ""` asks Google to answer from the grant it already holds. If it
-   * can, nothing is shown at all and sync is live before the board finishes
-   * rendering. If it cannot — the grant was revoked, the Google session
-   * expired, a password changed elsewhere — it fails, and the failure is
-   * surfaced rather than swallowed: a Connect button sitting there quietly is
-   * indistinguishable from sync working.
-   *
-   * Only attempted where a grant plausibly exists. A silent request that has to
-   * become a window would be a window opened outside a user gesture, which the
-   * browser blocks — so a browser that has never connected is left alone.
-   */
-  const resumed = useRef(false);
-  useEffect(() => {
-    if (
-      resumed.current ||
-      !isConfigured ||
-      !hasConnectedBefore() ||
-      state.status !== "signedOut"
-    ) {
-      return;
-    }
-    resumed.current = true;
-    setState({ status: "connecting" });
-    void (async () => {
-      try {
-        const session = await requestToken("");
-        const account = await fetchAccount(session).catch(() => ({}));
-        setState({ status: "signedIn", session: { ...session, ...account } });
-      } catch (error) {
-        // The grant is gone. Forgetting the flag stops this from retrying on
-        // every load, and the next connection is a deliberate one.
-        rememberConnected(false);
-        setState({
-          status: "failed",
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    })();
-  }, [setState, state.status]);
 
   const signOut = useCallback(async () => {
     if (state.status === "signedIn") {

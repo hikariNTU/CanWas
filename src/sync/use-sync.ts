@@ -14,7 +14,7 @@ import type { OcrState } from "@/board/types";
 import { ocrClient, selectedEngine } from "@/ocr/client";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import { getSyncBase, putAsset, putSyncBase } from "@/storage/db";
-import { authAtom, isLive, renewToken } from "@/sync/auth";
+import { authAtom, isLive } from "@/sync/auth";
 import { createDriveTransport } from "@/sync/drive-transport";
 import { fakeRemote } from "@/sync/fake-remote";
 import type { SyncBoard } from "@/sync/merge";
@@ -74,24 +74,18 @@ export function useSync(boardId: string): {
           if (!renew && isLive(current.session)) {
             return current.session;
           }
-          try {
-            // Only the token and its expiry come back. The email and the quota
-            // were fetched once at sign-in and are still true.
-            const fresh = await renewToken();
-            const session = { ...current.session, ...fresh };
-            store.set(authAtom, { status: "signedIn", session });
-            return session;
-          } catch (error) {
-            // A renewal that fails means the grant is gone — revoked, or a
-            // password change, or another device signing out. Dropping back to
-            // signed out puts the button back to "connect", which is the one
-            // thing that can fix it. Staying signed in would retry forever.
-            store.set(authAtom, {
-              status: "failed",
-              error: error instanceof Error ? error.message : String(error),
-            });
-            throw error;
-          }
+          // No renewal happens here, because none is possible. Google's token
+          // model has no silent path — every token comes from a popup, and a
+          // popup needs a click. A sync round is a timer, not a click, so
+          // asking here would open a window the browser blocks.
+          //
+          // The session is marked expired instead, which puts a red dot on the
+          // button and turns it into Reconnect. That is one click, and unlike a
+          // blocked popup it is a click the user can see the reason for.
+          store.set(authAtom, { status: "expired" });
+          throw new Error(
+            "The Drive session has expired. Reconnect to keep syncing.",
+          );
         })
       : null;
   }, [auth.status, store]);

@@ -39,6 +39,10 @@ export type AuthState =
   | { status: "signedOut" }
   | { status: "connecting" }
   | { status: "signedIn"; session: Session }
+  /** Had a token, no longer does. Distinct from `signedOut` because the fix is
+   *  one click with no consent screen, and saying so is the whole difference
+   *  between an annoyance and a mystery. */
+  | { status: "expired" }
   | { status: "failed"; error: string };
 
 export const authAtom = atom<AuthState>(
@@ -56,10 +60,15 @@ let pending:
 /**
  * Asks Google for an access token.
  *
- * `prompt: ""` lets Google skip the consent screen when consent already
- * exists, which is what makes a silent renewal possible — there is no refresh
- * token in a browser flow, so an hour from now this is how the session
- * continues without another dialog.
+ * **This must be called from a user gesture.** Google's token model has no
+ * silent path: "only the dialog UX is supported", and every token comes from a
+ * popup that a browser will block unless a click opened it. There is no refresh
+ * token in a browser flow either — nothing to exchange in the background.
+ *
+ * `prompt: ""` is still worth passing once consent exists. It does not remove
+ * the popup, but it removes what the popup *shows*: the window opens and closes
+ * without an account chooser or a consent screen, which is the difference
+ * between a click and a conversation.
  */
 export async function requestToken(
   prompt: "" | "consent" = "",
@@ -141,27 +150,6 @@ export function rememberConnected(connected: boolean): void {
     // Nothing to do and nothing worth telling the user: the cost is one extra
     // click next time.
   }
-}
-
-let renewal: Promise<Session> | null = null;
-
-/**
- * A fresh token for an account that has already consented.
- *
- * De-duplicated, because a sync round makes many Drive calls and they can all
- * discover the expiry at once — without this, one lapsed hour would fire a
- * dozen simultaneous token requests and Google would rate-limit the lot.
- *
- * `prompt: ""` means Google answers from the existing grant without showing
- * anything. If the grant is gone this rejects rather than opening a popup the
- * browser would block anyway: renewal is not a user gesture, so it cannot be
- * allowed to turn into a dialog.
- */
-export function renewToken(): Promise<Session> {
-  renewal ??= requestToken("").finally(() => {
-    renewal = null;
-  });
-  return renewal;
 }
 
 export function revoke(session: Session): Promise<void> {

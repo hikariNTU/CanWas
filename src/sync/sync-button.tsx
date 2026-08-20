@@ -1,7 +1,7 @@
 import { Popover } from "@base-ui/react/popover";
 import { useAtomValue } from "jotai";
 
-import { authAtom } from "@/sync/auth";
+import { authAtom, hasConnectedBefore } from "@/sync/auth";
 import { useGoogleAccount } from "@/sync/use-google-account";
 import { syncStatusAtom, type SyncStatus } from "@/sync/use-sync";
 import { useTranslation, type TranslationsKey } from "@/translations";
@@ -92,15 +92,22 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
   const connectable = isConfigured && auth.status !== "connecting";
   const { icon, label, tone } = appearanceFor(status, connectable);
 
-  // A failed sign-in leaves no transport, which makes the status "off" — and
-  // off looks like an invitation to connect rather than like something that
-  // went wrong. Both failures wear the same mark.
+  // A failed or expired sign-in leaves no transport, which makes the status
+  // "off" — and off looks like an invitation rather than like something that
+  // stopped working. All three wear the same mark.
   const failure =
     status.state === "failed"
       ? status.message
       : auth.status === "failed"
         ? auth.error
-        : null;
+        : auth.status === "expired"
+          ? t("sync.expired")
+          : null;
+
+  // Connecting again is one click and no consent screen; connecting the first
+  // time is a conversation with Google. Saying which is which is the whole
+  // difference between an annoyance and a mystery.
+  const returning = auth.status === "expired" || hasConnectedBefore();
 
   return (
     <Popover.Root>
@@ -191,9 +198,16 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                   {t(
                     state.status === "connecting"
                       ? "sync.connecting"
-                      : "sync.connect",
+                      : returning
+                        ? "sync.reconnect"
+                        : "sync.connect",
                   )}
                 </button>
+                {auth.status === "expired" && (
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {t("sync.expiredWhy")}
+                  </p>
+                )}
                 {state.status === "failed" && (
                   <p
                     data-testid="sync-error"
