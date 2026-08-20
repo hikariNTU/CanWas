@@ -113,7 +113,44 @@ else may be folded into it.
 CanWas/
   boards/<board-id>.json      the board record, as it is in IndexedDB
   assets/<sha256>.<ext>       image bytes, content-addressed
+  text/<sha256>.json          what was read out of those bytes
 ```
+
+Every JSON document this app writes carries a `_version`. Not for the format as
+it stands — a single writer needs no version — but for the moment there are
+two. Devices update independently, so a phone unopened for a month is a client
+running last month's code reading what the laptop wrote this morning. Without a
+stamp, an old build reading a new document does not fail, it _half-succeeds_:
+takes the fields it knows, drops the rest, writes the result back. Stamp on the
+way out, refuse on the way in — refusing to read is also refusing to overwrite.
+A missing stamp is version 0, which is what the boards written before this
+carry; they are read normally and stamped on their next write.
+
+Recognition lives in its own folder rather than as a second extension under
+`assets/`, because `hasAsset` answers by filename prefix and a text file beside
+the image would make a picture nobody has look present.
+
+It is the cheapest thing here to share and the most expensive not to: reading an
+image costs 21 MB of weights and real seconds, and depends on nothing but the
+bytes — which are content-addressed, so the same id is the same pixels on every
+device forever. It also cannot conflict. Two devices that read the same image
+did not disagree, so first writer wins and nobody loses.
+
+Two rules it does have:
+
+- **Only a finished reading goes up.** A failure is one device's problem — it
+  ran out of memory, or the tab closed — and publishing it would stop every
+  other device from ever trying.
+- **The engine is recorded and checked.** The mock recognizer invents its
+  strings, so a board that had been near a `?engine=mock` session would
+  otherwise poison every other device with nonsense that looks exactly like a
+  result.
+
+Recognition is pulled _before_ the images it belongs to, so a downloaded asset
+arrives already read. Landing the pixels first puts an unread asset in the store
+and the local pipeline starts on it the moment React sees it — spending exactly
+what this exchange exists to save, then overwriting the arriving reading with
+its own.
 
 Weights are never uploaded. They are 21 MB of public files that re-download for
 free, and putting them in someone's Drive quota would be rude.

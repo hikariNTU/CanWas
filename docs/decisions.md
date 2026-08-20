@@ -1404,3 +1404,49 @@ recorded densely. An image that says nothing is taken at face value.
 This is expected behaviour rather than a bug — the zoom controls are right
 there, and the alternative was resizing every ordinary paste to protect against
 an unusual one.
+
+## D60 — Recognition syncs, and every remote document carries a version
+
+**2026-08-20 · settled**
+
+`text/<sha256>.json` beside `assets/<sha256>.<ext>`, holding the words read out
+of those bytes and the name of the engine that read them. Every JSON document
+written to a remote — boards included — carries a `_version`.
+
+Recognition is the cheapest thing in the sync to share and the most expensive
+not to. It costs 21 MB of weights and real seconds of CPU to produce, and it is
+a pure function of the bytes; the id _is_ the hash of those bytes, so the same
+id is the same pixels on every device, forever. It also cannot conflict — two
+devices that read the same image did not disagree about anything — so it needs
+none of the merge machinery a board needs. First writer wins.
+
+Its own folder rather than a second extension in `assets/`: `hasAsset` answers
+by filename prefix, so `<hash>.ocr.json` sitting beside the image would make a
+picture nobody has look present.
+
+Two guards, both learned rather than assumed:
+
+- **Only a finished reading is published.** A failure belongs to the device that
+  had it, and uploading one would stop every other device from trying.
+- **The engine is recorded and checked on the way in.** The mock recognizer
+  invents its strings. One `?engine=mock` session would otherwise write
+  plausible nonsense that every real build would adopt in preference to reading
+  the image itself — the one way this feature could quietly ruin a board.
+
+Recognition is pulled before the images, so a downloaded asset is stored already
+read. The obvious order — bytes first, words after — puts an unread asset in the
+store, and `useOcr` enqueues it on the very next render: the device pays the full
+cost anyway and then overwrites the arriving reading with its own.
+
+The `_version` stamp is not for today's format. Devices update independently, so
+a phone unopened for a month runs last month's code against what a laptop wrote
+this morning. An old build reading a new document does not fail cleanly, it
+half-succeeds — keeps the fields it knows, drops the rest, writes it back — and
+the write destroys the evidence. Stamp on the way out, refuse on the way in;
+refusing to read is also refusing to overwrite. A missing stamp is version 0,
+which is what already-written boards carry, and they are stamped on their next
+write.
+
+Reverses if: readings grow large enough to be worth compressing or chunking. A
+dense page is a few hundred words of JSON today, which is smaller than the image
+it describes by a wide margin.

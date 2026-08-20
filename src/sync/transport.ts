@@ -11,6 +11,8 @@
  * one module names a concrete implementation, and it is this one.
  */
 
+import type { Word } from "@/board/types";
+import type { EngineName } from "@/ocr/types";
 import type { SyncBoard } from "@/sync/merge";
 
 export type TransportName = "drive" | "fake";
@@ -19,6 +21,19 @@ export interface RemoteAsset {
   blob: Blob;
   /** Extension as stored, so a download knows what it is holding. */
   extension: string;
+}
+
+/**
+ * A recognition, as it travels.
+ *
+ * Carries the engine that produced it because the words are only meaningful
+ * against one: the mock recognizer invents strings, and a board that had been
+ * near a `?engine=mock` session would otherwise poison every other device with
+ * nonsense that looks exactly like a result.
+ */
+export interface RemoteText {
+  engine: EngineName;
+  words: Word[];
 }
 
 export interface SyncTransport {
@@ -30,6 +45,16 @@ export interface SyncTransport {
   hasAsset(id: string): Promise<boolean>;
   getAsset(id: string): Promise<RemoteAsset | null>;
   putAsset(id: string, asset: RemoteAsset): Promise<void>;
+  /**
+   * Recognition, keyed by the same content hash as the image it came from.
+   *
+   * Its own three methods rather than an asset with a different extension:
+   * `hasAsset` answers by filename prefix, so a text file living beside the
+   * image would make a picture nobody has look present.
+   */
+  hasText(id: string): Promise<boolean>;
+  getText(id: string): Promise<RemoteText | null>;
+  putText(id: string, text: RemoteText): Promise<void>;
 }
 
 /**

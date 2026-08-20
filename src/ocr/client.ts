@@ -9,7 +9,7 @@ import type { EngineName, OcrRequest, OcrResponse } from "@/ocr/types";
  * overlay without waiting for a download. Anything else, including no
  * parameter at all, gets the real engine.
  */
-function selectedEngine(): EngineName {
+export function selectedEngine(): EngineName {
   const requested = new URLSearchParams(location.search).get("engine");
   return requested === "mock" ? "mock" : "paddle";
 }

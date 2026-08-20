@@ -11,13 +11,20 @@
  * loop read local state and call it remote, and the test would pass.
  */
 
+import {
+  accepted,
+  BOARD_VERSION,
+  stamped,
+  TEXT_VERSION,
+} from "@/sync/document";
 import type { SyncBoard } from "@/sync/merge";
-import type { RemoteAsset, SyncTransport } from "@/sync/transport";
+import type { RemoteAsset, RemoteText, SyncTransport } from "@/sync/transport";
 
 const DB_NAME = "canwas-fake-remote";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const BOARD_STORE = "boards";
 const ASSET_STORE = "assets";
+const TEXT_STORE = "text";
 
 let connection: Promise<IDBDatabase> | null = null;
 
@@ -31,6 +38,9 @@ function open(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(ASSET_STORE)) {
         db.createObjectStore(ASSET_STORE, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(TEXT_STORE)) {
+        db.createObjectStore(TEXT_STORE, { keyPath: "id" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -76,11 +86,19 @@ export const fakeRemote: SyncTransport = {
     // returned through JSON anyway, because Drive will hand back parsed JSON
     // and a difference in what the two transports return is a difference the
     // loop would eventually depend on.
-    return record ? (JSON.parse(JSON.stringify(record)) as SyncBoard) : null;
+    return record
+      ? accepted<SyncBoard>(
+          JSON.parse(JSON.stringify(record)),
+          BOARD_VERSION,
+          `board ${id}`,
+        )
+      : null;
   },
 
   async putBoard(board) {
-    await run(BOARD_STORE, "readwrite", (store) => store.put(board));
+    await run(BOARD_STORE, "readwrite", (store) =>
+      store.put(stamped(board, BOARD_VERSION)),
+    );
   },
 
   async hasAsset(id) {
@@ -101,5 +119,36 @@ export const fakeRemote: SyncTransport = {
 
   async putAsset(id, asset) {
     await run(ASSET_STORE, "readwrite", (store) => store.put({ id, ...asset }));
+  },
+
+  async hasText(id) {
+    const count = await run<number>(TEXT_STORE, "readonly", (store) =>
+      store.count(id),
+    );
+    return count > 0;
+  },
+
+  async getText(id) {
+    const record = await run<(RemoteText & { id: string }) | undefined>(
+      TEXT_STORE,
+      "readonly",
+      (store) => store.get(id),
+    );
+    if (!record) {
+      return null;
+    }
+    // The key is the store's, not the document's.
+    const { engine, words } = accepted<RemoteText & { id: string }>(
+      JSON.parse(JSON.stringify(record)),
+      TEXT_VERSION,
+      `text ${id}`,
+    );
+    return { engine, words };
+  },
+
+  async putText(id, text) {
+    await run(TEXT_STORE, "readwrite", (store) =>
+      store.put({ id, ...stamped(text, TEXT_VERSION) }),
+    );
   },
 };

@@ -11,7 +11,9 @@ import {
   type Asset,
   type BoardNode,
   type Tombstone,
+  type Word,
 } from "@/board/types";
+import type { EngineName } from "@/ocr/types";
 import { mergeBoards, type MergeReport, type SyncBoard } from "@/sync/merge";
 import type { SyncTransport } from "@/sync/transport";
 
@@ -26,6 +28,8 @@ export interface SyncResult {
   report: MergeReport;
   uploaded: number;
   downloaded: string[];
+  /** Asset ids whose recognition came down from the remote. */
+  read: string[];
   /** True when the local board is already what the remote holds. */
   unchanged: boolean;
 }
@@ -52,8 +56,16 @@ export async function syncBoard(options: {
   transport: SyncTransport;
   local: BoardSnapshot;
   base: SyncBoard | null;
-  /** Called with any asset the remote had that this device did not. */
-  onAsset: (id: string, blob: Blob) => Promise<void>;
+  /**
+   * Called with any asset the remote had that this device did not, together
+   * with its reading if the remote had one — so the asset can be stored
+   * already read and never enter the recognition queue at all.
+   */
+  onAsset: (id: string, blob: Blob, words?: readonly Word[]) => Promise<void>;
+  /** Called with any recognition the remote had that this device did not. */
+  onText: (id: string, words: readonly Word[]) => Promise<void>;
+  /** This build's recognizer. Results from another one are not interchangeable. */
+  engine: EngineName;
 }): Promise<SyncResult> {
   const { transport, local, base } = options;
 
@@ -76,14 +88,86 @@ export async function syncBoard(options: {
     await transport.putBoard(merged);
   }
 
+  // Recognition moves *before* the images it belongs to, so a downloaded asset
+  // can arrive already read. Landing the pixels first would put an unread asset
+  // in the store and the local pipeline would start on it the moment React saw
+  // it — spending the 21 MB and the seconds this exchange exists to save, and
+  // then overwriting the arriving reading with its own.
+  const readings = await pullText(
+    transport,
+    merged.nodes,
+    local.assets,
+    options,
+  );
+
   const downloaded = await pullAssets(
     transport,
     merged.nodes,
     local.assets,
-    options.onAsset,
+    (id, blob) => options.onAsset(id, blob, readings.get(id)),
   );
 
-  return { merged, report, uploaded, downloaded, unchanged };
+  // An asset this device already held takes its reading on its own: no
+  // download is coming to carry it.
+  for (const [id, words] of readings) {
+    if (local.assets[id]) {
+      await options.onText(id, words);
+    }
+  }
+
+  return {
+    merged,
+    report,
+    uploaded,
+    downloaded,
+    read: [...readings.keys()],
+    unchanged,
+  };
+}
+
+/**
+ * Moves recognition results in whichever direction is missing one.
+ *
+ * Reading an image costs 21 MB of weights and real seconds of a real CPU, and
+ * the answer depends on nothing but the bytes — which are content-addressed, so
+ * the same id is the same pixels on every device, forever. That makes this the
+ * cheapest thing in the whole sync to share and the most expensive to not
+ * share.
+ *
+ * It also cannot conflict. Two devices that both read the same image did not
+ * disagree about anything, so whoever wrote first wins and nobody loses.
+ */
+async function pullText(
+  transport: SyncTransport,
+  nodes: readonly BoardNode[],
+  held: Record<string, Asset>,
+  options: { engine: EngineName },
+): Promise<Map<string, readonly Word[]>> {
+  const readings = new Map<string, readonly Word[]>();
+  for (const id of new Set(assetIdsOf(nodes))) {
+    const ocr = held[id]?.ocr;
+    if (ocr?.status === "done") {
+      // Only a finished reading goes up. A failure is this device's problem —
+      // it ran out of memory, or the tab was closed — and publishing it would
+      // stop every other device from trying.
+      if (!(await transport.hasText(id))) {
+        await transport.putText(id, {
+          engine: options.engine,
+          words: ocr.words,
+        });
+      }
+      continue;
+    }
+    const remote = await transport.getText(id);
+    // A mock reading is invented text, and the two engines are not
+    // interchangeable in either direction. This is the one way this feature
+    // could quietly ruin a board, so it is checked rather than assumed.
+    if (!remote || remote.engine !== options.engine) {
+      continue;
+    }
+    readings.set(id, remote.words);
+  }
+  return readings;
 }
 
 async function pushAssets(

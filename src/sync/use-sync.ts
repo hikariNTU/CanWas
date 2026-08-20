@@ -10,6 +10,8 @@ import {
   tombstonesAtom,
 } from "@/board/store";
 import { readIntrinsicSize } from "@/board/ingest";
+import type { OcrState } from "@/board/types";
+import { ocrClient, selectedEngine } from "@/ocr/client";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import { getSyncBase, putAsset, putSyncBase } from "@/storage/db";
 import { authAtom, isLive, renewToken } from "@/sync/auth";
@@ -128,9 +130,15 @@ export function useSync(boardId: string): {
         transport,
         local: { board: local, assets: store.get(assetsAtom) },
         base: (storedBase?.board as SyncBoard | undefined) ?? null,
-        onAsset: async (id, blob) => {
+        onAsset: async (id, blob, words) => {
           const size = await readIntrinsicSize(blob);
-          const asset = {
+          // Stored already read when the remote had a reading for it. An asset
+          // that lands unread is picked up by the recognition queue on the very
+          // next render, which is the cost this is here to avoid.
+          const ocr: OcrState = words
+            ? { status: "done", words: [...words] }
+            : { status: "idle" };
+          const record = {
             id,
             blob,
             width: size.width,
@@ -138,18 +146,35 @@ export function useSync(boardId: string): {
             // The id *is* the hash of the original bytes, which is why it can
             // travel as a filename and be trusted on arrival.
             hash: id,
-            ocr: { status: "idle" } as const,
-            url: URL.createObjectURL(blob),
+            ocr,
           };
-          await putAsset({
-            id,
-            blob,
-            width: size.width,
-            height: size.height,
-            hash: id,
-            ocr: { status: "idle" },
+          await putAsset(record);
+          if (words) {
+            ocrClient.adopt(id);
+          }
+          store.set(assetsAtom, {
+            ...store.get(assetsAtom),
+            [id]: { ...record, url: URL.createObjectURL(blob) },
           });
-          store.set(assetsAtom, { ...store.get(assetsAtom), [id]: asset });
+        },
+        engine: selectedEngine(),
+        onText: async (id, words) => {
+          const asset = store.get(assetsAtom)[id];
+          // The asset may have been swept between the round starting and this
+          // arriving. A reading with no image to sit on is nothing.
+          if (!asset || asset.ocr.status === "done") {
+            return;
+          }
+          const ocr: OcrState = { status: "done", words: [...words] };
+          const { url: _url, ...record } = { ...asset, ocr };
+          await putAsset(record);
+          store.set(assetsAtom, {
+            ...store.get(assetsAtom),
+            [id]: { ...asset, ocr },
+          });
+          // Otherwise the local pipeline reads pixels that have already been
+          // read: `useOcr` adopts a done asset, but only one it saw arrive.
+          ocrClient.adopt(id);
         },
       });
 

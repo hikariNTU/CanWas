@@ -22,11 +22,20 @@ import {
   ROOT_FOLDER_NAME,
   type DriveFile,
 } from "@/sync/drive";
+import {
+  accepted,
+  BOARD_VERSION,
+  stamped,
+  TEXT_VERSION,
+} from "@/sync/document";
 import type { SyncBoard } from "@/sync/merge";
-import type { SyncTransport } from "@/sync/transport";
+import type { RemoteText, SyncTransport } from "@/sync/transport";
 
 const BOARDS_FOLDER = "boards";
 const ASSETS_FOLDER = "assets";
+/** Recognition, one file per image hash. Its own folder rather than a second
+ *  extension in `assets/`, so a name-prefix lookup cannot confuse the two. */
+const TEXT_FOLDER = "text";
 
 /**
  * Folder ids and the directory listing, cached for the life of a session.
@@ -40,8 +49,10 @@ const ASSETS_FOLDER = "assets";
 interface Directory {
   boardsFolderId: string;
   assetsFolderId: string;
+  textFolderId: string;
   boards: Map<string, DriveFile>;
   assets: Map<string, DriveFile>;
+  text: Map<string, DriveFile>;
 }
 
 /**
@@ -83,19 +94,23 @@ export function createDriveTransport(getSession: SessionSource): SyncTransport {
   const load = (): Promise<Directory> =>
     authed(async (active) => {
       const rootId = await ensureFolder(active, ROOT_FOLDER_NAME);
-      const [boardsFolderId, assetsFolderId] = await Promise.all([
+      const [boardsFolderId, assetsFolderId, textFolderId] = await Promise.all([
         ensureFolder(active, BOARDS_FOLDER, rootId),
         ensureFolder(active, ASSETS_FOLDER, rootId),
+        ensureFolder(active, TEXT_FOLDER, rootId),
       ]);
-      const [boards, assets] = await Promise.all([
+      const [boards, assets, text] = await Promise.all([
         listChildren(active, boardsFolderId),
         listChildren(active, assetsFolderId),
+        listChildren(active, textFolderId),
       ]);
       return {
         boardsFolderId,
         assetsFolderId,
+        textFolderId,
         boards: new Map(boards.map((file) => [file.name, file])),
         assets: new Map(assets.map((file) => [file.name, file])),
+        text: new Map(text.map((file) => [file.name, file])),
       };
     });
 
@@ -127,7 +142,11 @@ export function createDriveTransport(getSession: SessionSource): SyncTransport {
         return null;
       }
       const blob = await authed((active) => getFileContent(active, file.id));
-      return JSON.parse(await blob.text()) as SyncBoard;
+      return accepted<SyncBoard>(
+        JSON.parse(await blob.text()),
+        BOARD_VERSION,
+        `board ${id}`,
+      );
     },
 
     async putBoard(board) {
@@ -138,7 +157,9 @@ export function createDriveTransport(getSession: SessionSource): SyncTransport {
           name,
           parentId: state.boardsFolderId,
           fileId: state.boards.get(name)?.id,
-          body: new Blob([JSON.stringify(board)], { type: "application/json" }),
+          body: new Blob([JSON.stringify(stamped(board, BOARD_VERSION))], {
+            type: "application/json",
+          }),
         }),
       );
       state.boards.set(name, { ...written, name });
@@ -162,6 +183,41 @@ export function createDriveTransport(getSession: SessionSource): SyncTransport {
         blob: await authed((active) => getFileContent(active, file.id)),
         extension: name.slice(name.lastIndexOf(".") + 1),
       };
+    },
+
+    async hasText(id) {
+      const { text } = await open();
+      return text.has(`${id}.json`);
+    },
+
+    async getText(id) {
+      const { text } = await open();
+      const file = text.get(`${id}.json`);
+      if (!file) {
+        return null;
+      }
+      const blob = await authed((active) => getFileContent(active, file.id));
+      return accepted<RemoteText>(
+        JSON.parse(await blob.text()),
+        TEXT_VERSION,
+        `text ${id}`,
+      );
+    },
+
+    async putText(id, value) {
+      const state = await open();
+      const name = `${id}.json`;
+      const written = await authed((active) =>
+        putFile(active, {
+          name,
+          parentId: state.textFolderId,
+          fileId: state.text.get(name)?.id,
+          body: new Blob([JSON.stringify(stamped(value, TEXT_VERSION))], {
+            type: "application/json",
+          }),
+        }),
+      );
+      state.text.set(name, { ...written, name });
     },
 
     async putAsset(id, asset) {
