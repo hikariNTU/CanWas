@@ -387,7 +387,12 @@ export function Canvas({ boardId }: { boardId: string }) {
                 {isSelected &&
                   selection.length === 1 &&
                   !isEditing &&
-                  !isReading && (
+                  !isReading &&
+                  // Not in pan mode: there the press under it belongs to the
+                  // viewport, so a handle would be a grip that does nothing —
+                  // worse than absent, because it advertises a gesture the
+                  // mode does not have (D70).
+                  mode === "select" && (
                     // The dot is 12px on screen and the grab area is 24px:
                     // a handle small enough to look right is smaller than
                     // anyone can reliably hit, so the two are separated.

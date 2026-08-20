@@ -1807,6 +1807,10 @@ is tinted and the board moves behind it, so a flat neutral is the one thing in
 the bar that does not move with it and it reads as a seam
 (docs/ui-guidelines.md).
 
+**The resize handle is select-mode chrome.** In pan mode the press under it
+belongs to the viewport, so a handle there is a grip that does nothing — worse
+than absent, because it advertises a gesture the mode does not have.
+
 **Select mode never pans.** A left press in select mode belongs to the node or
 to the marquee, full stop; panning is the pan key, the middle button, or
 switching the mode. Touch was briefly exempted from that so a finger could

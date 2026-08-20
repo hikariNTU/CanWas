@@ -397,3 +397,18 @@ test("every control a finger can hit is round and at least 44px", async ({
     ).toBeGreaterThanOrEqual(measured.height / 2);
   }
 });
+
+test("the resize handle belongs to select mode only", async ({ page }) => {
+  await pasteImage(page, 300, 200);
+  const node = page.getByTestId("board-node");
+  const centre = await centreOf(node);
+  await page.touchscreen.tap(centre.x, centre.y);
+  await expect(node).toHaveAttribute("data-selected", "true");
+
+  // Pan mode gives the press under the handle to the viewport, so drawing one
+  // would advertise a gesture the mode does not have.
+  await expect(page.getByTestId("resize-handle")).toHaveCount(0);
+
+  await page.getByTestId("mode-select").click();
+  await expect(page.getByTestId("resize-handle")).toBeVisible();
+});
