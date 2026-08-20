@@ -93,6 +93,57 @@ async function fingerDrag(
   );
 }
 
+/**
+ * A two-finger pinch, centred on `at`, going from `from` to `to` pixels apart.
+ *
+ * Both fingers move, which is what a real pinch looks like and what stops the
+ * midpoint from wandering; a test that moved one finger would be testing a drag
+ * with a spectator.
+ */
+async function pinch(
+  page: Page,
+  at: { x: number; y: number },
+  from: number,
+  to: number,
+) {
+  await page.evaluate(
+    ({ centre, start, end }) => {
+      const surface = document.querySelector("[data-testid=canvas-surface]")!;
+      const target = document.elementFromPoint(centre.x, centre.y) ?? surface;
+      const send = (type: string, id: number, x: number, y: number) =>
+        target.dispatchEvent(
+          new PointerEvent(type, {
+            pointerId: id,
+            pointerType: "touch",
+            isPrimary: id === 1,
+            button: 0,
+            buttons: type === "pointerup" ? 0 : 1,
+            clientX: x,
+            clientY: y,
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      const spread = (gap: number) => [
+        { x: centre.x - gap / 2, y: centre.y },
+        { x: centre.x + gap / 2, y: centre.y },
+      ];
+      const [a0, b0] = spread(start);
+      send("pointerdown", 1, a0!.x, a0!.y);
+      send("pointerdown", 2, b0!.x, b0!.y);
+      for (let step = 1; step <= 8; step += 1) {
+        const [a, b] = spread(start + ((end - start) * step) / 8);
+        send("pointermove", 1, a!.x, a!.y);
+        send("pointermove", 2, b!.x, b!.y);
+      }
+      const [a1, b1] = spread(end);
+      send("pointerup", 1, a1!.x, a1!.y);
+      send("pointerup", 2, b1!.x, b1!.y);
+    },
+    { centre: at, start: from, end: to },
+  );
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("?engine=mock#/touch");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
@@ -411,4 +462,48 @@ test("the resize handle belongs to select mode only", async ({ page }) => {
 
   await page.getByTestId("mode-select").click();
   await expect(page.getByTestId("resize-handle")).toBeVisible();
+});
+
+test("two fingers zoom the board, in both modes", async ({ page }) => {
+  await pasteImage(page, 300, 200);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveCount(1);
+  const before = (await node.boundingBox())!;
+
+  await pinch(
+    page,
+    await centreOf(page.getByTestId("canvas-surface")),
+    100,
+    300,
+  );
+  const spread = (await node.boundingBox())!;
+  expect(spread.width).toBeGreaterThan(before.width * 1.5);
+
+  // And the same gesture in select mode, where one finger drags a node: a
+  // second finger has to outrank that, or an image can never be zoomed while
+  // it is the thing under the fingers.
+  await page.getByTestId("mode-select").click();
+  await pinch(page, await centreOf(node), 300, 100);
+  const pinched = (await node.boundingBox())!;
+  expect(pinched.width).toBeLessThan(spread.width * 0.7);
+});
+
+test("a pinch on an image zooms it without moving it", async ({ page }) => {
+  await pasteImage(page, 300, 200);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveCount(1);
+  const before = (await node.boundingBox())!;
+
+  // Started right on the image and in select mode, which is the case that used
+  // to be impossible: the first finger begins a node drag, and unless the pinch
+  // takes the gesture away the image ends up somewhere else entirely.
+  await page.getByTestId("mode-select").click();
+  await pinch(page, await centreOf(node), 120, 260);
+
+  // Back to 1:1, where the same board geometry has to draw the same rectangle.
+  await page.getByTestId("zoom-reset").click();
+  const after = (await node.boundingBox())!;
+  expect(Math.abs(after.x - before.x)).toBeLessThan(2);
+  expect(Math.abs(after.y - before.y)).toBeLessThan(2);
+  expect(Math.abs(after.width - before.width)).toBeLessThan(2);
 });

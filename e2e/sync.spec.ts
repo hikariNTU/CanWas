@@ -681,3 +681,33 @@ test("renaming a board keeps the record of what was deleted", async ({
     .toBe("Renamed After Deleting");
   expect((await storedBoard(page, BOARD))?.tombstones).toHaveLength(1);
 });
+
+test("a rename here reaches the remote on its own", async ({ page }) => {
+  // The board has to exist remotely first, so the assertion is about the name
+  // travelling rather than about the board arriving at all.
+  await pasteImage(page, 200);
+  await expect
+    .poll(() => remoteBoard(page, BOARD).then((b) => b?.name), {
+      timeout: 15000,
+    })
+    .toBe(BOARD);
+
+  // And the rounds the paste started have to be over. A rename that happens
+  // while one is still pending rides up on it, which is exactly the accident
+  // that hid this bug.
+  await page.waitForTimeout(6000);
+
+  await page.getByTestId("board-name").click();
+  const field = page.getByTestId("board-name-input");
+  await field.fill("Named Here");
+  await field.press("Enter");
+
+  // No node is touched afterwards, and nothing is pressed. The push timer
+  // watched only the node list, so a rename sat on this device until some
+  // unrelated edit happened to carry it up.
+  await expect
+    .poll(() => remoteBoard(page, BOARD).then((b) => b?.name), {
+      timeout: 15000,
+    })
+    .toBe("Named Here");
+});

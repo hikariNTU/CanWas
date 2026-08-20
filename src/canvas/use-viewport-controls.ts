@@ -115,7 +115,66 @@ export function useViewportControls(
     let panningPointerId: number | null = null;
     let last: Point = { x: 0, y: 0 };
 
+    // Live fingers, in the order they landed. Two of them is a pinch, and a
+    // pinch outranks everything else a finger can be doing (D73).
+    const touches = new Map<number, Point>();
+    let pinching = false;
+    let spread = 0;
+    let middle: Point = { x: 0, y: 0 };
+
+    function twoFingers(): [Point, Point] | null {
+      const points = [...touches.values()];
+      return points.length === 2 ? [points[0]!, points[1]!] : null;
+    }
+
+    function measure([a, b]: [Point, Point]) {
+      return {
+        spread: Math.hypot(b.x - a.x, b.y - a.y),
+        middle: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      };
+    }
+
+    /**
+     * Takes the gesture away from whatever claimed the first finger.
+     *
+     * A node drag, a lasso and a tap all start on the first `pointerdown` and
+     * run on `window` listeners, so by the time the second finger lands one of
+     * them is already moving something. They all abort on `pointercancel` —
+     * the event the platform itself would send if the browser took the gesture
+     * over for scrolling — so that is what they get. Cancelling is the right
+     * word for it: a pinch that dragged an image halfway across the board on
+     * the way to zooming would be worse than no pinch at all.
+     */
+    function stealFromOtherGestures() {
+      if (panningPointerId !== null) {
+        element!.style.cursor = "";
+        if (element!.hasPointerCapture(panningPointerId)) {
+          element!.releasePointerCapture(panningPointerId);
+        }
+        panningPointerId = null;
+      }
+      for (const id of touches.keys()) {
+        window.dispatchEvent(
+          new PointerEvent("pointercancel", { pointerId: id, bubbles: true }),
+        );
+      }
+    }
+
     function handlePointerDown(event: PointerEvent) {
+      if (event.pointerType === "touch") {
+        touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        const pair = twoFingers();
+        if (pair) {
+          pinching = true;
+          ({ spread, middle } = measure(pair));
+          stealFromOtherGestures();
+        }
+        // A third finger neither pinches nor pans; it just joins the map, so
+        // that lifting one of the first two does not restart a pan.
+        if (touches.size > 1) {
+          return;
+        }
+      }
       const isPanButton = event.button === 0 || event.button === 1;
       if (!isPanButton || panningPointerId !== null) {
         return;
@@ -148,6 +207,29 @@ export function useViewportControls(
     }
 
     function handlePointerMove(event: PointerEvent) {
+      if (event.pointerType === "touch" && touches.has(event.pointerId)) {
+        touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        const pair = pinching ? twoFingers() : null;
+        if (pair) {
+          const next = measure(pair);
+          const factor = spread > 0 ? next.spread / spread : 1;
+          const dx = next.middle.x - middle.x;
+          const dy = next.middle.y - middle.y;
+          const anchor = anchorFromEvent({
+            clientX: next.middle.x,
+            clientY: next.middle.y,
+          });
+          ({ spread, middle } = next);
+          // Zoom about the point between the fingers and follow that point as
+          // it travels, so a pinch pans and zooms in one movement — the two are
+          // one gesture on a touch screen, and separating them makes the board
+          // slide out from under the fingers.
+          setViewport((current) =>
+            panBy(zoomByFactor(current, anchor, factor), dx, dy),
+          );
+          return;
+        }
+      }
       if (event.pointerId !== panningPointerId) {
         return;
       }
@@ -158,6 +240,12 @@ export function useViewportControls(
     }
 
     function endPan(event: PointerEvent) {
+      if (touches.delete(event.pointerId) && touches.size < 2) {
+        // The pinch ends with the first finger to leave. The one still down is
+        // deliberately not promoted to a pan: it has been sitting still while
+        // the other did the moving, and handing it the board makes it jump.
+        pinching = false;
+      }
       if (event.pointerId !== panningPointerId) {
         return;
       }
@@ -178,7 +266,7 @@ export function useViewportControls(
       element.removeEventListener("pointerup", endPan);
       element.removeEventListener("pointercancel", endPan);
     };
-  }, [elementRef, setViewport]);
+  }, [anchorFromEvent, elementRef, setViewport]);
 
   const zoomFromCenter = useCallback(
     (factor: number) => {

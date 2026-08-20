@@ -1892,3 +1892,33 @@ claim every other project on the github.io origin.
 **Reverses if:** the dependency weight stops being worth it, at which point the
 precache manifest is the only piece that genuinely needs generating and
 `scripts/collect-licenses.mjs` already proves that shape works here.
+
+## D73 — Two fingers pinch, and outrank whatever the first one started
+
+**2026-08-20 · settled**
+
+The surface is `touch-action: none`, which is what stops the browser from
+scrolling the page under a pan — and it takes the browser's own pinch-zoom with
+it. That left a phone with no way to zoom at all except the buttons, on the one
+device where a screenshot wider than the screen is the normal case.
+
+So the pinch is handled directly, in `use-viewport-controls`, alongside the pan
+it already owns: live fingers are tracked in a map, the second one starts a
+pinch, and every move zooms about the point between the fingers and pans by how
+far that point travelled. Zoom and pan are one gesture on a touch screen —
+splitting them makes the board slide out from under the fingers.
+
+A pinch **outranks** the node drag, lasso or tap that the first finger already
+started, because by the time the second finger lands one of them is moving
+something. They are aborted with a dispatched `pointercancel` — the same event
+the platform sends when it takes a gesture over for scrolling, which they all
+already handle. Any other rule means an image cannot be zoomed while it is the
+thing under the fingers, which on a full-screen screenshot is always.
+
+Lifting one finger ends the pinch and does **not** promote the other to a pan:
+that finger has been still while the other did the moving, so handing it the
+board makes it jump.
+
+**Reverses if:** the platform ever offers a `touch-action` that allows pinch
+while suppressing pan and scroll. `pinch-zoom` exists but restores the visual
+viewport, which zooms the chrome too and is not what this needs.

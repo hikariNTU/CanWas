@@ -284,14 +284,25 @@ export function useSync(boardId: string): {
   }, [hydrated, runOnce, setStatus, transport]);
 
   // Push once local edits go quiet.
+  //
+  // The board's own fields count as edits too. Watching only the node list
+  // meant a rename never started a round of its own: it sat on the device
+  // until some unrelated paste or drag happened to carry it up, and on a board
+  // nobody touched again, forever. Read as scalars rather than as the metadata
+  // object, so the write every round makes on the way out — `adoptBoardMeta`,
+  // with the merged fields — cannot arm the timer that would start the next
+  // one.
   const nodes = useAtomValue(boardNodesAtom)[boardId];
+  const meta = useAtomValue(boardsMetaAtom)[boardId];
+  const name = meta?.name;
+  const deletedAt = meta?.deletedAt;
   useEffect(() => {
     if (!transport || nodes === undefined) {
       return;
     }
     const timer = setTimeout(() => void runOnce(), QUIET_MS);
     return () => clearTimeout(timer);
-  }, [nodes, runOnce, transport]);
+  }, [nodes, name, deletedAt, runOnce, transport]);
 
   // Exposed so the sync button can ask for a round now rather than at the next
   // quiet moment — the thing you press before closing a laptop.
