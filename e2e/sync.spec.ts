@@ -41,6 +41,28 @@ async function pasteImage(page: Page, tint = 0) {
   }, tint);
 }
 
+/** Reads a board record out of this device's own database. */
+function storedBoard(page: Page, id: string) {
+  return page.evaluate(
+    (boardId) =>
+      new Promise<{ name: string; tombstones?: unknown[] } | null>(
+        (resolve, reject) => {
+          const open = indexedDB.open("canwas");
+          open.onerror = () => reject(open.error);
+          open.onsuccess = () => {
+            const read = open.result
+              .transaction("boards", "readonly")
+              .objectStore("boards")
+              .get(boardId);
+            read.onsuccess = () => resolve(read.result ?? null);
+            read.onerror = () => reject(read.error);
+          };
+        },
+      ),
+    id,
+  );
+}
+
 /** Reads a board record out of the fake remote's database. */
 function remoteBoard(page: Page, id: string) {
   return page.evaluate(
@@ -620,4 +642,42 @@ test("a rename on another device arrives here", async ({ page }) => {
   // And it outlives a reload, rather than living only in the atom.
   await page.reload();
   await expect(page.getByTestId("board-name")).toHaveText("Renamed Elsewhere");
+});
+
+test("renaming a board keeps the record of what was deleted", async ({
+  page,
+}) => {
+  await pasteImage(page, 170);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveCount(1);
+
+  await node.click();
+  await page.keyboard.press("Delete");
+  await expect(page.getByTestId("board-node")).toHaveCount(0);
+  await expect
+    .poll(() => storedBoard(page, BOARD).then((b) => b?.tombstones?.length), {
+      timeout: 10000,
+    })
+    .toBe(1);
+
+  // A rename replaces the whole stored record, and used to assemble that
+  // record by hand without `tombstones` — which `StoredBoard` makes optional,
+  // so leaving it out type-checked. Every deletion on the board was erased.
+  //
+  // Read straight after the write, because the damage repairs itself: the next
+  // ordinary save builds its record from the atoms, where the tombstone still
+  // is. The board only loses it if the tab reloads in between — which is why
+  // this asserts on the record rather than on a resurrection, and why the
+  // assertion has to be here rather than after a convenient wait.
+  await page.getByTestId("board-name").click();
+  const field = page.getByTestId("board-name-input");
+  await field.fill("Renamed After Deleting");
+  await field.press("Enter");
+
+  await expect
+    .poll(() => storedBoard(page, BOARD).then((b) => b?.name), {
+      timeout: 10000,
+    })
+    .toBe("Renamed After Deleting");
+  expect((await storedBoard(page, BOARD))?.tombstones).toHaveLength(1);
 });

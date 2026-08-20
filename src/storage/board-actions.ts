@@ -1,10 +1,11 @@
-import { atom } from "jotai";
+import { atom, type Atom } from "jotai";
 
 import { boardNodesAtom, tombstonesAtom } from "@/board/store";
 import { createId } from "@/lib/id";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
 import { viewportsAtom } from "@/canvas/viewport-atom";
 import { boardsMetaAtom, type BoardMeta } from "@/storage/boards-atom";
+import { announce } from "@/storage/tab-channel";
 import {
   deleteBoard,
   getAllBoards,
@@ -38,11 +39,14 @@ export async function createBoard(name: string): Promise<StoredBoard> {
     updatedAt: now,
   };
   await putBoard(board);
+  // The list changed rather than a board: another tab's menu is short by one.
+  announce({ kind: "boards" });
   return board;
 }
 
 export async function removeBoard(id: string): Promise<void> {
   await deleteBoard(id);
+  announce({ kind: "boards" });
   // Orphaned assets are reclaimed by the startup sweep (D14), not here:
   // sweeping now could take bytes a still-open board is using.
 }
@@ -67,6 +71,33 @@ export async function resolveLandingBoard(
  * (D26): `putBoard` replaces the whole record, so writing a stale list here
  * would silently discard content.
  */
+/**
+ * The whole stored record for a board, assembled from the atoms.
+ *
+ * Exists because writing one by hand is a way to forget a field, and the field
+ * that got forgotten was `tombstones`. `StoredBoard` has it optional, so
+ * leaving it out type-checks — and renaming a board therefore erased the record
+ * of every node ever deleted on it. The next sync then saw those nodes on the
+ * remote with nothing to say they had been deleted, and brought them all back.
+ *
+ * Every writer that replaces a record goes through here, so the next field
+ * added to a board cannot be dropped by one caller out of three.
+ */
+function recordFor(get: <T>(a: Atom<T>) => T, meta: BoardMeta): StoredBoard {
+  return {
+    ...meta,
+    nodes: get(boardNodesAtom)[meta.id] ?? [],
+    tombstones: get(tombstonesAtom)[meta.id] ?? [],
+    viewport: get(viewportsAtom)[meta.id] ?? IDENTITY_VIEWPORT,
+  };
+}
+
+/** Writes a board record and tells the other tabs it moved. */
+function writeBoard(record: StoredBoard): void {
+  void putBoard(record);
+  announce({ kind: "board", boardId: record.id, updatedAt: record.updatedAt });
+}
+
 /**
  * Takes the board's own fields from a sync round.
  *
@@ -100,12 +131,7 @@ export const adoptBoardMetaAtom = atom(
     }
     const next = { ...meta, ...incoming };
     set(boardsMetaAtom, { ...get(boardsMetaAtom), [boardId]: next });
-    void putBoard({
-      ...next,
-      nodes: get(boardNodesAtom)[boardId] ?? [],
-      tombstones: get(tombstonesAtom)[boardId] ?? [],
-      viewport: get(viewportsAtom)[boardId] ?? IDENTITY_VIEWPORT,
-    });
+    writeBoard(recordFor(get, next));
   },
 );
 
@@ -119,10 +145,6 @@ export const renameBoardAtom = atom(
     }
     const next = { ...meta, name: trimmed, updatedAt: Date.now() };
     set(boardsMetaAtom, { ...get(boardsMetaAtom), [boardId]: next });
-    void putBoard({
-      ...next,
-      nodes: get(boardNodesAtom)[boardId] ?? [],
-      viewport: get(viewportsAtom)[boardId] ?? IDENTITY_VIEWPORT,
-    });
+    writeBoard(recordFor(get, next));
   },
 );

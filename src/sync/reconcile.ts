@@ -35,6 +35,7 @@ import {
   type StoredBoard,
 } from "@/storage/db";
 import { IDENTITY_VIEWPORT } from "@/canvas/coords";
+import { announce } from "@/storage/tab-channel";
 import type { SyncBoard } from "@/sync/merge";
 import { syncBoard } from "@/sync/sync-board";
 import type { SyncTransport } from "@/sync/transport";
@@ -117,6 +118,8 @@ export async function reconcileBoards(options: {
         await putSyncBase({ boardId: id, board: pulled, syncedAt: Date.now() });
         report.arrived.push(id);
         options.onBoard(metaOf(pulled));
+        // A board that did not exist a moment ago: every tab's menu is stale.
+        announce({ kind: "boards" });
         continue;
       }
 
@@ -170,6 +173,11 @@ export async function reconcileBoards(options: {
       });
       report.pushed.push(id);
       options.onBoard(metaOf(result.merged));
+      announce({
+        kind: "board",
+        boardId: id,
+        updatedAt: result.merged.updatedAt,
+      });
     } catch {
       // One board that cannot be read, or one upload that fails, must not stop
       // the other forty-nine. The board keeps whatever it had; the next pass

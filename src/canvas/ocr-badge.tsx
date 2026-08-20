@@ -118,12 +118,30 @@ export function OcrBadge({
       />
       <span
         className={clsx(
-          "text-xs leading-none whitespace-nowrap text-neutral-400",
-          expanded ? "inline" : "hidden group-hover:inline",
+          "text-xs leading-none text-neutral-400",
+          // The reason may be a sentence, so only a failure is allowed to wrap
+          // and only a failure gets a width to wrap inside.
+          ocr.status === "failed"
+            ? "max-w-64 whitespace-normal"
+            : "whitespace-nowrap",
+          expanded ? "inline-block" : "hidden group-hover:inline-block",
         )}
       >
         {t(label)}
         {percent}
+        {/* Said out loud, because it is the only place it can be. The chip is
+            `pointer-events-none` so that a node stays draggable through it,
+            which also means its `title` can never be shown — a failure that
+            reads "Could not read" and nothing else sends whoever hits it to
+            the console, and most people do not have one open. */}
+        {ocr.status === "failed" && (
+          <span
+            data-testid="ocr-error"
+            className="mt-0.5 block font-mono text-[10px] break-words text-amber-400/80"
+          >
+            {ocr.error}
+          </span>
+        )}
       </span>
     </div>
   );
