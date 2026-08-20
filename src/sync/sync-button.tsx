@@ -146,14 +146,6 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                       ` / ${bytes(state.session.storageLimit)}`}
                   </p>
                 )}
-                <button
-                  data-testid="sync-now"
-                  disabled={status.state === "syncing"}
-                  onClick={onSync}
-                  className={`mt-3 ${action}`}
-                >
-                  {t("sync.now")}
-                </button>
               </div>
             ) : (
               <>
@@ -178,6 +170,22 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
                   </p>
                 )}
               </>
+            )}
+
+            {/* Available whenever a transport is live, which is not the same
+                as being signed in — the fake remote needs no account, and a
+                round on demand is the thing you press before closing a laptop.
+                Gating this on the account left a build with working sync and
+                no way to ask for one. */}
+            {status.state !== "off" && (
+              <button
+                data-testid="sync-now"
+                disabled={status.state === "syncing"}
+                onClick={onSync}
+                className={`mt-3 ${action}`}
+              >
+                {t("sync.now")}
+              </button>
             )}
 
             {/* Where the last round got to. A failure is worth colour;

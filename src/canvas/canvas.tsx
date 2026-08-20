@@ -24,6 +24,7 @@ import { BoardName } from "@/canvas/board-name";
 import { About } from "@/canvas/about";
 import { AddImage } from "@/canvas/add-image";
 import { measureHeight, TextNodeView } from "@/canvas/text-node";
+import { MissingAsset } from "@/canvas/missing-asset";
 import { OcrBadge } from "@/canvas/ocr-badge";
 import { OcrOverlay } from "@/canvas/ocr-overlay";
 import { useOcr } from "@/ocr/use-ocr";
@@ -244,9 +245,10 @@ export function Canvas({ boardId }: { boardId: string }) {
             const isEditing = editingId === node.id;
             const isReading = readingId === node.id;
             const asset = node.kind === "image" ? assets[node.assetId] : null;
-            if (node.kind === "image" && !asset) {
-              return null;
-            }
+            // An image with no asset is still a node: it has a position, a
+            // size, a place in the order, and it can be selected, moved and
+            // deleted. Skipping it rendered a board with an invisible hole in
+            // it that still caught clicks — see `MissingAsset`.
             return (
               <div
                 key={node.id}
@@ -349,6 +351,12 @@ export function Canvas({ boardId }: { boardId: string }) {
                       />
                     )}
                   </>
+                ) : node.kind === "image" ? (
+                  // The bytes are not here, but the geometry is: the board
+                  // travelled and the image has not caught up. Rendering
+                  // nothing left a node that could be selected, dragged and
+                  // deleted while being invisible.
+                  <MissingAsset scale={viewport.scale} />
                 ) : node.kind === "text" ? (
                   <TextNodeView
                     node={isEditing ? { ...node, text: draft } : node}

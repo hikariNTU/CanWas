@@ -186,6 +186,10 @@ const translations = {
     "zh-TW": "連結 Google 雲端硬碟",
     "en-US": "Connect Google Drive",
   },
+  "asset.missing": {
+    "zh-TW": "圖片尚未同步到這台裝置",
+    "en-US": "This image has not reached this device yet",
+  },
   "menu.open": {
     "zh-TW": "選單",
     "en-US": "Menu",

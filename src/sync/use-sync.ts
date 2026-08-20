@@ -17,6 +17,7 @@ import { createDriveTransport } from "@/sync/drive-transport";
 import { fakeRemote } from "@/sync/fake-remote";
 import type { SyncBoard } from "@/sync/merge";
 import { selectedTransport, type SyncTransport } from "@/sync/transport";
+import { settleRound } from "@/sync/settle";
 import { syncBoard } from "@/sync/sync-board";
 
 /** How long the board must sit still before a push. Longer than the local save. */
@@ -152,24 +153,39 @@ export function useSync(boardId: string): {
         },
       });
 
+      // The board may have moved while the round was in the air — a paste, a
+      // drag, a delete. The round never saw those and its result therefore
+      // says they do not exist, so landing it as-is would undo every one of
+      // them, tombstones included, and the next push would delete them
+      // everywhere. Settled against the board as it is now instead.
+      const settled = settleRound({
+        started: local,
+        merged: result.merged,
+        current: {
+          ...local,
+          nodes: store.get(boardNodesAtom)[boardId] ?? [],
+          tombstones: store.get(tombstonesAtom)[boardId] ?? [],
+        },
+      });
+
       // The merge lands as an ordinary Change so it has an inverse and undo
       // still means something (D16), and with stamps preserved so the nodes
       // keep the times the devices that edited them recorded.
-      const current = store.get(boardNodesAtom)[boardId] ?? [];
-      commit(
-        (nodes) => replaceNodes(nodes, result.merged.nodes, "sync"),
-        "preserve",
-      );
-      if (result.merged.tombstones.length > 0 || current.length > 0) {
-        store.set(tombstonesAtom, {
-          ...store.get(tombstonesAtom),
-          [boardId]: result.merged.tombstones,
-        });
-      }
+      commit((nodes) => replaceNodes(nodes, settled.nodes, "sync"), "preserve");
+      store.set(tombstonesAtom, {
+        ...store.get(tombstonesAtom),
+        [boardId]: settled.tombstones,
+      });
 
+      // The base is what the *remote* now holds, which is what the round
+      // pushed — not what this device happens to hold a moment later. Recording
+      // the local list here was the second half of the same bug: a node that
+      // arrived mid-round would enter the base without ever reaching Drive, and
+      // the next round would read "in the base, absent from the remote" as the
+      // remote having deleted it.
       await putSyncBase({
         boardId,
-        board: { ...result.merged, nodes: store.get(boardNodesAtom)[boardId] },
+        board: result.merged,
         syncedAt: Date.now(),
       });
       setStatus({ state: "idle", at: Date.now() });

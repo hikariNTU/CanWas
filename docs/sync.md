@@ -79,6 +79,34 @@ A renewal that fails means the grant is gone. The app drops to signed out rather
 than retrying: the button goes back to offering a connection, which is the only
 thing that can actually fix it.
 
+## Landing a round on a board that moved
+
+A round reads the board, talks to Drive for a second or several — longer when
+it is uploading a screenshot — and comes back with a merged result. By then the
+board may have moved: a node pasted, a node dragged, a node deleted.
+
+The result is therefore **settled** against the board as it is at that instant
+before it lands (`settleRound`), rather than replacing it. The rule is that a
+round only has authority over what it saw; anything that happened since is
+newer than the round by definition and survives to be pushed by the next one.
+It is the same merge that does this, with the board as the round found it as
+the base — which is what distinguishes "the remote deleted this" from "this
+arrived while we were busy".
+
+Two things got this wrong at first, and both looked identical from the outside:
+a node pasted during a round vanished a second or two later, tombstone and all,
+so the next push deleted it everywhere.
+
+- The result was applied with `replaceNodes` against current nodes, so anything
+  the round had not seen was treated as removed.
+- The stored base was written as "the merged board, with whatever nodes this
+  device holds now". A node that arrived mid-round therefore entered the base
+  without ever reaching Drive, and the next round read "in the base, absent from
+  the remote" as the remote having deleted it.
+
+The base is now exactly what was pushed. It describes the _remote_, and nothing
+else may be folded into it.
+
 ## What is stored, and where
 
 ```

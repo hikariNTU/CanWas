@@ -44,18 +44,24 @@ test("the info panel reports the build and what is on disk", async ({
   await page.screenshot({ path: "e2e/screenshots/about.png" });
 });
 
-test("an unconfigured build says so instead of offering a dead button", async ({
+test("the sync panel offers exactly one of sign-in or an explanation", async ({
   page,
 }) => {
   await page.getByTestId("sync-button").click();
 
-  // No VITE_GOOGLE_CLIENT_ID in a test build. A sign-in button that cannot
-  // work is worse than none, and a silently missing one is a mystery to
-  // whoever has to debug it later.
-  await expect(page.getByTestId("sync-unconfigured")).toBeVisible();
-  await expect(page.getByTestId("sync-sign-in")).toHaveCount(0);
+  // Which branch shows depends on whether this build was given a client id,
+  // which depends on whether a developer has a .env — so the test asserts the
+  // property that must hold either way rather than one of the two outcomes.
+  // A sign-in button that cannot work is worse than none, and a silently
+  // missing one is a mystery to whoever has to debug it later.
+  const explained = page.getByTestId("sync-unconfigured");
+  const signIn = page.getByTestId("sync-sign-in");
+  await expect(explained.or(signIn).first()).toBeVisible();
+  expect(await explained.count()).toBe(1 - (await signIn.count()));
 
-  // Nothing third-party is fetched for a feature this build cannot offer.
+  // Nothing third-party is fetched until sign-in is actually pressed: the
+  // script is loaded on demand rather than from index.html, so a session that
+  // never touches sync never touches Google.
   const google = page.locator('script[src*="accounts.google.com"]');
   await expect(google).toHaveCount(0);
 });

@@ -223,3 +223,36 @@ test("a locally deleted node is not pushed back by the remote copy", async ({
   await page.waitForTimeout(1500);
   await expect(page.getByTestId("board-node")).toHaveCount(0);
 });
+
+test("a node whose image has not arrived shows a placeholder, not a hole", async ({
+  page,
+}) => {
+  await pasteImage(page, 80);
+  await expect(page.getByTestId("board-node")).toHaveCount(1);
+
+  // Another device adds a node pointing at bytes nobody here has. The board
+  // travels as JSON and the images follow separately, so this is the ordinary
+  // state between the two writes — not a corruption.
+  await addRemoteNode(page, BOARD, {
+    id: "orphan",
+    kind: "image",
+    order: "a9",
+    updatedAt: Date.now(),
+    x: 400,
+    y: 400,
+    w: 200,
+    h: 150,
+    assetId: "0000000000000000000000000000000000000000000000000000000000000000",
+  });
+  await page.getByTestId("sync-button").click();
+  await page.getByTestId("sync-now").click();
+
+  const orphan = page.locator('[data-node-id="orphan"]');
+  await expect(orphan).toBeVisible();
+  // Visible, and visibly a picture that is not here. Rendering nothing left a
+  // node that could be selected, dragged and deleted while invisible.
+  await expect(orphan.getByTestId("missing-asset")).toBeVisible();
+  const box = (await orphan.boundingBox())!;
+  expect(box.width).toBeCloseTo(200, 0);
+  expect(box.height).toBeCloseTo(150, 0);
+});
