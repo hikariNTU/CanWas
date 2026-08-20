@@ -10,7 +10,8 @@ selectable.
 
 Everything runs on your device: boards live in IndexedDB, recognition runs in a
 worker, and there is no server. Connecting Google Drive syncs your boards
-between your own devices and nowhere else.
+between your own devices and nowhere else. It installs to a home screen and,
+after its first load, opens without a network connection.
 
 **Status:** all nine build steps are done. The canvas, history, persistence,
 real PaddleOCR recognition and Drive sync are all in. What is designed and not
@@ -25,16 +26,17 @@ npm run dev
 
 ## Commands
 
-| Command                           | What it does                                         |
-| --------------------------------- | ---------------------------------------------------- |
-| `npm run dev`                     | Vite dev server                                      |
-| `npm run build`                   | Production build to `dist/`                          |
-| `npm run typecheck`               | `tsc --noEmit`                                       |
-| `npm run lint`                    | oxlint, zero warnings allowed                        |
-| `npm run format` / `format:check` | oxfmt, includes Tailwind class sorting               |
-| `npm run licenses`                | Regenerate `licenses.html` (only when deps change)   |
-| `npm run test:e2e`                | Playwright happy-path suite (local only, not in CI)  |
-| `npm run check`                   | format:check + lint + typecheck + build, in sequence |
+| Command                           | What it does                                        |
+| --------------------------------- | --------------------------------------------------- |
+| `npm run dev`                     | Vite dev server                                     |
+| `npm run build`                   | Production build to `dist/`                         |
+| `npm run typecheck`               | `tsc --noEmit`                                      |
+| `npm run lint`                    | oxlint, zero warnings allowed                       |
+| `npm run format` / `format:check` | oxfmt, includes Tailwind class sorting              |
+| `npm run licenses`                | Regenerate `licenses.html` (only when deps change)  |
+| `npm run test:e2e`                | Playwright happy-path suite (local only, not in CI) |
+| `npm run check:pwa`               | Assert the generated service worker's shape         |
+| `npm run check`                   | format:check + lint + typecheck + build + check:pwa |
 
 ## Documentation
 
@@ -60,6 +62,28 @@ also means they still render when the app itself fails to start.
 modules the production build actually bundles — including the ones only the OCR
 worker imports — plus the fonts and model weights fetched at runtime. Run it
 when dependencies change and commit the result.
+
+## On a phone
+
+Touch gets a mode chip above the zoom and undo controls
+([D70](docs/decisions.md)): **Pan** gives every press to the viewport — including
+a press on top of an image, which is the case that used to make a full-bleed
+screenshot impossible to move past — and a tap still selects. **Select** drags
+images instead. A selected image gets a delete button, since a phone has no
+`Delete` key. None of it renders on a mouse, which already has the space bar,
+the middle button and the key.
+
+A paste bigger than the window moves the _camera_, never the image
+([D71](docs/decisions.md)): node geometry stays at its own pixel size (D59), so
+nothing about this reaches the board record or another device.
+
+Offline is `vite-plugin-pwa` in `generateSW` mode with a prompted update — never
+an automatic one, because reloading mid-recognition throws away an initialised
+runtime and 31 MB of weights ([D72](docs/decisions.md)). The ONNX wasm is
+runtime-cached rather than precached, so an install costs ~1 MB rather than
+15 MB. Known cost: a cold **offline first launch** renders in system fallback,
+with Material Symbols ligatures showing as their own names, because fonts are
+runtime-cached rather than vendored.
 
 ## Text recognition
 

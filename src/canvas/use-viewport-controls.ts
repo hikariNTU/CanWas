@@ -2,12 +2,16 @@ import { useAtom } from "jotai";
 import { useCallback, useEffect, type RefObject } from "react";
 
 import {
+  boxFitsIn,
+  fitBox,
   IDENTITY_VIEWPORT,
   panBy,
   zoomByFactor,
+  type Box,
   type Point,
   type Viewport,
 } from "@/canvas/coords";
+import { currentMode } from "@/canvas/canvas-mode";
 import { isPanKeyDown } from "@/canvas/pan-key";
 import { readViewport, viewportsAtom } from "@/canvas/viewport-atom";
 
@@ -34,6 +38,7 @@ interface ViewportControls {
   viewport: Viewport;
   resetViewport: () => void;
   zoomFromCenter: (factor: number) => void;
+  fitIntoView: (box: Box) => void;
 }
 
 /**
@@ -117,9 +122,13 @@ export function useViewportControls(
       }
       // Who owns a left press.
       //
-      // On a node it is a node drag. On empty canvas it is a lasso (D54) —
-      // unless the pan key is held, or the pointer is a finger, which has
-      // neither a middle button nor a keyboard and so must keep panning.
+      // In pan mode the viewport owns every left press, node or not — that is
+      // the whole point of the mode, since a screenshot wider than the screen
+      // leaves no empty canvas to grab (D70). A tap that never travels is
+      // handled elsewhere, by `useTapSelect`, so nodes stay selectable here.
+      //
+      // In select mode: a node drag on a node, a lasso on empty canvas (D54),
+      // and panning only via the pan key or the middle button.
       //
       // The node's own handler cannot prevent this by calling stopPropagation:
       // React delegates events to the root container, so this native listener
@@ -127,6 +136,7 @@ export function useViewportControls(
       // test has to live here. Middle-drag still pans from anywhere.
       if (
         event.button === 0 &&
+        currentMode() === "select" &&
         ((event.target as Element | null)?.closest?.("[data-node-id]") ||
           (event.pointerType !== "touch" && !isPanKeyDown()))
       ) {
@@ -188,6 +198,26 @@ export function useViewportControls(
     [setViewport],
   );
 
+  /**
+   * Frames `box`, but only when it is not already fully on screen.
+   *
+   * The conditional is the whole design (D71): pasting a small image onto a
+   * board being read must not yank the view, and only the case that is
+   * actually broken — a capture larger than the window — causes motion.
+   */
+  const fitIntoView = useCallback(
+    (box: Box) => {
+      const rect = elementRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return;
+      }
+      setViewport((current) =>
+        boxFitsIn(box, current, rect) ? current : fitBox(box, current, rect),
+      );
+    },
+    [elementRef, setViewport],
+  );
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (!event.metaKey && !event.ctrlKey) {
@@ -208,5 +238,5 @@ export function useViewportControls(
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [resetViewport, zoomFromCenter]);
 
-  return { viewport, resetViewport, zoomFromCenter };
+  return { viewport, resetViewport, zoomFromCenter, fitIntoView };
 }

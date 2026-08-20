@@ -170,3 +170,18 @@ test("a CJK board name keeps its characters in the slug", async ({ page }) => {
     .poll(() => decodeURIComponent(page.url()))
     .toMatch(/#\/[0-9a-hjkmnp-tv-z]{12}-設計參考$/);
 });
+
+test("a mouse gets no touch chrome", async ({ page }) => {
+  await page.goto("?engine=mock#/desktop-chrome");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+
+  // The mode chip and the selection bar exist for a device with no space bar,
+  // no middle button and no Delete key (D70). This project has all three, so
+  // `(pointer: coarse)` does not match and neither widget is rendered — the
+  // negative half of what e2e/touch.spec.ts asserts.
+  await expect(page.getByTestId("mode-chip")).toHaveCount(0);
+  await page
+    .getByTestId("canvas-surface")
+    .click({ position: { x: 400, y: 300 } });
+  await expect(page.getByTestId("selection-bar")).toHaveCount(0);
+});

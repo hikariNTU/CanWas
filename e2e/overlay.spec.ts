@@ -56,12 +56,12 @@ test("double-click enters the image and its text becomes selectable", async ({
     "true",
   );
 
-  // Entering also selects the whole overlay, because the double-click that
-  // enters lands on text the same frame it becomes selectable. Cleared here so
-  // what the drag below produces is the drag's own doing.
-  expect(
-    await page.evaluate(() => window.getSelection()?.toString() ?? ""),
-  ).not.toBe("");
+  // Entering no longer selects the whole overlay as a side effect. It used to:
+  // the double-click that enters landed on text that became selectable the
+  // same frame. Since D69 the board is `user-select: none` until an overlay is
+  // active, so the click that flips it finds nothing selectable yet — and a
+  // stray whole-image selection on every double-click was never the point of
+  // this mode anyway. Cleared regardless, so the drag below stands alone.
   await page.evaluate(() => window.getSelection()?.removeAllRanges());
 
   // Let the multi-click chain lapse. A press within Chrome's double-click

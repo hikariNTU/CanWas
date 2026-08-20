@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/react" />
 
 /** Inlined by `define` in vite.config.ts. */
 declare const __BUILD_COMMIT__: string;

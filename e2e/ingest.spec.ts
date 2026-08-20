@@ -137,6 +137,12 @@ test("a pasted image is the size it is", async ({ page }) => {
   // Scaling it to fit made two different crops of the same screen come out
   // the same size, which is the one comparison a board of screenshots exists
   // to make.
+  //
+  // Measured at 100%: this capture is wider than the window, so the view
+  // zoomed out to frame it (D71). That moved the viewport and nothing else —
+  // reset it and the node is still exactly the size it was pasted at, which is
+  // the claim D59 actually makes.
+  await page.getByTestId("zoom-reset").click();
   const box = (await node.boundingBox())!;
   expect(box.width).toBeCloseTo(1600, 0);
   expect(box.height).toBeCloseTo(1000, 0);
@@ -253,4 +259,87 @@ test("paste falls back to the viewport centre when the pointer never entered", a
   const box = (await page.getByTestId("board-node").boundingBox())!;
   expect(box.x + box.width / 2).toBeCloseTo(surface.x + surface.width / 2, 0);
   expect(box.y + box.height / 2).toBeCloseTo(surface.y + surface.height / 2, 0);
+});
+
+test("a capture larger than the window is framed, not resized", async ({
+  page,
+}) => {
+  const surface = await surfaceBox(page);
+  await pasteImage(page, 2400, 1600);
+
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveCount(1);
+
+  // The whole thing is on screen, which at 1:1 it could not possibly be.
+  const box = (await node.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(surface.x - 1);
+  expect(box.y).toBeGreaterThanOrEqual(surface.y - 1);
+  expect(box.x + box.width).toBeLessThanOrEqual(surface.x + surface.width + 1);
+  expect(box.y + box.height).toBeLessThanOrEqual(
+    surface.y + surface.height + 1,
+  );
+
+  // Framing is a view change, so it is not on the history stack (D17).
+  await expect(page.getByTestId("undo")).toBeEnabled();
+  await page.getByTestId("undo").click();
+  await expect(page.getByTestId("board-node")).toHaveCount(0);
+});
+
+test("a paste that already fits leaves the view alone", async ({ page }) => {
+  const gridBefore = await page
+    .getByTestId("canvas-grid")
+    .evaluate((element) => getComputedStyle(element).backgroundPosition);
+
+  await pasteImage(page, 300, 200);
+  await expect(page.getByTestId("board-node")).toHaveCount(1);
+
+  // Nothing moved: pasting a small image onto a board being read must not
+  // yank it out from under the reader (D71).
+  await expect(page.getByTestId("zoom-reset")).toHaveText("100%");
+  expect(
+    await page
+      .getByTestId("canvas-grid")
+      .evaluate((element) => getComputedStyle(element).backgroundPosition),
+  ).toBe(gridBefore);
+});
+
+test("a batch is framed as one, not one file at a time", async ({ page }) => {
+  const surface = await surfaceBox(page);
+  await page.evaluate(async () => {
+    const transfer = new DataTransfer();
+    for (const [index, size] of [1400, 1100].entries()) {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = Math.round(size * 0.6);
+      const context = canvas.getContext("2d")!;
+      context.fillStyle = index === 0 ? "#f5f5f5" : "#d4d4d4";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png"),
+      );
+      transfer.items.add(
+        new File([blob!], `shot-${index}.png`, { type: "image/png" }),
+      );
+    }
+    window.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData: transfer,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+
+  const nodes = page.getByTestId("board-node");
+  await expect(nodes).toHaveCount(2);
+
+  // Both are visible. Fitting each in turn would have left the view framing
+  // whichever arrived last, with the other off screen.
+  for (const node of await nodes.all()) {
+    const box = (await node.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(surface.x - 1);
+    expect(box.x + box.width).toBeLessThanOrEqual(
+      surface.x + surface.width + 1,
+    );
+  }
 });

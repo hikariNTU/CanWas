@@ -1714,3 +1714,158 @@ says that issues are public.
 
 Reverses if: the app ever moves off Pages onto something that can serve routes,
 _and_ gains a reason to want these inside the shell. Neither is likely.
+
+---
+
+## D68 — The canvas runs under the cutout; the chrome does not
+
+**2026-08-20 · settled**
+
+`viewport-fit=cover` in the viewport meta, and one `.chrome-layer` element that
+carries `env(safe-area-inset-*)` as padding. Every floating island is a child of
+it and keeps its plain `top-3` / `bottom-3`, because an absolutely positioned
+element is laid out against its containing block's **padding** box — so one rule
+moves all of them clear of a notch at once.
+
+The canvas itself is deliberately not inset. A board wants every pixel, and dark
+grey behind a punch-hole camera reads as bezel rather than as a mistake. Only
+things that can be pressed need to be reachable.
+
+Installed to a home screen there is no browser UI to hide behind, so without
+this the top-left island sits under the status bar. That makes it a prerequisite
+for [D72](#d72--offline-is-a-generated-service-worker-and-the-update-is-asked-for),
+not a polish pass after it.
+
+**Reverses if:** never, realistically. The alternative is letterboxing the app
+inside the safe box, which loses screen on every device to protect chrome that
+is already clear.
+
+---
+
+## D69 — A press-and-hold on the board is a gesture, not a text selection
+
+**2026-08-20 · settled**
+
+`user-select: none` and `-webkit-touch-callout: none` on the canvas surface,
+with `user-select: text` back on `.ocr-word`.
+
+Holding a finger on an image used to raise the OS selection handles and take the
+whole canvas — every label, every button — as one blob of text. The callout is
+the second half and is iOS-only: Safari offers a copy/share sheet for a held
+image even when selection is off.
+
+The exception is not a compromise, it is the point. The recognition overlay is
+genuinely text, and long-press is the only way to copy it on a phone; suppressing
+it everywhere would have made OCR a desktop-only feature without saying so.
+
+**Known cost, accepted:** entering reading mode no longer selects the whole
+overlay as a side effect of the double-click that enters it. That behaviour was
+incidental — the surrounding board is now unselectable at the moment the click
+lands — and `e2e/overlay.spec.ts` records the change where it used to assert it.
+
+---
+
+## D70 — One finger does one thing, and a chip says which
+
+**2026-08-20 · settled**
+
+Two modes. In **pan**, a press anywhere moves the viewport, including on top of
+a node, and a press that ends without travelling more than 5px is a tap that
+selects instead. In **select**, a press on a node drags it and a press on empty
+canvas rubber-bands.
+
+The chip renders only where `matchMedia("(pointer: coarse)")` matches, live, so
+attaching a mouse to a tablet removes it. `currentMode()` returns `select`
+unconditionally on a fine pointer: a desktop never sees the chip, and a mode it
+cannot see governing its clicks would be a trap.
+
+Why it exists: [D54](#d54--left-drag-on-empty-canvas-selects-panning-moves-to-space-and-the-middle-button)
+left touch panning to "drag the empty canvas", which works right up until a
+screenshot fills the screen — and a screenshot that fills the screen is the
+normal case on a phone. There is no space bar and no middle button to fall back
+to.
+
+Module state with a manual subscription, like `pan-key.ts`, because the
+consumers that matter are native `pointerdown` handlers registered once. Not
+persisted and not part of the board record: it is view state (D17), and syncing
+it would mean picking up a phone and finding the mode a laptop chose.
+
+The chip sits one row above the zoom and undo islands, not beside them: on a
+412px screen it is wide enough to reach the bottom-left corner, and one control
+on top of another is not a layout. Bottom to top the stack reads zoom and undo,
+then the mode chip, then the selection bar when there is a selection.
+
+**Reverses if:** a gesture emerges that separates the two without a mode —
+two-finger pan is the obvious candidate, but `touch-action: none` on the surface
+means it would have to be implemented by hand.
+
+---
+
+## D71 — A paste that does not fit moves the view, not the image
+
+**2026-08-20 · settled · refines [D59](#d59--paste-sizes-nodes-at-their-own-size-corrected-for-density)**
+
+After an ingest, the batch's bounding box is tested against the current view. If
+it already fits, nothing happens. If it does not, the viewport zooms and centres
+so the batch fills about 90% of the screen.
+
+The complaint this answers is a phone one: a 4000px screenshot at 1:1 covers the
+entire screen with no empty canvas left, so the board can neither be seen nor —
+before [D70](#d70--one-finger-does-one-thing-and-a-chip-says-which) — moved. The
+obvious fix is to scale the paste down, which is exactly
+[D19](#d19--paste-sizes-nodes-to-fit-the-viewport), retired the day before for
+destroying the comparison a screenshot board exists to make.
+
+So the size is left alone and the camera moves instead. Node geometry is
+untouched, which means nothing here reaches the board record, the history stack
+or another device — the viewport is neither undoable nor synced (D17). The
+visual result on a phone is identical to fitting the paste; the difference only
+shows up when the same board is opened somewhere else, where D19 would have
+disagreed with itself and this cannot.
+
+Two details worth keeping: the fit is one per batch rather than per file, so four
+dropped screenshots frame as a group; and it never zooms further **in** than the
+view already was, because a batch can fail to fit by sitting off to one side and
+magnifying a small image for that reason is not what anyone means by "fit".
+
+---
+
+## D72 — Offline is a generated service worker, and the update is asked for
+
+**2026-08-20 · settled**
+
+`vite-plugin-pwa` as a dev dependency, `generateSW`, `registerType: "prompt"`.
+
+Generated rather than hand-written: the precache manifest is built from the real
+output, so hashed assets are revisioned and stale caches are cleaned. That
+bookkeeping is where hand-rolled workers rot, and a bad cache on a static host
+cannot be fixed from the server side — the user would have to clear site data.
+The cost is honest: 281 packages in `node_modules` for one config block.
+
+Prompt, never `autoUpdate`. An automatic update reloads the page the moment a new
+build is found, and a reload here throws away an initialised ONNX runtime and
+31 MB of weights — the most expensive state the app holds, and the one the user
+waited longest for.
+
+What is precached: the four HTML entries (D67), the hashed JS and CSS, the
+icons. About 1 MB. What is **not**: ONNX Runtime's 13.5 MB wasm, which would be
+the larger half of an install that is otherwise ~600 kB and which plenty of
+sessions never reach. It is runtime-cached on first use instead, arriving
+alongside the weights it needs anyway. The weights themselves stay out entirely
+— IndexedDB already holds the copy that survives a reload, and caching 31 MB
+twice on a phone is asking to be evicted.
+
+Fonts are runtime-cached rather than self-hosted, which was a deliberate call
+with a stated cost: **a cold offline first launch renders in system fallback,
+and Material Symbols ligatures show as their own names** — `delete`, `close` —
+until the font arrives. Second launch onward is correct. Self-hosting just the
+icon font is a ~250 kB reversal that touches nothing else.
+
+`scripts/check-pwa.mjs` runs in `npm run check` and asserts the parts nothing
+else can: every document page is precached, no wasm is, the runtime rule exists,
+weights are absent, `scope` and `start_url` stay `"."` — an absolute `/` would
+claim every other project on the github.io origin.
+
+**Reverses if:** the dependency weight stops being worth it, at which point the
+precache manifest is the only piece that genuinely needs generating and
+`scripts/collect-licenses.mjs` already proves that shape works here.

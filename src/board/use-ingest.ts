@@ -17,13 +17,20 @@ import { assetsAtom } from "@/board/store";
 import { createId } from "@/lib/id";
 import { putAsset } from "@/storage/db";
 import type { Asset, BoardNode, NewNode } from "@/board/types";
-import { screenToWorld, type Point, type Viewport } from "@/canvas/coords";
+import {
+  screenToWorld,
+  type Box,
+  type Point,
+  type Viewport,
+} from "@/canvas/coords";
 
 interface IngestOptions {
   boardId: string;
   viewport: Viewport;
   surfaceRef: RefObject<HTMLElement | null>;
   nodes: readonly BoardNode[];
+  /** Frames what just arrived, but only if it does not already fit (D71). */
+  fitIntoView: (box: Box) => void;
 }
 
 /**
@@ -33,11 +40,20 @@ interface IngestOptions {
  * (D21): the async Clipboard API cannot be driven by a synthetic event, which
  * would make the paste path impossible to cover in Playwright.
  */
+function boundingBox(nodes: readonly NewNode[]): Box {
+  const left = Math.min(...nodes.map((node) => node.x));
+  const top = Math.min(...nodes.map((node) => node.y));
+  const right = Math.max(...nodes.map((node) => node.x + node.w));
+  const bottom = Math.max(...nodes.map((node) => node.y + node.h));
+  return { x: left, y: top, w: right - left, h: bottom - top };
+}
+
 export function useIngest({
   boardId,
   viewport,
   surfaceRef,
   nodes,
+  fitIntoView,
 }: IngestOptions) {
   // A paste event carries no coordinates, so the last pointer position over the
   // canvas stands in for the cursor. Null until the pointer has been over it,
@@ -129,8 +145,19 @@ export function useIngest({
       commit((current) =>
         insertNodes(current, added, `paste ${added.length} image(s)`),
       );
+
+      // One fit over the whole batch, not one per file: four dropped
+      // screenshots are four nodes side by side, and fitting each in turn
+      // would leave the view framing whichever happened to be last.
+      //
+      // The nodes keep the size they were given. Only the viewport moves, and
+      // the viewport is neither undoable nor synced (D17), so this cannot
+      // reach the board record or another device.
+      if (added.length > 0) {
+        fitIntoView(boundingBox(added));
+      }
     },
-    [assets, commit, nodes, setAssets, surfaceRef, viewport],
+    [assets, commit, fitIntoView, nodes, setAssets, surfaceRef, viewport],
   );
 
   useEffect(() => {

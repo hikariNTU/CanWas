@@ -58,6 +58,29 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* The layer every floating widget lives in.
+   Padding rather than per-widget offsets: an absolutely positioned child is
+   laid out against its containing block's PADDING box, so one rule here moves
+   all five islands clear of a cutout at once and each keeps its own plain
+   `top-3` / `bottom-3`. The canvas underneath is deliberately not inset — it
+   runs edge to edge and under the camera (D68). */
+.chrome-layer {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* A press-and-hold on the board is a gesture, never a text selection.
+   Without this, holding a finger on an image raises the OS selection handles
+   and takes the whole canvas — every label, every button — as one blob of
+   text. `-webkit-touch-callout` is the second half: iOS shows a copy/share
+   callout for a held image even when selection is off (D69). The exception is
+   `.ocr-word` below, which re-enables selection so recognised text can still
+   be held and copied. */
+.canvas-surface {
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* The OCR overlay: real text, invisible ink. The browser draws the selection
    highlight itself, so it lands exactly where a native text selection would.
    Font must match OVERLAY_FONT in ocr-overlay.tsx — the widths measured there
@@ -65,6 +88,11 @@ body {
 .ocr-word {
   font-family: "Noto Sans", ui-sans-serif, sans-serif;
   font-weight: 700;
+  /* Back on, against `.canvas-surface`. This is the one thing on the board
+     that is genuinely text, and long-press is the only way to copy it on a
+     phone. */
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 .ocr-word::selection {
   background: color-mix(in srgb, var(--color-sky-400) 45%, transparent);

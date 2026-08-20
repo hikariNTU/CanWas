@@ -5,6 +5,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 /**
  * Build identity, resolved once at build time and inlined.
@@ -100,5 +101,97 @@ export default defineConfig({
     }),
     react(),
     tailwindcss(),
+    VitePWA({
+      // `prompt`, never `autoUpdate`. An automatic update reloads the page the
+      // moment a new build is found, and a reload here throws away a warm OCR
+      // session — 31 MB of weights and an initialised runtime — mid-read. The
+      // app asks instead (D72).
+      registerType: "prompt",
+      // The three document pages are real HTML entries (D67), so they are
+      // precached like any other asset and open offline. `icon.png` stays for
+      // the favicon; the 192 and 512 sizes are what a home screen wants.
+      includeAssets: ["icon.png", "icon-192.png", "icon-512.png"],
+      manifest: {
+        name: "CanWas",
+        short_name: "CanWas",
+        description:
+          "An infinite board for images and text. Paste a screenshot, arrange it, and read the text back out of it.",
+        lang: "en",
+        // Both relative to the deployed subpath, not to the domain root: the
+        // site lives under /canwas/ and a scope of "/" would claim the whole
+        // github.io origin, every other project page included.
+        start_url: ".",
+        scope: ".",
+        display: "standalone",
+        orientation: "any",
+        background_color: "#0a0a0a",
+        theme_color: "#0a0a0a",
+        icons: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,png,svg}"],
+        // ONNX Runtime's wasm is 13.5 MB and is deliberately NOT precached.
+        // Precaching bills every install for a runtime plenty of sessions
+        // never reach, on the device least able to afford it — and it would be
+        // the larger half of an install that is otherwise about 600 kB. It is
+        // runtime-cached below instead, so it survives offline from the first
+        // recognition onward, which is exactly when its 31 MB of weights
+        // arrive too.
+        globIgnores: ["**/*.wasm"],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // A hash never reaches a server (D6), so the only navigation this app
+        // ever makes is to one of the four real HTML files. Each is precached
+        // under its own URL, and a fallback that rewrote them to the app would
+        // serve the board where a privacy policy was asked for.
+        navigateFallback: "index.html",
+        navigateFallbackDenylist: [/\.html$/],
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // Same-origin wasm: cached the first time recognition needs it,
+            // then held. `CacheFirst` because the URL is content-hashed, so a
+            // new build asks for a different name and can never be stale.
+            urlPattern: ({
+              url,
+              sameOrigin,
+            }: {
+              url: URL;
+              sameOrigin: boolean;
+            }) => sameOrigin && url.pathname.endsWith(".wasm"),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "onnx-runtime",
+              expiration: { maxEntries: 4 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // The stylesheet: revalidated in the background so a font update is
+            // picked up, but never blocking a load.
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
+            handler: "StaleWhileRevalidate",
+            options: { cacheName: "google-fonts-css" },
+          },
+          {
+            // The font files themselves are immutable and hashed by URL.
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\//,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-files",
+              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+        // Recognition weights are deliberately absent. They are 31 MB, they
+        // are fetched once from huggingface.co, and IndexedDB already owns the
+        // copy that survives a reload (D40) — caching them a second time would
+        // double the storage a phone is asked for, on the one device most
+        // likely to evict it.
+      },
+    }),
   ],
 });

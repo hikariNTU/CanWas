@@ -2,7 +2,16 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- `viewport-fit=cover` lets the board paint under a notch, a punch-hole
+         camera or a home indicator. The canvas wants every pixel and dark grey
+         behind a cutout reads as bezel; the chrome layer holds itself clear
+         with `env(safe-area-inset-*)` instead. Installed as a PWA there is no
+         browser UI to hide behind, so without this the top-left island sits
+         under the status bar (D68). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"

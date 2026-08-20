@@ -6,6 +6,7 @@ import type { Rect } from "@/board/patch";
 import { boardNodesAtom } from "@/board/store";
 import type { BoardNode, NodeId } from "@/board/types";
 import { screenToWorld, type Viewport } from "@/canvas/coords";
+import { currentMode } from "@/canvas/canvas-mode";
 import { isPanKeyDown } from "@/canvas/pan-key";
 
 /**
@@ -63,11 +64,12 @@ export function useLasso(
     }
 
     function handlePointerDown(event: PointerEvent) {
-      // Touch has no second button and no space bar, so one finger has to stay
-      // panning — it is the only way to move around a phone screen.
+      // A finger lassos only in select mode. In pan mode it has to keep
+      // panning, because on a phone that is the only way to move around the
+      // board at all — there is no second button and no space bar (D70).
       if (
         event.button !== 0 ||
-        event.pointerType === "touch" ||
+        (event.pointerType === "touch" && currentMode() !== "select") ||
         isPanKeyDown() ||
         (event.target as Element | null)?.closest?.("[data-node-id]")
       ) {

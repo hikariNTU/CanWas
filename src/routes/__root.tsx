@@ -1,5 +1,7 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 
+import { UpdatePrompt } from "@/pwa/update-prompt";
+
 export const Route = createRootRoute({
   component: RootLayout,
 });
@@ -13,6 +15,9 @@ function RootLayout() {
   return (
     <div className="h-full bg-neutral-950 text-neutral-100">
       <Outlet />
+      {/* The one piece of shared chrome, and it is normally nothing: it
+          renders only when a new build is already downloaded and waiting. */}
+      <UpdatePrompt />
     </div>
   );
 }

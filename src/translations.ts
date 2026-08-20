@@ -316,6 +316,30 @@ const translations = {
     "zh-TW": "重設檢視",
     "en-US": "Reset view",
   },
+  "canvas.modePan": {
+    "zh-TW": "平移",
+    "en-US": "Pan",
+  },
+  "canvas.modeSelect": {
+    "zh-TW": "選取",
+    "en-US": "Select",
+  },
+  "canvas.deleteSelection": {
+    "zh-TW": "刪除所選",
+    "en-US": "Delete selection",
+  },
+  "pwa.updateReady": {
+    "zh-TW": "有新版本",
+    "en-US": "New version available",
+  },
+  "pwa.reload": {
+    "zh-TW": "重新載入",
+    "en-US": "Reload",
+  },
+  "pwa.dismiss": {
+    "zh-TW": "稍後再說",
+    "en-US": "Later",
+  },
   "board.placeholder": {
     "zh-TW": "畫布尚未實作。這裡之後會是無限畫布。",
     "en-US": "Canvas not implemented yet. The infinite canvas lands here.",

@@ -12,8 +12,9 @@
     "format:check": "oxfmt --check .",
     "licenses": "node scripts/collect-licenses.mjs && oxfmt licenses.html",
     "test:e2e": "playwright test",
-    "check": "rc=0; failed=''; for s in format:check lint typecheck build; do npm run $s || { rc=1; failed=\"$failed $s\"; }; done; [ $rc -eq 0 ] && echo 'all checks passed' || echo \"FAILED:$failed\"; exit $rc",
-    "preview": "vite preview"
+    "check": "rc=0; failed=''; for s in format:check lint typecheck build check:pwa; do npm run $s || { rc=1; failed=\"$failed $s\"; }; done; [ $rc -eq 0 ] && echo 'all checks passed' || echo \"FAILED:$failed\"; exit $rc",
+    "preview": "vite preview",
+    "check:pwa": "node scripts/check-pwa.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -37,6 +38,7 @@
     "oxlint-tsgolint": "^7.0.2001",
     "tailwindcss": "^4.3.1",
     "typescript": "^7.0.2",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vite-plugin-pwa": "^1.3.0"
   }
 }

@@ -53,6 +53,23 @@ const EXTRAS = [
     text: readFileSync(join(root, "licenses/ofl-1.1.txt"), "utf8"),
   },
   {
+    // The one component the module graph cannot see. `sw.js` and its
+    // `workbox-*.js` sibling are written by workbox-build after the bundle is
+    // finished, so no import of them exists anywhere — but they are shipped,
+    // and shipping is what the licence attaches to.
+    name: "Workbox (service worker runtime, emitted into sw.js)",
+    version: readFileSync(
+      join(root, "node_modules/workbox-build/package.json"),
+      "utf8",
+    ).match(/"version":\s*"([^"]+)"/)[1],
+    license: "MIT",
+    url: "https://github.com/GoogleChrome/workbox",
+    text: readFileSync(
+      join(root, "node_modules/workbox-build/LICENSE"),
+      "utf8",
+    ),
+  },
+  {
     name: "Material Symbols Rounded",
     version: "Google Fonts",
     license: "Apache-2.0",

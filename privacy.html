@@ -53,6 +53,15 @@
           </td>
         </tr>
         <tr>
+          <th>Cache Storage <code>workbox-*</code></th>
+          <td>
+            Copies of the application's own files — pages, scripts, styles,
+            icons, and the typefaces they request — kept by the service worker
+            so the application opens without a network connection. No board
+            content is stored here.
+          </td>
+        </tr>
+        <tr>
           <th><code>canwas.preferredLang</code></th>
           <td>The preferred interface language.</td>
         </tr>
@@ -86,10 +95,11 @@
 
       <h3>Google Fonts</h3>
       <p>
-        On each application load, typefaces are retrieved from
-        <code>fonts.googleapis.com</code> and <code>fonts.gstatic.com</code>.
-        This page does not load any web font and therefore makes no such
-        request.
+        Typefaces are retrieved from <code>fonts.googleapis.com</code> and
+        <code>fonts.gstatic.com</code>. After the first successful load they are
+        served from the local cache described above, so subsequent loads
+        generally issue no request. This page loads no web font and therefore
+        makes no such request at all.
       </p>
 
       <h3>Hugging Face</h3>
@@ -226,6 +236,13 @@
             </td>
           </tr>
           <tr>
+            <th>Cache Storage <code>workbox-*</code></th>
+            <td>
+              由 Service Worker
+              保存之應用程式檔案副本（含頁面、程式碼、樣式、圖示及所需字型），供無網路連線時開啟使用；其中不含任何白板內容。
+            </td>
+          </tr>
+          <tr>
             <th><code>canwas.preferredLang</code></th>
             <td>儲存偏好介面語言。</td>
           </tr>
@@ -251,9 +268,9 @@
         </p>
         <h3>Google Fonts</h3>
         <p>
-          載入應用程式時，系統將自 <code>fonts.googleapis.com</code> 與
+          系統將自 <code>fonts.googleapis.com</code> 與
           <code>fonts.gstatic.com</code>
-          取得字型資源。本頁面未載入網路字型，故不會發出此請求。
+          取得字型資源。首次載入成功後即改由前述本地快取提供，其後通常不再發出請求。本頁面未載入網路字型，故完全不會發出此請求。
         </p>
         <h3>Hugging Face</h3>
         <p>

@@ -86,6 +86,24 @@
           a few seconds per image.
         </li>
         <li>
+          <strong>On a phone or tablet</strong>, a two-part control appears at
+          the bottom of the screen. In <strong>Pan</strong> mode a finger moves
+          the board wherever it is placed, including on top of an image, and a
+          tap selects; in <strong>Select</strong> mode a finger moves images
+          instead. A selected image can be deleted using the button that appears
+          above the control. This control is not shown when a mouse is in use,
+          where the space bar, the middle button and the <code>Delete</code> key
+          serve the same purposes.
+        </li>
+        <li>
+          <strong>Install to the home screen</strong> using the browser's
+          &ldquo;Install&rdquo; or &ldquo;Add to Home Screen&rdquo; command. The
+          application then opens without browser chrome and, after its first
+          successful load, without a network connection. Boards are held on the
+          device either way; installation changes how the application starts,
+          not where data is kept.
+        </li>
+        <li>
           <strong>Undo</strong> with <code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>; redo
           by additionally holding <code>Shift</code>. History is retained only
           within the tab and is cleared on reload; the board itself is saved
@@ -102,6 +120,22 @@
         take some time on a slow connection, and will fail entirely if
         <code>huggingface.co</code> is blocked on the network in use. The About
         panel indicates whether the weights are cached.
+      </p>
+
+      <h3>A notice reports that a new version is available</h3>
+      <p>
+        An updated version has been downloaded and is waiting. It is not applied
+        automatically, because reloading during recognition discards work in
+        progress. Select <em>Reload</em> when convenient, or dismiss the notice;
+        the update will be offered again on a subsequent visit.
+      </p>
+
+      <h3>Text recognition does not work offline</h3>
+      <p>
+        The recognition engine and its model weights are retrieved on first use
+        and retained thereafter. An installation that has never performed
+        recognition while online cannot perform it offline. Boards, images and
+        previously recognised text remain fully available.
       </p>
 
       <h3>Recognition returns incorrect characters</h3>
@@ -205,6 +239,15 @@
             辨識將自動開始，每張圖片約需數秒。
           </li>
           <li>
+            <strong>手機與平板：</strong
+            >畫面下方會出現雙段式控制項。於「平移」模式下，手指無論按在何處（含圖片上方）皆為移動畫面，輕觸則為選取；切換至「選取」模式後，手指改為拖曳圖片。選取圖片後，控制項上方會出現刪除按鈕。使用滑鼠時不顯示此控制項，該情形下改以空白鍵、中鍵與
+            <code>Delete</code> 鍵操作。
+          </li>
+          <li>
+            <strong>安裝至主畫面：</strong
+            >可透過瀏覽器之「安裝」或「加入主畫面」功能安裝。安裝後開啟將不顯示瀏覽器介面，且於首次成功載入後即可離線使用。無論是否安裝，白板資料均保存於本機裝置；安裝僅改變開啟方式，不影響資料存放位置。
+          </li>
+          <li>
             <strong>復原：</strong>使用 <code>Ctrl/Cmd&nbsp;+&nbsp;Z</code>；
             加按
             <code>Shift</code>
@@ -220,6 +263,16 @@
           <code>huggingface.co</code
           >，辨識將直接失敗。「關於」面板將顯示權重是否已完成快取。
         </p>
+        <h3>畫面提示有新版本</h3>
+        <p>
+          表示新版本已下載完成並等待套用。系統不會自動套用，因為辨識進行中重新載入將導致該作業中斷。請於方便時點選「重新載入」；若選擇稍後再說，下次開啟時會再次提示。
+        </p>
+
+        <h3>離線時無法進行文字辨識</h3>
+        <p>
+          辨識引擎與模型權重係於首次使用時下載並保存。若安裝後從未在連線狀態下執行過辨識，離線時即無法辨識。白板、圖片與先前已辨識之文字則不受影響，仍可正常使用。
+        </p>
+
         <h3>辨識結果字元錯誤</h3>
         <p>
           文字尺寸過小、模糊、傾斜或對比不足時，辨識效果將明顯降低，此為模型本身之限制，非可調整之設定。
