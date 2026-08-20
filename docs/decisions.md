@@ -1486,3 +1486,40 @@ question, or a change feed becomes available.
 
 See `docs/sync-limits.md` for what this costs in Drive quota units and where it
 still breaks.
+
+## D62 — Tabs tell each other, and opening a board is not an edit
+
+**2026-08-20 · settled**
+
+A `BroadcastChannel` carries `{kind: "board", boardId, updatedAt}` and
+`{kind: "boards"}` between tabs on this origin. A tab that hears its board moved
+reloads it from IndexedDB; a tab that hears the list moved re-reads the list.
+
+The message carries no board content, deliberately. It can arrive twice, arrive
+late, or be dropped, and IndexedDB remains the only source of truth — a payload
+would be a second copy of the board that could disagree with the first.
+
+The problem it solves is not a merge problem. Two tabs are two sets of atoms
+over one database, and each writes the whole board record when it saves, so a
+tab holding a stale node list lands it on top of a newer one. The second tab did
+not have to be _edited_ to destroy work; it only had to be open, and then saved.
+
+Two things had to be true for the channel to help.
+
+A tab with unsaved work does not reload. The save is debounced, so there is a
+window where the atoms are ahead of the database, and adopting another tab's
+record inside it would discard the edit about to be written. "Unsaved" is the
+identity of the node array rather than a flag — the atoms hold one array per
+board and every edit replaces it, so "the array in the store is not the array I
+saved" is exactly the question being asked.
+
+And **opening a board is no longer saving it**. The content effect ran on mount,
+saw a node list, and wrote it back with a fresh `updatedAt`. On one device that
+only meant "last edited" quietly became "last opened", which is what the board
+list sorts by. With two tabs it was the whole bug: the second tab to open a
+board stamped its own view as the most recent edit, and nothing could argue with
+it afterwards. The node list as it came off disk is now remembered, and a save
+happens only once the array is no longer that one.
+
+Reverses if: two tabs need to edit the same board simultaneously without a
+winner, which needs the merge, not a channel.

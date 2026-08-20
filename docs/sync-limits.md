@@ -85,14 +85,29 @@ a stale clock is the ordinary way this happens.
 This is the deepest structural risk in the design, and nothing above the merge
 can correct for it.
 
-### Two tabs on one board
+### Two tabs on one board — mostly handled
 
-Two tabs are two copies of the atoms over one IndexedDB and one Drive. The
-merge handles the _remote_ side correctly — the second tab's base is older, so
-a three-way merge does the right thing — but the two tabs write the whole board
-record to IndexedDB independently, and neither knows the other exists. The
-older tab's node list can land on top of the newer one's. Nothing here uses
-`BroadcastChannel` or a lock.
+Two tabs are two copies of the atoms over one IndexedDB. Each writes the _whole_
+board record when it saves, so a tab holding a stale node list used to land it
+on top of a newer one — the second tab did not have to be edited to destroy
+work, it only had to be open and then saved.
+
+A `BroadcastChannel` now carries "this board moved, go and look" between tabs.
+A tab that hears it reloads the board from IndexedDB, so by the time it writes
+anything it is writing over its own reading. It carries no board content: the
+message can arrive twice, arrive late, or be dropped, and IndexedDB is still the
+only source of truth.
+
+Two things had to be true for that to work. A tab with unsaved work does not
+reload — the save is debounced, and adopting another tab's record inside that
+window would discard the edit about to be written. And _opening_ a board no
+longer saves it: the content effect ran on mount and wrote the board back with a
+fresh `updatedAt`, so the second tab to open a board would stamp its own view as
+the newest edit, which is precisely the write that could not be argued with.
+
+What remains is last-writer-wins between two tabs both actively editing. That is
+the same rule the app already had, but both tabs now agree on what happened
+rather than one silently flattening the other.
 
 ### A board deleted while the pass is running
 
@@ -101,13 +116,16 @@ between then and the pass reaching it is written back out — `removeBoard` drop
 the row, and the pass still holds the record it read. The board returns from the
 dead, on this device and on the remote.
 
-### Renaming drops tombstones
+### Renaming dropped tombstones — fixed
 
-`renameBoardAtom` writes the board record without its `tombstones`. A rename
-therefore erases the record of every node deleted on that board, and the next
-sync sees those nodes on the remote with nothing saying they were deleted — so
-they come back. Now that names cross between devices, a rename is more likely
-than it was.
+`renameBoardAtom` assembled the stored record by hand and left out
+`tombstones`, which `StoredBoard` makes optional, so it type-checked. A rename
+erased the record of every node deleted on that board.
+
+Narrower in practice than it looks: the next ordinary save rebuilds the record
+from the atoms, where the tombstones still are, so the damage repaired itself
+unless the tab reloaded in between. Every writer now goes through one assembler,
+so the next field added to a board cannot be dropped by one caller out of three.
 
 ### A refusal nobody sees
 
