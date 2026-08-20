@@ -531,7 +531,10 @@ test("a document from a newer version is refused, loudly", async ({ page }) => {
   // Colour, not a glyph to be read: a board is looked at, not inspected.
   await expect(page.getByTestId("sync-error-dot")).toBeVisible();
   // And the reason is in reach, rather than in the console.
-  await expect(page.getByTestId("sync-state")).toContainText("newer version");
+  // The title row carries the state; the sentence explaining it lives in the
+  // body, where a sentence fits.
+  await expect(page.getByTestId("sync-state")).toHaveText("Sync failed");
+  await expect(page.getByTestId("sync-message")).toContainText("newer version");
 
   // Refusing to read is also refusing to overwrite. The board that could not
   // be understood is still there, exactly as its author left it.

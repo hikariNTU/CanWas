@@ -181,220 +181,184 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
   // nothing to an attacker: it opens no door, it only names one.
   const remembered = state.status === "signedIn" ? null : lastAccount();
 
-  // Said in words, because the tooltip says it in a picture and a screen reader
-  // gets none of it. Base UI keeps the popup out of the accessibility tree, so
-  // the label on the control is the only place this exists.
-  const reconnectLabel = remembered
-    ? [t("sync.reconnectAs"), remembered.name, remembered.email]
-        .filter(Boolean)
-        .join(" ")
-    : t("sync.reconnect");
-
   return (
-    <>
-      {/* Beside the icon rather than inside the popup. Reconnecting is not a
-          decision — there is one account and one button — so making it cost a
-          click to reach, then a click to press, is a tax on the most common
-          thing that happens after a reload. */}
-      {isConfigured && remembered && (
-        <Tip
-          label={
-            // The whole account, not just the address. The button already says
-            // "Reconnect"; what it cannot show in the width available is who
-            // that would be, which is the only question worth asking on a
-            // machine with two Google accounts signed in.
-            <Identity
-              account={remembered}
-              caption={t("sync.reconnectAs")}
-              unknown={t("sync.accountUnknown")}
-            />
-          }
-        >
-          <button
-            data-testid="sync-reconnect"
-            aria-label={reconnectLabel}
-            disabled={state.status === "connecting"}
-            onClick={() => void signIn()}
-            className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-full pr-3 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11 pointer-coarse:gap-2 pointer-coarse:pr-4 pointer-coarse:pl-2 pointer-coarse:text-sm"
-          >
-            {/* Grows with the pill. At 44px tall a 22px avatar sits in the
-                middle of a lot of glass, with the left padding reading as
-                half the right. */}
-            <Avatar
-              account={remembered}
-              className="size-[22px] pointer-coarse:size-7"
-            />
-            {t(
-              state.status === "connecting"
-                ? "sync.connecting"
-                : "sync.reconnect",
-            )}
-          </button>
-        </Tip>
-      )}
-
-      <Popover.Root>
-        {/* The message, not the label: a failure that only says "failed" sends
+    <Popover.Root>
+      {/* The message, not the label: a failure that only says "failed" sends
             whoever hits it to the console. The popup repeats it, but a tooltip
             is cheaper than a click when all you wanted was to check. */}
-        <Tip label={failure ?? t(label)}>
-          <Popover.Trigger
-            data-testid="sync-button"
-            data-sync-state={status.state}
-            data-sync-failed={failure ? "" : undefined}
-            aria-label={failure ?? t(label)}
-            className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11 ${tone}`}
+      <Tip label={failure ?? t(label)}>
+        <Popover.Trigger
+          data-testid="sync-button"
+          data-sync-state={status.state}
+          data-sync-failed={failure ? "" : undefined}
+          aria-label={failure ?? t(label)}
+          className={`glass pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11 ${tone}`}
+        >
+          <Icon name={icon} size={18} />
+          {failure && (
+            // Colour rather than a glyph, and on top rather than instead of
+            // one: the icon still has to say which state sync is in, and a
+            // badge is legible at a glance across a board without being read.
+            <span
+              data-testid="sync-error-dot"
+              aria-hidden
+              className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-400 ring-2 ring-neutral-900"
+            />
+          )}
+        </Popover.Trigger>
+      </Tip>
+      <Popover.Portal>
+        <Popover.Positioner sideOffset={6} align="end">
+          <Popover.Popup
+            data-testid="sync-panel"
+            className="glass-strong w-72 rounded-lg p-3 text-sm focus:outline-none"
           >
-            <Icon name={icon} size={18} />
-            {failure && (
-              // Colour rather than a glyph, and on top rather than instead of
-              // one: the icon still has to say which state sync is in, and a
-              // badge is legible at a glance across a board without being read.
+            {/* State sits on the title line rather than under the panel.
+                  It answers the question the panel is opened to ask, and at
+                  the bottom it was the last thing read instead of the first —
+                  below even Sync now, which is the button you press because of
+                  what it says. Only the label lives here: a failure's actual
+                  message is a sentence, and a sentence in a title row either
+                  wraps it or gets cut, so it stays in the body below. */}
+            <Popover.Title className="mb-3 flex items-center gap-2 font-bold text-neutral-100">
+              <DriveMark size={16} />
+              {t("sync.title")}
               <span
-                data-testid="sync-error-dot"
-                aria-hidden
-                className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-400 ring-2 ring-neutral-900"
-              />
-            )}
-          </Popover.Trigger>
-        </Tip>
-        <Popover.Portal>
-          <Popover.Positioner sideOffset={6} align="end">
-            <Popover.Popup
-              data-testid="sync-panel"
-              className="glass-strong w-72 rounded-lg p-3 text-sm focus:outline-none"
-            >
-              <Popover.Title className="mb-3 flex items-center gap-2 font-bold text-neutral-100">
-                <DriveMark size={16} />
-                {t("sync.title")}
-              </Popover.Title>
-
-              {!isConfigured ? (
-                // Said out loud rather than hidden. A sign-in button that
-                // cannot work is worse than none, and a missing one is a
-                // mystery to whoever built it.
-                <p
-                  data-testid="sync-unconfigured"
-                  className="text-xs text-neutral-500"
-                >
-                  {t("sync.unconfigured")}
-                </p>
-              ) : state.status === "signedIn" ? (
-                <div data-testid="sync-signed-in">
-                  <Identity
-                    account={state.session}
-                    caption={t("sync.grantedTo")}
-                    unknown={t("sync.accountUnknown")}
-                  />
-                  <Quota
-                    used={state.session.storageUsed}
-                    limit={state.session.storageLimit}
-                  />
-                </div>
-              ) : (
-                <>
-                  {/* The account is named before the button that would reach
-                      it, because on a machine with two Google accounts the
-                      question is never "connect?" but "connect as whom?". */}
-                  {remembered && (
-                    <div className="mb-3">
-                      <Identity
-                        account={remembered}
-                        caption={t("sync.lastConnected")}
-                        unknown={t("sync.accountUnknown")}
-                      />
-                    </div>
-                  )}
-                  <PanelButton
-                    data-testid="sync-sign-in"
-                    icon="login"
-                    disabled={state.status === "connecting"}
-                    onClick={() => void signIn()}
-                  >
-                    {t(
-                      state.status === "connecting"
-                        ? "sync.connecting"
-                        : remembered
-                          ? "sync.reconnect"
-                          : "sync.connect",
-                    )}
-                  </PanelButton>
-                  {auth.status === "expired" && (
-                    <p className="mt-1 text-xs text-neutral-500">
-                      {t("sync.expiredWhy")}
-                    </p>
-                  )}
-                  {state.status === "failed" && (
-                    <p
-                      data-testid="sync-error"
-                      className="mt-1 text-xs text-amber-500"
-                    >
-                      {state.error}
-                    </p>
-                  )}
-                </>
-              )}
-
-              {/* Available whenever a transport is live, which is not the same
-                  as being signed in — the fake remote needs no account, and a
-                  round on demand is the thing you press before closing a
-                  laptop. Gating this on the account left a build with working
-                  sync and no way to ask for one. */}
-              {status.state !== "off" && (
-                <PanelButton
-                  data-testid="sync-now"
-                  icon="sync"
-                  className="mt-3"
-                  disabled={status.state === "syncing"}
-                  onClick={onSync}
-                >
-                  {t("sync.now")}
-                </PanelButton>
-              )}
-
-              {/* Where the last round got to. A failure is worth colour;
-                  success is not. */}
-              <p
                 data-testid="sync-state"
                 data-sync-state={status.state}
-                className={
+                className={clsx(
+                  "ml-auto text-xs font-normal",
                   status.state === "failed"
-                    ? "mt-2 text-xs text-amber-500/80"
-                    : "mt-2 text-xs text-neutral-500"
-                }
+                    ? "text-amber-500/80"
+                    : "text-neutral-500",
+                )}
               >
                 {status.state === "syncing"
                   ? t("sync.syncing")
                   : status.state === "idle"
                     ? t("sync.idle")
                     : status.state === "failed"
-                      ? status.message
+                      ? t("sync.failed")
                       : t("sync.off")}
-              </p>
+              </span>
+            </Popover.Title>
 
-              {/* Last, behind a rule, and the only thing below it. It was
+            {!isConfigured ? (
+              // Said out loud rather than hidden. A sign-in button that
+              // cannot work is worse than none, and a missing one is a
+              // mystery to whoever built it.
+              <p
+                data-testid="sync-unconfigured"
+                className="text-xs text-neutral-500"
+              >
+                {t("sync.unconfigured")}
+              </p>
+            ) : state.status === "signedIn" ? (
+              <div data-testid="sync-signed-in">
+                <Identity
+                  account={state.session}
+                  caption={t("sync.grantedTo")}
+                  unknown={t("sync.accountUnknown")}
+                />
+                <Quota
+                  used={state.session.storageUsed}
+                  limit={state.session.storageLimit}
+                />
+              </div>
+            ) : (
+              <>
+                {/* The account is named before the button that would reach
+                      it, because on a machine with two Google accounts the
+                      question is never "connect?" but "connect as whom?". */}
+                {remembered && (
+                  <div className="mb-3">
+                    <Identity
+                      account={remembered}
+                      caption={t("sync.lastConnected")}
+                      unknown={t("sync.accountUnknown")}
+                    />
+                  </div>
+                )}
+                <PanelButton
+                  data-testid="sync-sign-in"
+                  icon="login"
+                  disabled={state.status === "connecting"}
+                  onClick={() => void signIn()}
+                >
+                  {t(
+                    state.status === "connecting"
+                      ? "sync.connecting"
+                      : remembered
+                        ? "sync.reconnect"
+                        : "sync.connect",
+                  )}
+                </PanelButton>
+                {auth.status === "expired" && (
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {t("sync.expiredWhy")}
+                  </p>
+                )}
+                {state.status === "failed" && (
+                  <p
+                    data-testid="sync-error"
+                    className="mt-1 text-xs text-amber-500"
+                  >
+                    {state.error}
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Available whenever a transport is live, which is not the same
+                  as being signed in — the fake remote needs no account, and a
+                  round on demand is the thing you press before closing a
+                  laptop. Gating this on the account left a build with working
+                  sync and no way to ask for one. */}
+            {status.state !== "off" && (
+              <PanelButton
+                data-testid="sync-now"
+                icon="sync"
+                className="mt-3"
+                disabled={status.state === "syncing"}
+                onClick={onSync}
+              >
+                {t("sync.now")}
+              </PanelButton>
+            )}
+
+            {/* Why the last round failed, in its own words. Kept out of the
+                  title row, where a sentence has nowhere to go. */}
+            {status.state === "failed" && (
+              <p
+                data-testid="sync-message"
+                className="mt-2 text-xs text-amber-500/80"
+              >
+                {status.message}
+              </p>
+            )}
+
+            {/* Last, behind a rule, and the only thing below it. It was
                   sitting between the account and Sync now, where it read as
                   another step in using sync rather than as the end of it — and
                   a bare underlined word directly above the primary action is a
                   misclick waiting to revoke a token. */}
-              {state.status === "signedIn" && (
-                <>
-                  <PanelRule />
-                  <PanelButton
-                    data-testid="sync-sign-out"
-                    icon="logout"
-                    onClick={() => void signOut()}
-                    className="text-xs text-neutral-500"
-                  >
-                    {t("sync.signOut")}
-                  </PanelButton>
-                </>
-              )}
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
-    </>
+            {state.status === "signedIn" && (
+              <>
+                <PanelRule />
+                <PanelButton
+                  data-testid="sync-sign-out"
+                  icon="logout"
+                  onClick={() => void signOut()}
+                  className="text-xs text-neutral-500"
+                >
+                  {t("sync.signOut")}
+                </PanelButton>
+              </>
+            )}
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
@@ -455,5 +419,72 @@ function Quota({ used, limit }: { used?: number; limit?: number }) {
         {limit !== undefined && ` / ${bytes(limit)}`}
       </p>
     </div>
+  );
+}
+
+/**
+ * Reconnect, on its own line under the icons.
+ *
+ * Beside the icon rather than inside the popup, because reconnecting is not a
+ * decision — there is one account and one button — so making it cost a click to
+ * reach, then a click to press, is a tax on the most common thing that happens
+ * after a reload.
+ *
+ * On its own row because it is the widest piece of chrome in the corner, and
+ * the board's name is in the opposite one: on a phone the two met in the middle
+ * and the name lost, truncated to a few characters by a button that is only
+ * there some of the time.
+ */
+export function ReconnectPill() {
+  const { state, isConfigured, signIn } = useGoogleAccount();
+  const { t } = useTranslation();
+  const remembered = state.status === "signedIn" ? null : lastAccount();
+
+  // Said in words, because the tooltip says it in a picture and a screen reader
+  // gets none of it. Base UI keeps the popup out of the accessibility tree, so
+  // the label on the control is the only place this exists.
+  const reconnectLabel = remembered
+    ? [t("sync.reconnectAs"), remembered.name, remembered.email]
+        .filter(Boolean)
+        .join(" ")
+    : t("sync.reconnect");
+
+  if (!isConfigured || !remembered) {
+    return null;
+  }
+
+  return (
+    <Tip
+      label={
+        // The whole account, not just the address. The button already says
+        // "Reconnect"; what it cannot show in the width available is who
+        // that would be, which is the only question worth asking on a
+        // machine with two Google accounts signed in.
+        <Identity
+          account={remembered}
+          caption={t("sync.reconnectAs")}
+          unknown={t("sync.accountUnknown")}
+        />
+      }
+    >
+      <button
+        data-testid="sync-reconnect"
+        aria-label={reconnectLabel}
+        disabled={state.status === "connecting"}
+        onClick={() => void signIn()}
+        className="glass pointer-events-auto flex h-9 items-center gap-1.5 rounded-full pr-3 pl-1.5 text-xs text-neutral-300 transition-colors hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11 pointer-coarse:gap-2 pointer-coarse:pr-4 pointer-coarse:pl-2 pointer-coarse:text-sm"
+      >
+        {/* Grows with the pill. At 44px tall a 22px avatar sits in the
+                middle of a lot of glass, with the left padding reading as
+                half the right. */}
+        <Avatar
+          account={remembered}
+          className="size-[22px] pointer-coarse:size-7"
+        />
+        {t(
+          state.status === "connecting" ? "sync.connecting" : "sync.reconnect",
+        )}
+      </button>
+    </Tip>
   );
 }

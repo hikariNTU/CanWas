@@ -29,7 +29,7 @@ import { OcrBadge } from "@/canvas/ocr-badge";
 import { OcrOverlay } from "@/canvas/ocr-overlay";
 import { useOcr } from "@/ocr/use-ocr";
 import { useCompression } from "@/image/use-compression";
-import { SyncButton } from "@/sync/sync-button";
+import { ReconnectPill, SyncButton } from "@/sync/sync-button";
 import { TipProvider } from "@/ui/tooltip";
 import { useKnownRemote } from "@/sync/edit-guard";
 import { StaleEditDialog } from "@/sync/stale-edit-dialog";
@@ -470,10 +470,17 @@ export function Canvas({ boardId }: { boardId: string }) {
           </div>
 
           {/* Opposite corner from the menu, so the two never crowd a narrow
-          window, and away from the zoom and undo controls that get used. */}
-          <div className="pointer-events-none absolute top-3 right-3 flex items-center gap-1">
-            <SyncButton onSync={syncNow} />
-            <About />
+          window, and away from the zoom and undo controls that get used.
+          Reconnect goes on a second row rather than beside the icons: it is
+          the widest thing in this corner and it only exists some of the time,
+          so on a phone it met the board name coming the other way and the name
+          was the one that got truncated. */}
+          <div className="pointer-events-none absolute top-3 right-3 flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1">
+              <SyncButton onSync={syncNow} />
+              <About />
+            </div>
+            <ReconnectPill />
           </div>
 
           {/* Bottom right: the only corner left, and the reachable one on a phone
