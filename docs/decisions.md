@@ -2661,6 +2661,18 @@ _with a tab bar_ is unaffected — only an installed app on a device with a cuto
 shows it. The test therefore asserts the declaration in `index.html` rather than
 any measurement, alongside the `viewport-fit=cover` assertion it belongs to.
 
+`black-translucent` alone was not enough, either: it is a WebKit extension
+consulted only for an app in Apple's *own* standalone mode, which iOS enters
+from `apple-mobile-web-app-capable`. iOS 16.4 learned to read `display:
+standalone` from the manifest and that is what puts the app in a window — but it
+does not turn on the legacy flag, so the style meta was read and ignored and the
+band stayed. Both are declared now, next to `mobile-web-app-capable`, the
+standardised spelling Chrome reads.
+
+Neither line takes effect on an app already on the home screen: iOS reads them
+when the icon is created. Fixing this on a device means deleting the app and
+adding it again.
+
 **Reverses if:** the app ever wants an opaque bar over the board — a light theme
 would, since light glyphs over pale dots are unreadable, and that is a colour
 decision this style cannot express.

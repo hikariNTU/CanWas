@@ -353,6 +353,13 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
     html,
     "without black-translucent iOS keeps the status bar for itself",
   ).toContain('content="black-translucent"');
+  // And the flag that style is conditional on: it is a WebKit extension read
+  // only for an app in Apple's own standalone mode, so on its own the line
+  // above is decoration (D93).
+  expect(
+    html,
+    "the status bar style is only read in Apple's standalone mode",
+  ).toContain('name="apple-mobile-web-app-capable"');
 });
 
 test("the touch controls sit above the corner islands, never on them", async ({

@@ -12,6 +12,15 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <!-- Apple's own standalone flag, and its standard replacement. iOS 16.4
+         learned to read `display: standalone` from the manifest, but the
+         status bar style below is a WebKit extension that is only consulted
+         for an app in *Apple's* standalone mode — so without this the meta
+         under it is read and ignored, and the status bar stays a reserved
+         band (D93). `mobile-web-app-capable` is the standardised spelling and
+         is what Chrome reads; both are declared rather than either alone. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <!-- What actually lets `viewport-fit=cover` do anything on an iPhone.
          Installed to the home screen, iOS defaults this to `default`, which
          reserves the status bar as a band the web view cannot reach and paints
