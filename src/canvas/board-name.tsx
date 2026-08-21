@@ -61,8 +61,17 @@ export function BoardName({ boardId }: { boardId: string }) {
   }
 
   function commit() {
-    guard(() => rename(boardId, draft));
+    const trimmed = draft.trim();
     setEditing(false);
+    // A name that has not changed is not an edit. Clicking the name, thinking
+    // better of it and clicking away used to raise the sync dialog over a
+    // rename to the string that was already there — `renameBoardAtom` would
+    // have done nothing with it, but the guard ran first (D88). An empty name
+    // is refused there too, and is the same non-edit here.
+    if (trimmed === "" || trimmed === name) {
+      return;
+    }
+    guard(() => rename(boardId, trimmed));
   }
 
   if (editing) {

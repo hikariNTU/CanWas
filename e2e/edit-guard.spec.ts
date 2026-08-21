@@ -174,3 +174,60 @@ test("a reachable remote never raises the dialog, and the round's own commit pas
   await expect(page.getByTestId("board-node")).toHaveCount(2);
   await expect(page.getByTestId("stale-edit-dialog")).toBeHidden();
 });
+
+test("opening an editor is not an edit, and settling it is", async ({
+  page,
+}) => {
+  await cutOff(page);
+
+  // A double-click on empty canvas creates the node the caret sits in. That
+  // node holds nothing, and is deleted again if nothing is typed — so the
+  // dialog in front of it asked about a change that did not exist yet, and
+  // stopped the gesture that was about to make one.
+  const surface = page.getByTestId("canvas-surface");
+  const box = (await surface.boundingBox())!;
+  await page.mouse.dblclick(box.x + 80, box.y + box.height - 80);
+  await expect(page.getByTestId("text-node-input")).toBeFocused();
+  await expect(page.getByTestId("stale-edit-dialog")).toBeHidden();
+
+  // Typed text is a real edit, and is held like any other.
+  await page.keyboard.type("Written while cut off");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("stale-edit-dialog")).toBeVisible();
+
+  await page.getByTestId("edit-anyway").click();
+  await expect(page.getByTestId("text-node-body")).toHaveText(
+    "Written while cut off",
+  );
+});
+
+test("abandoning an empty editor asks nothing", async ({ page }) => {
+  await cutOff(page);
+
+  const surface = page.getByTestId("canvas-surface");
+  const box = (await surface.boundingBox())!;
+  await page.mouse.dblclick(box.x + 80, box.y + box.height - 80);
+  await expect(page.getByTestId("text-node-input")).toBeFocused();
+
+  // Removing the node nobody typed into undoes the provisional insert, so it
+  // is exempt for the same reason the insert was. Guarded, it put a second
+  // dialog on the way out of a gesture that changed nothing.
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("stale-edit-dialog")).toBeHidden();
+  await expect(page.getByTestId("text-node-input")).toHaveCount(0);
+});
+
+test("a rename to the name it already has asks nothing", async ({ page }) => {
+  await cutOff(page);
+
+  await page.getByTestId("board-name").click();
+  const field = page.getByTestId("board-name-input");
+  await field.fill(BOARD);
+  await field.press("Enter");
+
+  // `renameBoardAtom` discards a rename to the current name, so this was a
+  // dialog in front of a no-op — raised by opening the field and clicking
+  // away, which is how anyone checks what a board is called.
+  await expect(page.getByTestId("stale-edit-dialog")).toBeHidden();
+  await expect(page.getByTestId("board-name")).toHaveText(BOARD);
+});

@@ -2420,3 +2420,27 @@ soon as the edit ends.
 
 **Reverses if:** a text node ever gains a second editing affordance that is not a
 surface, in which case the outline is the only thing saying which node it is.
+
+## D88 — The guard asks about edits, not about gestures
+
+D74 holds the first edit on a board whose remote cannot be reached. It hung
+off `commit`, which meant it fired on two things that are not edits.
+
+**Opening a text editor.** A double-click on empty canvas inserts the node the
+caret sits in, and that node holds nothing — abandon it and it is deleted
+again. Guarding the insert put the dialog in front of the double-click, before
+a single character existed to be at risk, and then a second time on the way out
+when the empty node was removed. Both go through `commitProvisional` now, which
+skips the guard; the `setTextContent` that lands what someone typed does not.
+
+**A rename to the name it already has.** `renameBoardAtom` discards those, but
+the guard ran before it — so clicking the name, thinking better of it, and
+clicking away raised a dialog over a no-op. The comparison moved ahead of the
+guard.
+
+The rule this settles: the guard exists to stop a change being made against a
+remote nobody has read, so it should see the change, not the gesture that might
+produce one. A gesture that ends in nothing needs no permission.
+
+**Reverses if:** provisional changes ever become something a merge can lose. They
+are exempt because an empty node is worth nothing to either side.

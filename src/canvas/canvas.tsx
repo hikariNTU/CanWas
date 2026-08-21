@@ -62,7 +62,8 @@ export function Canvas({ boardId }: { boardId: string }) {
 
   const nodes = readNodes(useAtomValue(boardNodesAtom), boardId);
   const assets = useAtomValue(assetsAtom);
-  const { commit, undo, redo, canUndo, canRedo } = useBoardHistory(boardId);
+  const { commit, commitProvisional, undo, redo, canUndo, canRedo } =
+    useBoardHistory(boardId);
   const { selection, setSelection, startMove, startResize, rectFor } =
     useNodeGestures(boardId, viewport);
   const { lasso } = useLasso(boardId, viewport, surfaceRef);
@@ -97,11 +98,13 @@ export function Canvas({ boardId }: { boardId: string }) {
     const text = truncateText(draft);
     setEditingId(null);
     if (text.trim() === "") {
-      commit((current) => deleteNodes(current, [id]));
+      // Removing a node nobody typed into undoes the provisional insert, and
+      // is exempt for the same reason it was.
+      commitProvisional((current) => deleteNodes(current, [id]));
       return;
     }
     commit((current) => setTextContent(current, id, text, height));
-  }, [commit, draft, editingId]);
+  }, [commit, commitProvisional, draft, editingId]);
 
   // Double-clicking empty canvas starts a new text node where the pointer is.
   useEffect(() => {
@@ -119,13 +122,14 @@ export function Canvas({ boardId }: { boardId: string }) {
         viewport,
       );
       const node = createTextNode(world.x, world.y);
-      commit((current) => insertNodes(current, [node], "add text"));
+      // Provisional: an empty node is a caret, not an edit.
+      commitProvisional((current) => insertNodes(current, [node], "add text"));
       select([node.id]);
       startEditing(node.id, "");
     }
     surface.addEventListener("dblclick", handleDoubleClick);
     return () => surface.removeEventListener("dblclick", handleDoubleClick);
-  }, [commit, select, startEditing, surfaceRef, viewport]);
+  }, [commitProvisional, select, startEditing, surfaceRef, viewport]);
 
   const { ingestFiles } = useIngest({
     boardId,

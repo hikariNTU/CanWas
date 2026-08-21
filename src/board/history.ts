@@ -201,8 +201,26 @@ export function useBoardHistory(boardId: string) {
     [boardId, commitChange, guard],
   );
 
+  /**
+   * A change the user has not made yet.
+   *
+   * Creating the empty node a caret sits in is not an edit: it holds nothing,
+   * and abandoning it deletes it again, so there is no content for the guard
+   * to be protecting. Guarding it put the dialog in front of a double-click —
+   * before a single character existed to be at risk — and then a second time
+   * on the way out, when the empty node was removed. Only the text someone
+   * actually typed goes through the guard (D88).
+   */
+  const commitProvisional = useCallback(
+    (build: ChangeBuilder) => {
+      commitChange(boardId, build, "now");
+    },
+    [boardId, commitChange],
+  );
+
   return {
     commit,
+    commitProvisional,
     undo: useCallback(
       () => guard(() => undoChange(boardId)),
       [boardId, guard, undoChange],
