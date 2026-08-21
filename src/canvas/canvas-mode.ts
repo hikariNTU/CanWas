@@ -84,6 +84,20 @@ export function resetCanvasMode() {
   emit();
 }
 
+/**
+ * Whether the primary pointer is a finger, on its own.
+ *
+ * Separate from `useCanvasMode` because a node's context menu cares about the
+ * device but has no opinion about the mode.
+ */
+export function useCoarsePointer(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => coarse,
+    () => false,
+  );
+}
+
 export function useCanvasMode(): {
   mode: CanvasMode;
   setMode: (next: CanvasMode) => void;
@@ -94,11 +108,7 @@ export function useCanvasMode(): {
     currentMode,
     () => "select",
   );
-  const isCoarse = useSyncExternalStore(
-    subscribe,
-    () => coarse,
-    () => false,
-  );
+  const isCoarse = useCoarsePointer();
   // `setCanvasMode` is a module function and so is already stable — no
   // `useCallback` needed, and nothing re-renders because it changed identity.
   return { mode, setMode: setCanvasMode, coarse: isCoarse };

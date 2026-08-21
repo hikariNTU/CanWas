@@ -271,3 +271,26 @@ test("nothing connected means no link to open", async ({ page }) => {
   await expect(page.getByTestId("node-menu-copy")).toBeVisible();
   await expect(page.getByTestId("node-menu-drive")).toHaveCount(0);
 });
+
+test("a mouse keeps its menu while the words are being read", async ({
+  page,
+}) => {
+  // The other side of D95. On a phone nothing opens the menu during reading,
+  // because a finger has no second gesture to spare. A mouse does: right-click
+  // is not how a selection is made anywhere, and the menu it opens carries
+  // "Copy text", which is the most useful item on it while reading.
+  await pasteTextImage(page, ["Titanium white", "Cadmium red"]);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveAttribute("data-ocr-status", "done");
+  const box = (await node.boundingBox())!;
+
+  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByTestId("ocr-overlay")).toHaveAttribute(
+    "data-active",
+    "true",
+  );
+
+  await node.click({ button: "right" });
+  await expect(page.getByTestId("node-menu")).toBeVisible();
+  await expect(page.getByTestId("node-menu-copy-text")).toBeVisible();
+});

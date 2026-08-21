@@ -2662,7 +2662,7 @@ shows it. The test therefore asserts the declaration in `index.html` rather than
 any measurement, alongside the `viewport-fit=cover` assertion it belongs to.
 
 `black-translucent` alone was not enough, either: it is a WebKit extension
-consulted only for an app in Apple's *own* standalone mode, which iOS enters
+consulted only for an app in Apple's _own_ standalone mode, which iOS enters
 from `apple-mobile-web-app-capable`. iOS 16.4 learned to read `display:
 standalone` from the manifest and that is what puts the app in a window — but it
 does not turn on the legacy flag, so the style meta was read and ignored and the
@@ -2726,3 +2726,28 @@ no-op, and that a controller change reloads once rather than racing the timeout.
 **Reverses if:** workbox-window ever re-reads the registration in
 `messageSkipWaiting`, at which point the middle attempt is the library's job
 again. The reload floor stays regardless.
+
+## D95 — While reading, a phone has no press left over for a menu
+
+D91 cancelled the context menu during reading by matching `touchstart`, which
+is the event Base UI's own long-press timer starts from. That is one of two
+paths into the same menu. `ContextMenuTrigger` also opens from `onContextMenu`,
+and Android takes that route: holding a finger there produces a native
+`contextmenu` event, so the menu opened over the selection exactly as before.
+The fix worked on iOS and did nothing on Android, which is where it was
+reported.
+
+The guard now asks about the device rather than the event. On a coarse pointer
+nothing opens the menu while a node is being read — not the long-press timer,
+not a native `contextmenu`, not anything a future version of the primitive
+invents — because a finger has no second gesture to spare and the selection is
+the more important of the two. A fine pointer keeps its right-click, and the
+menu carries "Copy text", which is the most useful item on it while reading.
+
+`fromTouch` remains as a tiebreaker for a machine with both: a `TouchEvent`
+means a finger, and Chrome's `contextmenu` is a `PointerEvent` that says which
+it was. Safari's is a plain `MouseEvent` with nothing to ask, which is why the
+device check comes first rather than last.
+
+**Reverses if:** reading mode ever grows a menu worth reaching by touch, which
+is the same condition D91 recorded and remains unmet.

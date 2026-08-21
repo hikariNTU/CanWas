@@ -668,9 +668,27 @@ test("a long press on the words being read is not a request for a menu", async (
   // extend one on a phone. A menu here takes the selection away at the moment
   // it is being made.
   const word = (await overlay.locator("[data-word]").first().boundingBox())!;
-  await longPress(page, {
+  const centreOfWord = {
     x: word.x + word.width / 2,
     y: word.y + word.height / 2,
-  });
+  };
+  await longPress(page, centreOfWord);
+  await expect(page.getByTestId("node-menu")).toHaveCount(0);
+
+  // The other half of the same gesture. iOS reaches the menu through the
+  // primitive's own long-press timer, which starts on `touchstart`; Android
+  // holds the finger and the system fires a native `contextmenu`, so the first
+  // fix caught one phone and missed the other (D95).
+  await page.evaluate((point) => {
+    document.elementFromPoint(point.x, point.y)!.dispatchEvent(
+      new PointerEvent("contextmenu", {
+        clientX: point.x,
+        clientY: point.y,
+        pointerType: "touch",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }, centreOfWord);
   await expect(page.getByTestId("node-menu")).toHaveCount(0);
 });

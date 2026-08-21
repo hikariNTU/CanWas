@@ -8,6 +8,7 @@ import { deleteNodes, reorderNodes } from "@/board/mutations";
 import { boardNodesAtom } from "@/board/store";
 import type { Asset, BoardNode } from "@/board/types";
 import { useTranslation, type TranslationsKey } from "@/translations";
+import { useCoarsePointer } from "@/canvas/canvas-mode";
 import { textOf } from "@/canvas/ocr-overlay";
 import { syncTransportAtom } from "@/sync/use-sync";
 import { Icon } from "@/ui/icon";
@@ -32,6 +33,26 @@ import { menuItemClass } from "@/ui/panel";
  * would not be in a key handler — `useBoardShortcuts` accepts either modifier
  * from everyone, whatever this says.
  */
+/**
+ * Whether a press came from a finger rather than a mouse.
+ *
+ * Three shapes to read, because three browsers disagree. The primitive's own
+ * long press hands over a `TouchEvent`; Chrome's `contextmenu` is a
+ * `PointerEvent` and says so; Safari's is a plain `MouseEvent` with nothing to
+ * ask, which is why the device check comes first at the call site and this is
+ * only ever the tiebreaker for a touchscreen laptop. Not `instanceof
+ * TouchEvent`: that constructor does not exist on a desktop browser without a
+ * touch screen, and reading it there throws.
+ */
+function fromTouch(event: Event): boolean {
+  if (event.type === "touchstart") {
+    return true;
+  }
+  return "pointerType" in event
+    ? (event as PointerEvent).pointerType !== "mouse"
+    : false;
+}
+
 const APPLE =
   typeof navigator !== "undefined" &&
   /Mac|iPhone|iPad/.test(navigator.userAgent);
@@ -134,6 +155,9 @@ export function NodeMenu({
   const { commit } = useBoardHistory(boardId);
   const { selection, setSelection } = useSelection(boardId);
   const transport = useAtomValue(syncTransportAtom);
+  // The device, not the event: what a press means while reading depends on
+  // whether this machine has any other kind of press (D95).
+  const coarse = useCoarsePointer();
 
   /**
    * Where this image lives on the remote, resolved while the menu opens.
@@ -172,15 +196,15 @@ export function NodeMenu({
         // one here takes the selection away at the moment it is being made,
         // and there is no other way to select on a touch screen.
         //
-        // Only the touch path is cancelled. A right-click during reading is
-        // still a right-click, and the menu it opens carries "Copy text",
-        // which is the most useful thing on it while reading.
-        // The primitive opens from `touchstart` on the long-press path and
-        // from `contextmenu` on the mouse one, so the event's type is what
-        // separates a finger from a right-click. Not `instanceof TouchEvent`:
-        // that constructor does not exist on a desktop browser without a touch
-        // screen, and reading it there throws.
-        if (open && reading && details.event.type === "touchstart") {
+        // Asked as a question about the device, not about the event. The
+        // primitive opens from `touchstart` on its own long-press timer and
+        // from `contextmenu` otherwise, and Android takes the second path: a
+        // held finger there produces a native `contextmenu`, so matching on
+        // `touchstart` alone caught iOS and missed Android entirely (D95).
+        // A phone has no other kind of press, so while reading, nothing on it
+        // opens the menu. A mouse keeps its right-click, and the menu that
+        // opens carries "Copy text".
+        if (open && reading && (coarse || fromTouch(details.event))) {
           details.cancel();
           return;
         }
