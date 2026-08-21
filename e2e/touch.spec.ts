@@ -386,6 +386,15 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
     "padding-top: env(safe-area-inset-top)",
   );
 
+  // The update banner is the one piece of chrome outside the canvas, and it
+  // appears without being asked for — under the clock, on a phone, unless it
+  // carries the same layer (D103). Read from the source because it only renders
+  // when a service worker has an update waiting, which no test here can stage.
+  const prompt = readFileSync(root + "src/pwa/update-prompt.tsx", "utf8");
+  expect(prompt, "the update banner has no safe-area layer").toContain(
+    'className="chrome-inset"',
+  );
+
   // And the declaration itself, which no amount of DOM inspection can reach.
   const html = readFileSync(root + "index.html", "utf8");
   expect(html, "without viewport-fit=cover the insets are always 0").toContain(

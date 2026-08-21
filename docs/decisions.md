@@ -2988,3 +2988,23 @@ listeners see the release without it.
 
 **Reverses if:** nothing obvious. A gesture that tracks pointers by id has to
 hear every release, and only `window` hears them all.
+
+## D103 — The update banner carries the same layer
+
+The one piece of chrome that lives outside the canvas is the update banner, and
+it was pinned with a plain `fixed inset-x-0 top-3`. On a phone that puts it
+under the clock — the exact place the board's own islands used to be, fixed by
+D99 for everything inside the canvas and for nothing outside it.
+
+It is wrapped in the same `chrome-inset` class rather than given insets of its
+own. A second copy of the rule would drift from the first, and this one drifting
+is how it would arrive: silently, on a device, in a banner that only appears
+when there is an update waiting.
+
+Which is also why the test reads the source rather than the DOM. The banner
+renders on `needRefresh`, and nothing in the suite can put a real service worker
+into that state. The assertion is that the file wraps the banner in the class —
+narrow, and it would have caught this.
+
+**Reverses if:** the banner ever moves inside the canvas, where the layer
+already exists.

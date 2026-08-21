@@ -15,6 +15,12 @@ import { useTranslation } from "@/translations";
  *
  * Top centre, away from the bottom-edge touch chrome: this appears without
  * being asked for, and it must never land under the thumb that is mid-gesture.
+ *
+ * It lives outside the canvas, so it carries its own copy of the safe-area
+ * layer — the same `chrome-inset` class, wrapped around it — rather than a
+ * second set of insets that would drift from the first (D103). Without it the
+ * banner lands under the clock on a phone, which is where the board's own
+ * islands used to be.
  */
 export function UpdatePrompt() {
   const { t } = useTranslation();
@@ -28,33 +34,39 @@ export function UpdatePrompt() {
   }
 
   return (
-    <div
-      data-testid="update-prompt"
-      className="fixed inset-x-0 top-3 z-50 mx-auto flex w-fit items-center gap-2 rounded-full glass-strong py-1 pr-1 pl-4"
-    >
-      <span className="text-xs text-neutral-200">{t("pwa.updateReady")}</span>
-      <button
-        type="button"
-        data-testid="update-reload"
-        onClick={() =>
-          void applyUpdate({
-            updateServiceWorker,
-            container: navigator.serviceWorker,
-            reload: () => window.location.reload(),
-          })
-        }
-        className="h-8 rounded-full bg-sky-500 px-3 text-xs text-neutral-950 transition-colors hover:bg-sky-400"
-      >
-        {t("pwa.reload")}
-      </button>
-      <button
-        type="button"
-        aria-label={t("pwa.dismiss")}
-        onClick={() => setNeedRefresh(false)}
-        className="grid h-8 w-8 place-items-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-100"
-      >
-        <Icon name="close" size={18} />
-      </button>
+    <div className="pointer-events-none fixed inset-0 z-50">
+      <div className="chrome-inset">
+        <div
+          data-testid="update-prompt"
+          className="pointer-events-auto absolute inset-x-0 top-3 mx-auto flex w-fit items-center gap-2 rounded-full glass-strong py-1 pr-1 pl-4"
+        >
+          <span className="text-xs text-neutral-200">
+            {t("pwa.updateReady")}
+          </span>
+          <button
+            type="button"
+            data-testid="update-reload"
+            onClick={() =>
+              void applyUpdate({
+                updateServiceWorker,
+                container: navigator.serviceWorker,
+                reload: () => window.location.reload(),
+              })
+            }
+            className="h-8 rounded-full bg-sky-500 px-3 text-xs text-neutral-950 transition-colors hover:bg-sky-400"
+          >
+            {t("pwa.reload")}
+          </button>
+          <button
+            type="button"
+            aria-label={t("pwa.dismiss")}
+            onClick={() => setNeedRefresh(false)}
+            className="grid h-8 w-8 place-items-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-100"
+          >
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
