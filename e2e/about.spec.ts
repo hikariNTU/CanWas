@@ -105,6 +105,10 @@ test("the panel reports what this device says about its edges", async ({
 
   const text = (await edges.innerText()).trim();
   expect(text).toMatch(/off \d+\/\d+/);
+  // The viewport against the screen, which is the half a reading of the insets
+  // cannot supply (D104).
+  expect(text).toMatch(/scr \d+×\d+/);
+  expect(text).toMatch(/box \d+→\d+/);
   expect(text).toMatch(/env \d+\/\d+/);
   expect(text).toMatch(/std (yes|no)/);
   expect(text).toMatch(/cal (yes|no)/);

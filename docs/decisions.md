@@ -3008,3 +3008,29 @@ narrow, and it would have caught this.
 
 **Reverses if:** the banner ever moves inside the canvas, where the layer
 already exists.
+
+## D104 — The readout measures the viewport against the screen
+
+`off 62/22 · env 62/34 · 402×812` says the insets are being applied exactly as
+written, and the bottom still reads as empty on the device. Those two facts only
+fit together one way: the gap is not an inset that is too large, it is a
+viewport that is too short. 402×812 is not the screen of the phone reporting it
+— that screen is 874 points tall, and 874 − 812 is 62, the top inset to the
+point.
+
+If the layout viewport is short, everything anchored to its bottom floats above
+the real bottom edge of the glass, and no reading of the insets can see that: a
+layer inset 22px from the bottom of a box that itself stops 62px early is
+correct in every number it reports and wrong on the screen.
+
+So the row reports `scr`, the screen, and `box`, where the chrome layer's edges
+actually land — `box 62→790` against `scr 402×874` is a viewport ending 84px
+above the glass, and `box 62→852` is a viewport that reaches it and an inset
+that is simply too big. Two lines apart, one measurement.
+
+Guessing between them would have been the fifth guess at this corner of the
+screen; the last four were wrong, and each cost a round trip to a device only
+the user has.
+
+**Reverses if:** the readout stops paying for itself. It has now decided four
+things (D99, D101, and both halves of this) that no local test could reach.

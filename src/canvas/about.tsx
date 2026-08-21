@@ -49,6 +49,10 @@ function formatBytes(bytes: number): string {
  * as one dense line rather than five rows — it is a reading to relay, not a
  * setting to understand (D98).
  *
+ * `box` is where those edges land on the glass and `scr` is the screen they
+ * land on, which is what separates an inset that is too large from a viewport
+ * that is too short.
+ *
  * `off` is where the chrome layer's edges actually landed, `env` is what the
  * browser reports before any floor or gutter is applied, and the two flags are
  * the conditions the floor is gated on. `off` under `env` at the bottom is the
@@ -67,6 +71,7 @@ function measureEdges(): string {
   const rect = probe.getBoundingClientRect();
   probe.remove();
 
+  const box = layer?.getBoundingClientRect();
   const standalone = window.matchMedia("(display-mode: standalone)").matches;
   const callout = CSS.supports("-webkit-touch-callout", "none");
   const round = (value: string | number) =>
@@ -80,6 +85,12 @@ function measureEdges(): string {
     `std ${standalone ? "yes" : "no"}`,
     `cal ${callout ? "yes" : "no"}`,
     `${Math.round(window.innerWidth)}×${Math.round(window.innerHeight)}`,
+    // Where the layer's edges actually are on the glass, against the screen
+    // itself. A layout viewport shorter than the screen would leave everything
+    // anchored to its bottom floating above the real edge, and no reading of
+    // the insets alone can tell that apart from an inset that is too large.
+    `scr ${Math.round(window.screen.width)}×${Math.round(window.screen.height)}`,
+    `box ${Math.round(box?.top ?? 0)}→${Math.round(box?.bottom ?? 0)}`,
   ].join(" · ");
 }
 
