@@ -1,6 +1,6 @@
 import { devices, expect, test, type Page } from "@playwright/test";
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { PNG, pasteTextImage } from "./support";
@@ -366,6 +366,21 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
     css,
     "a browser that reports 0 where it should not still needs a floor",
   ).toContain("max(env(safe-area-inset-top), 44px)");
+  // The bottom absorbs the islands' own 12px gutter rather than stacking with
+  // it (D101). Asserted against the built stylesheet as well as the source,
+  // because this rule was written once, lost before it was committed, and
+  // shipped as a passing test and a decision describing CSS that was not there.
+  expect(css, "the bottom inset does not absorb the gutter").toContain(
+    "max(calc(env(safe-area-inset-bottom) - 12px), 0px)",
+  );
+  const assets = root + "dist/assets/";
+  const stylesheet = readdirSync(assets).find(
+    (name) => name.startsWith("app-") && name.endsWith(".css"),
+  );
+  const built = readFileSync(assets + stylesheet, "utf8");
+  expect(built, "the built CSS lost the bottom inset").toContain(
+    "max(calc(env(safe-area-inset-bottom) - 12px)",
+  );
   // Offsets, not padding: the whole point of D99.
   expect(css, "the layer is padded rather than inset").not.toContain(
     "padding-top: env(safe-area-inset-top)",

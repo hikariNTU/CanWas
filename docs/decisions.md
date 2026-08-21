@@ -2921,10 +2921,18 @@ that 12 landed on top of the home indicator's 34 rather than beside it: 46px of
 nothing under the controls that are meant to be under a thumb, on the corner of
 the screen where reach is scarcest.
 
-The bottom inset is `max(env(safe-area-inset-bottom) - 12px, 0px)` now, so the
-gutter is taken out of the safe area rather than added to it and the chrome's
-own edge falls exactly on the safe-area line. `max(…, 0px)` keeps a device
-without a home indicator at its plain 12px.
+The bottom inset is `max(calc(env(safe-area-inset-bottom) - 12px), 0px)` now, so
+the gutter is taken out of the safe area rather than added to it and the
+chrome's own edge falls exactly on the safe-area line. `max(…, 0px)` keeps a
+device without a home indicator at its plain 12px.
+
+**Amended.** This decision shipped without its rule. The edit that wrote it was
+lost between being made and being committed, so the entry above, a passing test
+suite and a commit message all described CSS that was not in the file — and the
+device kept reporting the old number, which is the only reason it was noticed.
+The test now asserts the declaration in `src/index.css` _and_ in the built
+stylesheet, since neither the DOM nor `env()` can be measured anywhere this
+suite runs and a claim nothing checks is what caused this.
 
 Not applied at the top, where the same 12px reads as the gap between the islands
 and the status bar rather than as waste — which is what the device showed, and

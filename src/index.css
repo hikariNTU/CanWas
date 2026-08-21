@@ -68,7 +68,15 @@
   position: absolute;
   top: env(safe-area-inset-top);
   right: env(safe-area-inset-right);
-  bottom: env(safe-area-inset-bottom);
+  /* The islands already sit 12px in from every edge, and at the bottom that
+     lands on top of the home indicator's 34 rather than beside it — 46px of
+     nothing under the controls that most need to be under a thumb. The gutter
+     comes out of the inset instead, so the chrome's own edge falls on the
+     safe-area line. `calc()` spelled out inside `max()`, which is the form
+     WebKit has always taken. Not done at the top, where the same 12px reads as
+     the gap between the islands and the status bar rather than as waste
+     (D101). */
+  bottom: max(calc(env(safe-area-inset-bottom) - 12px), 0px);
   left: env(safe-area-inset-left);
 }
 
@@ -76,7 +84,6 @@
   @media (display-mode: standalone) {
     .chrome-inset {
       top: max(env(safe-area-inset-top), 44px);
-      bottom: max(env(safe-area-inset-bottom), 20px);
     }
   }
 }
