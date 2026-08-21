@@ -2780,3 +2780,26 @@ this was three layers of `height: 100%` nobody could see through.
 
 **Reverses if:** the board is ever embedded in a page with anything else on it,
 at which point `fixed` is wrong and the chain has to be made correct instead.
+
+## D97 — A node being read has no menu, on any device
+
+D91 kept the mouse's right-click during reading, on the grounds that a
+right-click is not how a selection is made and the menu carries "Copy text".
+D95 kept that exception while closing the Android route. Both were wrong about
+the same thing: they treated reading as a state the menu has to coexist with.
+
+It does not. Reading is where the text gets selected, every way of asking for a
+menu lands on a selection in progress, and the mode is not permanent — a click
+outside or Escape and the node is an ordinary node with its ordinary menu.
+Nothing is unreachable; while reading, the menu is one press further away. That
+is a smaller cost than a menu that opens over the thing being selected, and it
+is one rule rather than three, with no device sniffing, no event-type
+archaeology, and nothing that behaves differently on a touchscreen laptop than
+on a desktop.
+
+`fromTouch` and the coarse-pointer check are gone with the exception they
+served. What survives is `if (open && reading)`.
+
+**Reverses if:** reading ever becomes a mode you stay in — a document reader
+rather than a look at one picture — at which point a menu inside it is worth
+the collision, and it should be a menu built for reading rather than the board's.

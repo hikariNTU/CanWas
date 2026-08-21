@@ -272,25 +272,36 @@ test("nothing connected means no link to open", async ({ page }) => {
   await expect(page.getByTestId("node-menu-drive")).toHaveCount(0);
 });
 
-test("a mouse keeps its menu while the words are being read", async ({
-  page,
-}) => {
-  // The other side of D95. On a phone nothing opens the menu during reading,
-  // because a finger has no second gesture to spare. A mouse does: right-click
-  // is not how a selection is made anywhere, and the menu it opens carries
-  // "Copy text", which is the most useful item on it while reading.
+test("a node being read has no menu, mouse included", async ({ page }) => {
+  // Reading is where the text gets selected, and a right-click during a
+  // selection is not a request for a menu any more than a long press is. The
+  // menu is not lost: reading is a mode you leave, and leaving it is a click
+  // outside or Escape (D97).
   await pasteTextImage(page, ["Titanium white", "Cadmium red"]);
   const node = page.getByTestId("board-node");
   await expect(node).toHaveAttribute("data-ocr-status", "done");
   const box = (await node.boundingBox())!;
+  const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 
-  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await node.click({ button: "right" });
+  await expect(page.getByTestId("node-menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("node-menu")).toHaveCount(0);
+
+  await page.mouse.dblclick(centre.x, centre.y);
   await expect(page.getByTestId("ocr-overlay")).toHaveAttribute(
     "data-active",
     "true",
   );
+  await node.click({ button: "right" });
+  await expect(page.getByTestId("node-menu")).toHaveCount(0);
 
+  // And back again, which is what makes the rule above cost nothing.
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("ocr-overlay")).not.toHaveAttribute(
+    "data-active",
+    "true",
+  );
   await node.click({ button: "right" });
   await expect(page.getByTestId("node-menu")).toBeVisible();
-  await expect(page.getByTestId("node-menu-copy-text")).toBeVisible();
 });
