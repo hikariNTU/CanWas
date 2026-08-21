@@ -2574,3 +2574,27 @@ iOS device with Safari's remote inspector, not another emulated run.
 
 **Reverses if:** someone reproduces it deterministically, at which point this
 becomes a decision about a fix instead of a record of one that failed.
+
+## D91 — A long press on the words being read is not a request for a menu
+
+Every node is a context-menu trigger (D83), and the primitive opens on a long
+press so the board's whole vocabulary is reachable by touch. Reading mode wants
+the same gesture for something else: a held finger on the words is how a
+selection is extended, and on a phone it is the only way there is. Both were
+live at once, so the menu opened over the selection at the moment it was being
+made.
+
+The touch path is cancelled while that node is being read; the mouse path is
+not. A right-click during reading is still a right-click, and the menu it opens
+carries "Copy text", which is the most useful thing on it while reading. Base UI
+opens from `touchstart` on the long-press path and from `contextmenu` on the
+mouse one, so the event's type is what separates them — not `instanceof
+TouchEvent`, whose constructor does not exist on a desktop browser without a
+touch screen.
+
+Only the node being read is affected. Reading mode is not modal: the rest of the
+board is still a board, and a long press on another node still offers its menu.
+
+**Reverses if:** reading mode ever grows a menu of its own worth reaching by
+touch, at which point the gesture has two jobs again and one of them needs a
+different button.

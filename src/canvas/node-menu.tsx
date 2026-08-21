@@ -115,6 +115,7 @@ export function NodeMenu({
   boardId,
   node,
   asset,
+  reading,
   onRead,
   children,
 }: {
@@ -122,6 +123,8 @@ export function NodeMenu({
   node: BoardNode;
   /** The pixels behind an image node, when this device has them. */
   asset: Asset | null;
+  /** Whether this node is the one being read, which a long press belongs to. */
+  reading: boolean;
   /** Reading mode belongs to the canvas, which owns the state it turns on. */
   onRead: () => void;
   children: React.ReactElement;
@@ -163,7 +166,24 @@ export function NodeMenu({
 
   return (
     <ContextMenu.Root
-      onOpenChange={(open) => {
+      onOpenChange={(open, details) => {
+        // A long press on the node being read is how a phone extends a text
+        // selection — it is the gesture, not a way to ask for a menu. Opening
+        // one here takes the selection away at the moment it is being made,
+        // and there is no other way to select on a touch screen.
+        //
+        // Only the touch path is cancelled. A right-click during reading is
+        // still a right-click, and the menu it opens carries "Copy text",
+        // which is the most useful thing on it while reading.
+        // The primitive opens from `touchstart` on the long-press path and
+        // from `contextmenu` on the mouse one, so the event's type is what
+        // separates a finger from a right-click. Not `instanceof TouchEvent`:
+        // that constructor does not exist on a desktop browser without a touch
+        // screen, and reading it there throws.
+        if (open && reading && details.event.type === "touchstart") {
+          details.cancel();
+          return;
+        }
         setRemoteUrl(null);
         if (!open || node.kind !== "image" || !transport) {
           return;

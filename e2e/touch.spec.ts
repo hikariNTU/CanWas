@@ -597,3 +597,64 @@ test("the camera is its own button, and asks for the camera", async ({
   await expect(node).toHaveAttribute("data-node-kind", "image");
   await expect(node).toHaveAttribute("data-ocr-status", /queued|running|done/);
 });
+
+/**
+ * A long press, as the primitive sees it: a single touch that stays put.
+ *
+ * Touch events rather than pointer events because that is what Base UI's
+ * context menu listens to — it starts its timer on `touchstart` and cancels it
+ * if the finger travels more than ten pixels.
+ */
+async function longPress(page: Page, at: { x: number; y: number }) {
+  await page.evaluate((point) => {
+    const target = document.elementFromPoint(point.x, point.y)!;
+    const touch = new Touch({
+      identifier: 1,
+      target,
+      clientX: point.x,
+      clientY: point.y,
+    });
+    target.dispatchEvent(
+      new TouchEvent("touchstart", {
+        touches: [touch],
+        targetTouches: [touch],
+        changedTouches: [touch],
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }, at);
+  // The primitive's own delay is 500ms, and nothing here can observe the timer.
+  await page.waitForTimeout(700);
+}
+
+test("a long press on the words being read is not a request for a menu", async ({
+  page,
+}) => {
+  await pasteTextImage(page, ["Titanium white", "Cadmium red"]);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveAttribute("data-ocr-status", "done");
+  const box = (await node.boundingBox())!;
+  const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+  // A long press is a menu until the node is being read.
+  await longPress(page, centre);
+  await expect(page.getByTestId("node-menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("node-menu")).toHaveCount(0);
+
+  await page.touchscreen.tap(centre.x, centre.y);
+  await page.touchscreen.tap(centre.x, centre.y);
+  const overlay = page.locator("[data-testid=ocr-overlay][data-active]");
+  await expect(overlay).toHaveCount(1);
+
+  // Now it is how the selection is extended, and there is no other way to
+  // extend one on a phone. A menu here takes the selection away at the moment
+  // it is being made.
+  const word = (await overlay.locator("[data-word]").first().boundingBox())!;
+  await longPress(page, {
+    x: word.x + word.width / 2,
+    y: word.y + word.height / 2,
+  });
+  await expect(page.getByTestId("node-menu")).toHaveCount(0);
+});

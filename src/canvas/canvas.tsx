@@ -286,6 +286,7 @@ export function Canvas({ boardId }: { boardId: string }) {
                 boardId={boardId}
                 node={node}
                 asset={asset ?? null}
+                reading={isReading}
                 onRead={() => setReadingId(node.id)}
               >
                 <div
