@@ -2190,3 +2190,37 @@ Google account that owns the OAuth project. There is no DNS to prove.
 **Reverses if:** the app ever gains a real landing screen — one that explains
 itself before it opens a board. Then the document and the app agree and the
 consent screen can point at the root again.
+
+## D81 — The sitemap is generated, and the page list has one home
+
+Five URLs is not enough work to justify a plugin dependency, and it is exactly
+enough to go stale by hand. So `vite.config.ts` emits `sitemap.xml` and
+`robots.txt` from `DOCUMENTS`, the same object the multi-page build takes its
+Rollup inputs from. Adding a document page is one edit; a page that is built
+but unlisted — the failure nobody sees, because the page works fine — cannot
+happen. `check-pwa.mjs` asserts the two lists still agree.
+
+`lastmod` comes from `git log -1` on the file, not from the build clock. A
+stamp that moves on every deploy claims all five pages changed whenever any of
+them did, which is the sort of signal a crawler learns to disregard. No stamp
+at all is valid, and is what a shallow checkout gets.
+
+The app's board URLs are absent on purpose: they are hash routes (D6), so
+`#/<board>` never reaches a server, and each one names a board that exists on
+one person's device. `Disallow: /canwas/assets/` keeps crawlers out of the
+hashed bundle, which is re-hashed every deploy and contains a 13 MB wasm — a
+bot that follows it pays for it again under a filename that no longer exists.
+
+Every page also carries `rel="canonical"`. GitHub Pages answers both
+`/canwas/about` and `/canwas/about.html`, and the OAuth consent screen points
+at the first while every link in the site points at the second; without a
+canonical the two are duplicate documents that split whatever standing the
+page has.
+
+**None of this was for the verification.** Ownership is decided by the
+verification token and the property's scope, and a sitemap changes neither.
+This was worth doing on its own terms.
+
+**Reverses if:** a page ever needs to be listed that is not a build input — a
+redirect, or something served from `public/`. Then `DOCUMENTS` stops being the
+input map and becomes a list the input map is derived from.

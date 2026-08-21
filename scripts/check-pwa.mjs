@@ -23,15 +23,41 @@ const manifest = JSON.parse(read("manifest.webmanifest"));
 // enough to match on. The URL is.
 const precached = [...sw.matchAll(/url:"([^"]+)"/g)].map((match) => match[1]);
 
-for (const page of [
+const PAGES = [
   "index.html",
+  "about.html",
   "privacy.html",
   "support.html",
   "licenses.html",
-]) {
+];
+
+for (const page of PAGES) {
   if (!precached.includes(page)) {
     problems.push(`${page} is not precached and will not open offline`);
   }
+}
+
+// The sitemap is generated from the same list the build reads (D81), so this
+// is not checking the generator against itself: it is checking that the list
+// and this file still agree about what a page is. A page missing here is a
+// page nobody outside can find.
+const sitemap = read("sitemap.xml");
+for (const page of PAGES) {
+  const loc = `https://hikarintu.github.io/canwas/${page === "index.html" ? "" : page}`;
+  if (!sitemap.includes(`<loc>${loc}</loc>`)) {
+    problems.push(`${page} is built but missing from sitemap.xml`);
+  }
+}
+
+// A sitemap nothing points at is a file nobody fetches.
+const robots = read("robots.txt");
+if (
+  !robots.includes("Sitemap: https://hikarintu.github.io/canwas/sitemap.xml")
+) {
+  problems.push("robots.txt does not point at the sitemap");
+}
+if (!robots.includes("Disallow: /canwas/assets/")) {
+  problems.push("robots.txt lets crawlers into the hashed bundle");
 }
 
 const wasm = precached.filter((url) => url.endsWith(".wasm"));

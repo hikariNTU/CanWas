@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
@@ -53,6 +53,104 @@ const ortVersion = (
   ) as { version: string }
 ).version;
 
+/**
+ * Every real URL this site has, in one place.
+ *
+ * Both the multi-page build and the sitemap read it, so a new document page is
+ * one edit rather than two — and a page that exists but is unlisted, which is
+ * the failure nobody notices, cannot happen (D81).
+ */
+const DOCUMENTS = {
+  app: "index.html",
+  about: "about.html",
+  privacy: "privacy.html",
+  support: "support.html",
+  licenses: "licenses.html",
+} as const;
+
+/** Where the built site actually answers. Absolute URLs are required in a sitemap. */
+const ORIGIN = "https://hikarintu.github.io";
+
+/**
+ * When a page last actually changed, from git rather than from the clock.
+ *
+ * `lastmod` stamped with the build time would claim every page changed on
+ * every deploy, which is exactly the signal a crawler learns to ignore. An
+ * untracked or unbuildable checkout gets no stamp at all, which is valid: the
+ * element is optional.
+ */
+function lastModified(file: string): string | null {
+  try {
+    const stamp = execSync(`git log -1 --format=%cI -- ${file}`, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return stamp === "" ? null : stamp.slice(0, 10);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `sitemap.xml` and `robots.txt`, emitted from the page list above.
+ *
+ * Written here rather than kept in `public/` because the two facts they need —
+ * which pages exist, and what the base path is — already live in this file,
+ * and a hand-maintained copy of either goes stale silently. Not a dependency:
+ * five URLs do not justify a plugin.
+ *
+ * The app's own board URLs are deliberately absent. They are hash routes (D6),
+ * so `#/<board>` never reaches a server and names a board that exists on one
+ * person's device; there is nothing there for a crawler to fetch.
+ */
+function siteIndex(base: string): Plugin {
+  return {
+    name: "canwas-site-index",
+    apply: "build" as const,
+    generateBundle() {
+      const url = (file: string) =>
+        `${ORIGIN}${base}${file === "index.html" ? "" : file}`;
+
+      const entries = Object.values(DOCUMENTS)
+        .map((file) => {
+          const stamp = lastModified(file);
+          return [
+            "  <url>",
+            `    <loc>${url(file)}</loc>`,
+            ...(stamp === null ? [] : [`    <lastmod>${stamp}</lastmod>`]),
+            "  </url>",
+          ].join("\n");
+        })
+        .join("\n");
+
+      this.emitFile({
+        type: "asset",
+        fileName: "sitemap.xml",
+        source:
+          '<?xml version="1.0" encoding="UTF-8"?>\n' +
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+          `${entries}\n</urlset>\n`,
+      });
+
+      // `Disallow: assets/` keeps crawlers off the hashed bundle, which
+      // includes a 13 MB wasm binary and is re-hashed on every deploy — a bot
+      // that follows it downloads it again for a filename that no longer
+      // exists. Nothing there is a page.
+      this.emitFile({
+        type: "asset",
+        fileName: "robots.txt",
+        source: [
+          "User-agent: *",
+          `Disallow: ${base}assets/`,
+          "",
+          `Sitemap: ${ORIGIN}${base}sitemap.xml`,
+          "",
+        ].join("\n"),
+      });
+    },
+  };
+}
+
 /** Rollup wants a path, and `import.meta.url` is the only root this file knows. */
 function htmlEntry(name: string): string {
   return new URL(`./${name}`, import.meta.url).pathname;
@@ -82,13 +180,12 @@ export default defineConfig({
       // that Google's reviewer, a crawler or a link unfurler cannot fetch is
       // not a published policy. Real `.html` files have no deep-link problem,
       // so these sit beside the router without contradicting it (D67).
-      input: {
-        app: htmlEntry("index.html"),
-        about: htmlEntry("about.html"),
-        privacy: htmlEntry("privacy.html"),
-        support: htmlEntry("support.html"),
-        licenses: htmlEntry("licenses.html"),
-      },
+      input: Object.fromEntries(
+        Object.entries(DOCUMENTS).map(([name, file]) => [
+          name,
+          htmlEntry(file),
+        ]),
+      ),
     },
   },
   resolve: {
@@ -97,6 +194,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    siteIndex("/canwas/"),
     tanstackRouter({
       routeFileIgnorePrefix: "-",
     }),
