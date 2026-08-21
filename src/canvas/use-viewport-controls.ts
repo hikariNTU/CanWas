@@ -257,19 +257,31 @@ export function useViewportControls(
      * word for it: a pinch that dragged an image halfway across the board on
      * the way to zooming would be worse than no pinch at all.
      */
-    function stealFromOtherGestures() {
-      if (panningPointerId !== null) {
-        element!.style.cursor = "";
-        if (element!.hasPointerCapture(panningPointerId)) {
-          element!.releasePointerCapture(panningPointerId);
-        }
-        panningPointerId = null;
+    // Set while the cancels below are being dispatched. They go to `window`,
+    // which is now where this hook listens too, so without it a pinch would
+    // cancel itself the moment it began.
+    let stealing = false;
+
+    function dropPan() {
+      if (panningPointerId === null) {
+        return;
       }
+      element!.style.cursor = "";
+      if (element!.hasPointerCapture(panningPointerId)) {
+        element!.releasePointerCapture(panningPointerId);
+      }
+      panningPointerId = null;
+    }
+
+    function stealFromOtherGestures() {
+      dropPan();
+      stealing = true;
       for (const id of touches.keys()) {
         window.dispatchEvent(
           new PointerEvent("pointercancel", { pointerId: id, bubbles: true }),
         );
       }
+      stealing = false;
     }
 
     function handlePointerDown(event: PointerEvent) {
@@ -280,6 +292,17 @@ export function useViewportControls(
       clearTimeout(wheelTimerRef.current);
       commitLive();
       if (event.pointerType === "touch") {
+        // A primary touch is the first finger of a gesture: the platform only
+        // marks one that way while no other is down. So anything still in the
+        // map when one arrives is a finger whose release was never delivered,
+        // and it goes. Without this the board can be left counting a finger
+        // that no longer exists with no gesture able to clear it, since every
+        // gesture that could is now a pinch (D102).
+        if (event.isPrimary) {
+          touches.clear();
+          pinching = false;
+          dropPan();
+        }
         touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
         const pair = twoFingers();
         if (pair) {
@@ -333,7 +356,15 @@ export function useViewportControls(
       }
       panningPointerId = event.pointerId;
       last = { x: event.clientX, y: event.clientY };
-      element!.setPointerCapture(event.pointerId);
+      // A pointer the platform no longer knows about — one whose release was
+      // lost — throws here rather than capturing, and an uncaught throw would
+      // leave the pan half-started with nothing able to end it.
+      try {
+        element!.setPointerCapture(event.pointerId);
+      } catch {
+        // Capture is an optimisation; the window listeners see the release
+        // either way.
+      }
       element!.style.cursor = "grabbing";
     }
 
@@ -371,6 +402,9 @@ export function useViewportControls(
     }
 
     function endPan(event: PointerEvent) {
+      if (stealing) {
+        return;
+      }
       const wasPanning = event.pointerId === panningPointerId;
       if (touches.delete(event.pointerId) && touches.size < 2) {
         // The pinch ends with the first finger to leave. The one still down is
@@ -394,13 +428,20 @@ export function useViewportControls(
 
     element.addEventListener("pointerdown", handlePointerDown);
     element.addEventListener("pointermove", handlePointerMove);
-    element.addEventListener("pointerup", endPan);
-    element.addEventListener("pointercancel", endPan);
+    // A finger goes down on the surface and comes up wherever the page has got
+    // to by then. A long-press menu opens over it and takes the release into
+    // its portal; the surface hears nothing, and the finger is counted as still
+    // down forever. The next single finger then makes two, and every drag is a
+    // pinch — with no way back, because the finger that would clear it has
+    // already left (D102). Releases are heard on `window`, in the capture
+    // phase, so they arrive whatever the press turned into.
+    window.addEventListener("pointerup", endPan, true);
+    window.addEventListener("pointercancel", endPan, true);
     return () => {
       element.removeEventListener("pointerdown", handlePointerDown);
       element.removeEventListener("pointermove", handlePointerMove);
-      element.removeEventListener("pointerup", endPan);
-      element.removeEventListener("pointercancel", endPan);
+      window.removeEventListener("pointerup", endPan, true);
+      window.removeEventListener("pointercancel", endPan, true);
     };
   }, [anchorFromEvent, commitLive, elementRef, panLive]);
 

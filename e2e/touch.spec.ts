@@ -669,6 +669,70 @@ test("the camera is its own button, and asks for the camera", async ({
   await expect(node).toHaveAttribute("data-ocr-status", /queued|running|done/);
 });
 
+test("a finger the surface never saw lift does not turn the next one into a pinch", async ({
+  page,
+}) => {
+  await page.goto("?engine=mock#/board");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+  const centre = { x: 200, y: 400 };
+
+  // A finger lands on the board, and its release goes somewhere else. That is
+  // what a long-press menu does to it: the menu opens over the finger, and the
+  // `pointerup` is retargeted into the portal the surface's listeners cannot
+  // see. Reproduced by dispatching the release on `document.body`, which is an
+  // ancestor of the surface and so never propagates down to it.
+  await page.evaluate((point) => {
+    const surface = document.querySelector("[data-testid=canvas-surface]")!;
+    const send = (target: EventTarget, type: string) =>
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 7,
+          pointerType: "touch",
+          isPrimary: true,
+          button: 0,
+          buttons: type === "pointerup" ? 0 : 1,
+          clientX: point.x,
+          clientY: point.y,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    send(surface, "pointerdown");
+    send(document.body, "pointerup");
+  }, centre);
+
+  // And the harder version of the same thing: a release that is never
+  // delivered at all, to anyone. The next primary touch is the recovery,
+  // because the platform only calls a touch primary when nothing else is down.
+  await page.evaluate((point) => {
+    document.querySelector("[data-testid=canvas-surface]")!.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        pointerId: 9,
+        pointerType: "touch",
+        isPrimary: false,
+        button: 0,
+        buttons: 1,
+        clientX: point.x + 40,
+        clientY: point.y + 40,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }, centre);
+
+  // One finger now, and one finger pans. If the lifted one is still counted the
+  // board reads two and pinches instead, which zooms on every drag and leaves
+  // the user no way to put it back — the finger that would clear it is already
+  // gone.
+  const before = await gridOffset(page);
+  await fingerDrag(page, centre, 90, 60);
+  expect(
+    await gridOffset(page),
+    "one finger did not pan, so the lifted one is still being counted",
+  ).not.toBe(before);
+  await expect(page.getByTestId("zoom-reset")).toHaveText("100%");
+});
+
 /**
  * A long press, as the primitive sees it: a single touch that stays put.
  *

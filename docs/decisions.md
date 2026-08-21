@@ -2943,3 +2943,40 @@ failure.
 **Reverses if:** the bottom chrome ever stops being edge-hugging — a footer with
 its own background would want the full inset, since the inset is what keeps it
 off the indicator rather than what spaces it from the edge.
+
+## D102 — A finger the surface never saw lift
+
+Reported from a phone: after a long press opened a context menu, every later
+one-finger drag pinch-zoomed, and nothing the user could do put it back.
+
+The board counts live fingers in a map keyed by pointer id, and two entries is a
+pinch (D73). Entries were removed on `pointerup` and `pointercancel` — listened
+for on the surface itself. A press that ends somewhere else therefore never
+leaves the map, and a long press is exactly that: the menu opens over the finger
+and the release is retargeted into a portal the surface cannot see. One phantom
+finger plus one real one is two, so every drag was a pinch from then on. There
+was no recovery either, because the recovery is lifting a finger, and the finger
+in question was already up.
+
+Two changes, because the missing release has two shapes.
+
+Releases are heard on `window`, in the capture phase, so they arrive whatever
+the press turned into. This needs a guard: `stealFromOtherGestures` cancels the
+other gestures by dispatching `pointercancel` at `window`, which is now where
+this hook listens, so a pinch would have cancelled itself the moment it began. A
+flag set across that dispatch keeps the hook from hearing its own cancels.
+
+And a primary touch clears the map before it adds itself. The platform only
+marks a touch primary while no other finger is down, so anything still in the
+map when one arrives is by definition stale. That covers a release that is never
+delivered to anyone — the shape the window listeners cannot help with — and it
+means the recovery is putting one finger on the board, which is what a user does
+anyway when something feels stuck.
+
+`setPointerCapture` is in a `try` now for the same reason: called with a pointer
+the platform has forgotten it throws, and the throw left the pan half-started
+with nothing able to end it. Capture is an optimisation here; the window
+listeners see the release without it.
+
+**Reverses if:** nothing obvious. A gesture that tracks pointers by id has to
+hear every release, and only `window` hears them all.
