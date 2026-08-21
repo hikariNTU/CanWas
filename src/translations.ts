@@ -146,6 +146,14 @@ const translations = {
     "zh-TW": "拍照",
     "en-US": "Take a photo",
   },
+  "image.failed": {
+    "zh-TW": "圖片無法加入",
+    "en-US": "That image could not be added",
+  },
+  "image.dismiss": {
+    "zh-TW": "關閉訊息",
+    "en-US": "Dismiss",
+  },
   "about.compressed": {
     "zh-TW": "壓縮後（同步用）",
     "en-US": "WebP for sync",

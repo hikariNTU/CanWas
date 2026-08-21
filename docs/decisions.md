@@ -2598,3 +2598,42 @@ board is still a board, and a long press on another node still offers its menu.
 **Reverses if:** reading mode ever grows a menu of its own worth reaching by
 touch, at which point the gesture has two jobs again and one of them needs a
 different button.
+
+## D92 — An image can be hashed without WebCrypto, and a failed ingest says so
+
+On a phone the dev server is reached at `http://192.168.x.x`, which is not a
+secure context, so Safari does not expose `crypto.subtle` at all. `hashBlob` is
+the first `await` in the image pipeline, so reading `.digest` off `undefined`
+threw before any asset or node existed and every picture — library or camera —
+silently failed. Text nodes went on working, because they need only
+`crypto.getRandomValues`, which is not gated. The symptom was two dead buttons
+and no explanation.
+
+Two separate things were wrong, and both are fixed here.
+
+**The hash has a fallback.** `src/lib/sha256.ts` is SHA-256 in software, reached
+by `import()` only when `crypto.subtle` is missing, so on the deployed site and
+on localhost it is a chunk that is never fetched. Written by hand rather than
+taken as a dependency: the digest is an asset's id, so it has to agree with
+WebCrypto bit for bit forever or the same picture becomes two assets on two
+devices — and SHA-256 is a frozen spec, which makes this the rare code that
+cannot go stale. It is content addressing, not security. Verified against the
+browser's own implementation across the lengths where the padding rule changes,
+and by ingesting one file down each path and finding one stored asset.
+
+The alternative was serving the dev server over HTTPS, which would also fix the
+camera and let the service worker register over LAN. That is still worth doing —
+it is the only way to test the PWA on a phone — but it fixes the development
+machine rather than the code, and an app that dies on an insecure origin is a
+fragility worth removing regardless.
+
+**A failed ingest is visible.** Every call site is a `void ingestFiles(...)` and
+there was no `catch`, so the rejection reached `unhandledrejection` and nothing
+rendered. Now the pipeline is wrapped and a dismissable pill says the image
+could not be added, with the cause in the console. This is not specific to
+WebCrypto: a corrupt file or an image too large to decode failed the same silent
+way.
+
+**Reverses if:** the dev server moves to HTTPS *and* some future origin problem
+proves the fallback is load-bearing for nothing — at which point the software
+digest is dead weight. The error surfacing does not reverse.

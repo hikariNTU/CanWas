@@ -6,7 +6,16 @@ const CASCADE_STEP = 24;
 
 export async function hashBlob(blob: Blob): Promise<string> {
   const buffer = await blob.arrayBuffer();
-  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  // `crypto.subtle` is a secure-context API, so it is simply absent on
+  // `http://192.168.x.x` — the address a phone uses to reach a dev server.
+  // Reading `.digest` off it there throws, which killed the whole image path
+  // at its first await while text nodes carried on working (D92).
+  const subtle = globalThis.crypto?.subtle as SubtleCrypto | undefined;
+  if (!subtle) {
+    const { sha256Hex } = await import("@/lib/sha256");
+    return sha256Hex(new Uint8Array(buffer));
+  }
+  const digest = await subtle.digest("SHA-256", buffer);
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");

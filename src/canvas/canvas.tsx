@@ -131,7 +131,7 @@ export function Canvas({ boardId }: { boardId: string }) {
     return () => surface.removeEventListener("dblclick", handleDoubleClick);
   }, [commitProvisional, select, startEditing, surfaceRef, viewport]);
 
-  const { ingestFiles } = useIngest({
+  const { ingestFiles, ingestError, clearIngestError } = useIngest({
     boardId,
     viewport,
     surfaceRef,
@@ -531,6 +531,24 @@ export function Canvas({ boardId }: { boardId: string }) {
                   void ingestFiles(files, null);
                 }}
               />
+            </div>
+          )}
+
+          {/* Under the top row rather than beside the buttons, and centred:
+              this is about something the person just did, so it belongs where
+              they are looking, and both corners are already spoken for. */}
+          {ingestError && (
+            <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center px-3">
+              <button
+                type="button"
+                data-testid="ingest-error"
+                aria-label={`${t("image.failed")} — ${t("image.dismiss")}`}
+                onClick={clearIngestError}
+                className="pointer-events-auto flex items-center gap-2 rounded-full glass glass-hover py-2 pr-3 pl-2.5 text-sm text-neutral-200 focus-visible:outline-2 focus-visible:outline-sky-500"
+              >
+                <Icon name="warning" size={18} className="text-amber-400" />
+                {t("image.failed")}
+              </button>
             </div>
           )}
 

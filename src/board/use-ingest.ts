@@ -1,5 +1,11 @@
 import { useAtom } from "jotai";
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 
 import {
   cascadeFreeOrigin,
@@ -60,11 +66,15 @@ export function useIngest({
   // canvas stands in for the cursor. Null until the pointer has been over it,
   // in which case placement falls back to the viewport centre.
   const pointerRef = useRef<Point | null>(null);
+  // Null until something goes wrong, and back to null on the next ingest that
+  // works: a stale warning about a file that has since been replaced is worse
+  // than no warning at all.
+  const [ingestError, setIngestError] = useState<Error | null>(null);
   const [assets, setAssets] = useAtom(assetsAtom);
   const { commit } = useBoardHistory(boardId);
   const { setSelection } = useSelection(boardId);
 
-  const ingestFiles = useCallback(
+  const placeFiles = useCallback(
     async (files: File[], screenPoint: Point | null) => {
       const surface = surfaceRef.current;
       if (files.length === 0 || !surface) {
@@ -160,6 +170,30 @@ export function useIngest({
       }
     },
     [assets, commit, fitIntoView, nodes, setAssets, surfaceRef, viewport],
+  );
+
+  /**
+   * The same pipeline, with somewhere for a failure to go.
+   *
+   * Every call site is a `void ingestFiles(...)`, so before this a rejection
+   * went to `unhandledrejection` and the button simply did nothing — which is
+   * how a missing `crypto.subtle` on an insecure origin read as broken chrome
+   * rather than as a missing API (D92). The cause is still worth a console
+   * entry; the person holding the phone only needs to know it did not work.
+   */
+  const ingestFiles = useCallback(
+    async (files: File[], screenPoint: Point | null) => {
+      try {
+        await placeFiles(files, screenPoint);
+        setIngestError(null);
+      } catch (error) {
+        console.error("Could not add an image", error);
+        setIngestError(
+          error instanceof Error ? error : new Error(String(error)),
+        );
+      }
+    },
+    [placeFiles],
   );
 
   useEffect(() => {
@@ -315,7 +349,9 @@ export function useIngest({
     };
   }, [ingestFiles, surfaceRef]);
 
+  const clearIngestError = useCallback(() => setIngestError(null), []);
+
   // Returned so a file picker can reach the same pipeline. Paste and drop do
   // not exist on a phone, so without a third way in the app is unusable there.
-  return { ingestFiles };
+  return { ingestFiles, ingestError, clearIngestError };
 }
