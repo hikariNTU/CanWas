@@ -23,6 +23,16 @@ const manifest = JSON.parse(read("manifest.webmanifest"));
 // enough to match on. The URL is.
 const precached = [...sw.matchAll(/url:"([^"]+)"/g)].map((match) => match[1]);
 
+// Android masks every launcher icon and puts one that cannot be masked on a
+// white plate, which nobody sees until they install it on a phone (D100). One
+// manifest key away at all times, like everything else checked here.
+const maskable = manifest.icons?.some((icon) =>
+  icon.purpose?.split(" ").includes("maskable"),
+);
+if (!maskable) {
+  problems.push("no maskable icon: Android will put the icon on a white plate");
+}
+
 const PAGES = [
   "index.html",
   "about.html",

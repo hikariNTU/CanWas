@@ -222,7 +222,13 @@ export default defineConfig({
       // The four document pages are real HTML entries (D67), so they are
       // precached like any other asset and open offline. `icon.png` stays for
       // the favicon; the 192 and 512 sizes are what a home screen wants.
-      includeAssets: ["icon.png", "icon-192.png", "icon-512.png"],
+      includeAssets: [
+        "icon.png",
+        "icon-192.png",
+        "icon-512.png",
+        "icon-maskable-192.png",
+        "icon-maskable-512.png",
+      ],
       manifest: {
         name: "CanWas",
         short_name: "CanWas",
@@ -238,9 +244,39 @@ export default defineConfig({
         orientation: "any",
         background_color: "#0a0a0a",
         theme_color: "#0a0a0a",
+        // Two sets, not one icon claiming both purposes. `any` is the icon as
+        // drawn — a rounded square, which is what iOS and a desktop shortcut
+        // want. `maskable` is full bleed with the letter inside the safe zone,
+        // because Android masks every launcher icon into a shape of its
+        // choosing and gives an icon that is not built for it a white plate to
+        // sit on (D100). One file with `purpose: "any maskable"` would be
+        // wrong in both places at once: padded where it should be tight, and
+        // cropped where it should not be.
         icons: [
-          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
-          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "icon-maskable-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "icon-maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
         ],
       },
       workbox: {
