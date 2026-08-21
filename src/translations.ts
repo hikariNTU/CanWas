@@ -82,8 +82,12 @@ const translations = {
     "zh-TW": "關於",
     "en-US": "About",
   },
-  "about.build": {
+  "about.version": {
     "zh-TW": "版本",
+    "en-US": "Version",
+  },
+  "about.build": {
+    "zh-TW": "建置",
     "en-US": "Build",
   },
   "about.engine": {

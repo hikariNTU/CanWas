@@ -106,6 +106,7 @@ export function About() {
               {t("about.title")}
             </Popover.Title>
 
+            <Row label="about.version">v{__BUILD_VERSION__}</Row>
             <Row label="about.build">
               {__BUILD_COMMIT__}
               <span className="ml-2 text-neutral-500">

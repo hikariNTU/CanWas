@@ -38,6 +38,23 @@ npm run dev
 | `npm run check:pwa`               | Assert the generated service worker's shape         |
 | `npm run check`                   | format:check + lint + typecheck + build + check:pwa |
 
+## Commit messages
+
+Subjects are conventional — `type(scope): summary` — and this is enforced, not
+just asked for. `npm install` points `core.hooksPath` at `.githooks`, and from
+then on:
+
+- a subject that is not conventional is rejected;
+- a commit that stages `src/` under a type that moves no version (`docs`,
+  `test`, `chore`, `ci`, `build`) is rejected, because that code would ship
+  under a version number that never changed;
+- everything else bumps `package.json` and amends it into the commit itself —
+  `feat` moves the minor, `fix`, `perf`, `refactor`, `style` and `revert` move
+  the patch, and a `!` moves the minor while the major is 0.
+
+That version is what the About panel shows, beside the commit sha. `--no-verify`
+skips the check; nothing skips it silently. See [D89](docs/decisions.md).
+
 ## Documentation
 
 Read in this order:

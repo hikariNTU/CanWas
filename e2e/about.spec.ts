@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { expect, test } from "@playwright/test";
 
 import { pasteTextImage } from "./support";
@@ -18,6 +20,17 @@ test("the info panel reports the build and what is on disk", async ({
   // checkout with git available.
   await expect(panel).toContainText("onnxruntime-web");
   await expect(panel).not.toContainText("unknown");
+
+  // The version comes from package.json, which the commit hook writes (D89).
+  // Read from the file here rather than pinned to a literal, because the
+  // literal would be wrong one commit later — the number moves on its own.
+  const version = (
+    JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    ) as { version: string }
+  ).version;
+  expect(version, "the version is still the npm default").not.toBe("0.0.0");
+  await expect(panel).toContainText(`v${version}`);
 
   // The engine's name against the ids of the weights actually configured,
   // rather than against a literal copied into the test. This row was a literal

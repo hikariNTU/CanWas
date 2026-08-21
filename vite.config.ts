@@ -40,6 +40,18 @@ function isDirty(): boolean {
 }
 
 /**
+ * The version the commit hook wrote, read rather than derived.
+ *
+ * Counting conventional commits at build time would need the whole history,
+ * which a shallow CI checkout does not have. `package.json` always does (D89).
+ */
+const appVersion = (
+  JSON.parse(
+    readFileSync(new URL("./package.json", import.meta.url), "utf8"),
+  ) as { version: string }
+).version;
+
+/**
  * Read from the lockfile's installed copy, not by importing the package —
  * `onnxruntime-web` does not export `./package.json`, and a version string is
  * not worth loading a runtime for.
@@ -170,6 +182,7 @@ export default defineConfig({
     ),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __ORT_VERSION__: JSON.stringify(ortVersion),
+    __BUILD_VERSION__: JSON.stringify(appVersion),
   },
   base: "/canwas/",
   build: {

@@ -2451,3 +2451,66 @@ the change is the honest third option, and until it existed the only way out of
 the dialog was a choice nobody wanted. Escape does the same thing, because the
 dialog holds no state of its own — closed with an edit still held, it could
 never be released. Discarding is not permission: the next edit asks again.
+
+## D89 — The version is written by the commit that earns it
+
+The About panel reported a commit sha and a build date, which answers "which
+build is this" and not "how far along is this". A version number is the second
+answer, and there were three places it could come from.
+
+**Not typed by hand.** A number somebody remembers to raise is a number
+somebody forgets to raise, and the panel then states a version the build is
+not.
+
+**Not derived at build.** Counting conventional commits from `git log` inside
+`vite.config.ts` needs the whole history, and `actions/checkout` clones one
+commit deep. It would work locally and quietly produce nothing in CI — the
+build that matters.
+
+So the number lives in `package.json`, and a hook keeps it true. `commit-msg`
+rejects a subject that is not conventional, because the bump reads that
+subject and an unchecked subject is an untrustworthy version. It also rejects a
+commit that stages `src/` under a type that moves nothing: code shipped under
+a version that never noticed is the exact failure the number exists to prevent.
+Of the 88 commits before this one, that rule would have stopped exactly one.
+
+**Why `post-commit`, and why it amends.** Git snapshots the commit tree between
+`pre-commit` and `prepare-commit-msg`. A `git add` from `commit-msg` stays in
+the index and lands in the _next_ commit — which is worse than useless, since
+the version would then trail one commit behind the change it describes. So the
+only hook that can add a file to a commit runs before the message exists, and
+the type in that message is the whole input. The commit lands, the hook
+rewrites `package.json`, and `git commit --amend --no-edit --no-verify` puts it
+inside. The sha changes once, immediately, before it can have been pushed.
+
+**Bumping twice is the failure mode**, since that amend re-enters the hook. The
+rule is one comparison: if `HEAD` already records a different version from
+`HEAD^`, the version moved for this change and nothing more is owed. That one
+sentence covers all three ways it happens — the hook's own amend, an author
+amending a commit already bumped, and a squash merge carrying a branch's
+accumulated bumps across. Without it the number still comes out right, because
+the replacement is anchored to the old version string and finds nothing to
+replace; but it comes out behind a warning on every commit, which teaches
+people to ignore warnings.
+
+`refactor` and `style` bump the patch here, unlike the conventional-commits
+default of bumping on `fix` alone. In this repo both change shipped code —
+`style` means visual styling (`style(chrome): capsules everywhere`), not
+whitespace — and a type that ships code has to move the number or the check
+above contradicts itself.
+
+A breaking change moves the minor while the major is 0. Semver says 0.x
+promises nothing, so nothing there can be broken, and letting a subject line
+declare 1.0 would make this project's largest claim by accident.
+
+The lockfile carries the root version twice, and `npm ci` refuses a lockfile
+that disagrees with `package.json` — so missing either copy breaks the deploy
+rather than the hook. Both sit above the first `node_modules/` key, which is
+what keeps the replacement off a dependency that happens to share the version.
+
+Seeded at 0.46.0 by replaying the existing history: 46 features, and the patch
+count back to zero at the most recent one.
+
+**Reverses if:** history stops being squash-merged, or the sha changing under an
+amend ever costs more than the number is worth. The lint half stands on its own
+either way.

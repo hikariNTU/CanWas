@@ -1,9 +1,10 @@
 {
   "name": "canwas",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.46.0",
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "vite",
     "build": "rm -rf dist && vite build",
     "typecheck": "tsc --noEmit",
