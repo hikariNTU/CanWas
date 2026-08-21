@@ -3034,3 +3034,42 @@ the user has.
 
 **Reverses if:** the readout stops paying for itself. It has now decided four
 things (D99, D101, and both halves of this) that no local test could reach.
+
+## D105 — `black-translucent` moves the window, it does not grow it
+
+The readout that ended it:
+
+```
+off 62/22 · env 62/34 · std yes · cal yes · 402×812 · scr 402×874 · box 62→790
+```
+
+A 402×874 screen and an 812-tall viewport. 874 − 812 is 62, the top inset to
+the point, and the layer's bottom edge lands at 790 — 84px above the glass, none
+of which is an inset being wrong.
+
+That is what `black-translucent` does. It does not make the window taller; it
+slides it up under the status bar and leaves the height alone, so the band it
+vacates at the bottom belongs to no one. The dots stopping short of the bottom
+edge — reported here in the very first round and blamed on the insets ever since
+— was this the whole time. Every measurement was consistent with a correct
+layout because the layout _was_ correct; it was correct inside a box that ends
+early.
+
+The board is given back exactly what the shift took: `height: calc(100% +
+env(safe-area-inset-top))` on the fixed root. The inset is not being used as a
+safe area here — it is being used as the measurement of the shift, which is the
+same number by construction. `top` and `height` win over `bottom` when a box
+sets all three, so the extra height carries downward, to the edge the shift
+exposed.
+
+Gated behind the same `@supports` / `display-mode: standalone` pair as the top
+floor. Everywhere else the top inset is 0 and the rule reads `height: 100%`,
+which is what a fixed `inset-0` box already was.
+
+The update banner's own fixed layer gets it too. It is outside the canvas, so
+like D103 it needs its own copy of anything the canvas learns.
+
+**Reverses if:** iOS starts making the window full height under
+`black-translucent`, at which point this doubles the overshoot instead of
+cancelling it. `box` against `scr` in the About readout is exactly the pair that
+would show it, and the two numbers should agree once this ships.

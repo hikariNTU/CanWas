@@ -386,6 +386,28 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
     "padding-top: env(safe-area-inset-top)",
   );
 
+  // On an installed iPhone app the viewport is shorter than the screen, and
+  // the board is given back the difference as height (D105). Height has to beat
+  // `bottom: 0` for that to reach the bottom edge rather than stretch into
+  // nothing — over-constrained boxes drop `bottom`, and this is that rule made
+  // into an assertion, driven inline because `env()` is 0 here.
+  const grew = await page.evaluate(() => {
+    const root = document.querySelector(
+      "[data-testid=chrome-layer]",
+    )!.parentElement!;
+    const layer = document.querySelector("[data-testid=chrome-layer]")!;
+    const before = layer.getBoundingClientRect().bottom;
+    root.style.height = `${window.innerHeight + 62}px`;
+    const after = layer.getBoundingClientRect().bottom;
+    root.style.height = "";
+    return after - before;
+  });
+  expect(grew, "height does not carry the layer past the viewport").toBe(62);
+  await expect(page.getByTestId("chrome-layer")).toHaveClass(/chrome-inset/);
+  expect(css, "the board cannot grow past a short viewport").toContain(
+    "height: calc(100% + env(safe-area-inset-top))",
+  );
+
   // The update banner is the one piece of chrome outside the canvas, and it
   // appears without being asked for — under the clock, on a phone, unless it
   // carries the same layer (D103). Read from the source because it only renders

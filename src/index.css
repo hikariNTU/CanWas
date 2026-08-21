@@ -80,10 +80,29 @@
   left: env(safe-area-inset-left);
 }
 
+/* The board's own box, which on one platform is not the viewport.
+
+   `black-translucent` does not make the window taller — it slides it up under
+   the status bar and leaves the same height behind, so the bottom of the screen
+   is a band nothing can paint on. The device measured it exactly: a 402x874
+   screen, a 812-tall viewport, and 874 - 812 = 62, the top inset to the point
+   (D105).
+
+   The document can still be taller than the viewport, so the board is given
+   back precisely what the shift took: `100%` of the viewport plus the inset
+   that measures the shift. `top` and `height` win over `bottom` when all three
+   are set, which is what carries the extra height downward instead of
+   stretching upward into nothing.
+
+   Everywhere else the top inset is 0 and this is `height: 100%`. */
 @supports (-webkit-touch-callout: none) {
   @media (display-mode: standalone) {
     .chrome-inset {
       top: max(env(safe-area-inset-top), 44px);
+    }
+
+    .screen-fill {
+      height: calc(100% + env(safe-area-inset-top));
     }
   }
 }

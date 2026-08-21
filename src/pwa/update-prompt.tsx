@@ -34,7 +34,7 @@ export function UpdatePrompt() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-50">
+    <div className="screen-fill pointer-events-none fixed inset-0 z-50">
       <div className="chrome-inset">
         <div
           data-testid="update-prompt"
