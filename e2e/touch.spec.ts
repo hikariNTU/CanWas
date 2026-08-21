@@ -335,9 +335,17 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   expect(layered.holdsCanvas, "the canvas must stay full bleed").toBe(false);
 
   // The insets themselves, which resolve to 0 here and so cannot be measured.
-  await expect(page.getByTestId("chrome-layer")).toHaveClass(
-    /pt-\[env\(safe-area-inset-top\)\]/,
+  // One class rather than four utilities, because iOS needs a floor under the
+  // top one and `max()` does not fit in a class name (D96).
+  await expect(page.getByTestId("chrome-layer")).toHaveClass(/chrome-inset/);
+  const css = readFileSync(root + "src/index.css", "utf8");
+  expect(css, "the insets are not declared anywhere").toContain(
+    "env(safe-area-inset-top)",
   );
+  expect(
+    css,
+    "iOS reports the top inset as 0 in a standalone app, so it needs a floor",
+  ).toContain("max(env(safe-area-inset-top), 44px)");
 
   // And the declaration itself, which no amount of DOM inspection can reach.
   const html = readFileSync(root + "index.html", "utf8");
@@ -360,6 +368,29 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
     html,
     "the status bar style is only read in Apple's standalone mode",
   ).toContain('name="apple-mobile-web-app-capable"');
+});
+
+test("the board is the size of the screen, not of its ancestors", async ({
+  page,
+}) => {
+  // `h-full` is a chain of percentages and every link has to be exactly the
+  // screen. Installed on a phone one of them was not, and the dots stopped
+  // short of the bottom edge; asking the viewport directly cannot go wrong
+  // that way (D96).
+  const measured = await page.evaluate(() => {
+    const surface = document.querySelector("[data-testid=canvas-surface]")!;
+    const rect = surface.getBoundingClientRect();
+    return {
+      width: rect.width,
+      height: rect.height,
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      position: getComputedStyle(surface.parentElement!).position,
+    };
+  });
+  expect(measured.position).toBe("fixed");
+  expect(measured.width).toBe(measured.innerWidth);
+  expect(measured.height).toBe(measured.innerHeight);
 });
 
 test("the touch controls sit above the corner islands, never on them", async ({

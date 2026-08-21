@@ -2751,3 +2751,32 @@ device check comes first rather than last.
 
 **Reverses if:** reading mode ever grows a menu worth reaching by touch, which
 is the same condition D91 recorded and remains unmet.
+
+## D96 — The insets need a floor, and the board needs the viewport
+
+Two things went wrong the moment D93 made the board full bleed on an installed
+iPhone, and they look like one thing on a screenshot.
+
+**The islands landed under the clock.** With `black-translucent`, WebKit hands
+the page the whole screen and then reports `safe-area-inset-top` as 0, so the
+chrome layer's padding — correct, and doing exactly what D68 asked — resolved to
+nothing and the top row sat over the status bar. The four utilities are now one
+`.chrome-inset` class with `max(env(safe-area-inset-top), 44px)` under
+`@supports (-webkit-touch-callout: none)` and `(display-mode: standalone)`:
+WebKit-on-iOS, installed, and nowhere else. A Safari tab reports 0 correctly,
+because the browser's own chrome is in that space. 44px is the status bar on a
+device with a cutout; a Dynamic Island is taller but the islands sit beside the
+text at either end of it, not under the middle, and `max()` believes any browser
+that reports the truth.
+
+**The dots stopped short of the bottom.** The canvas was sized `h-full`, a chain
+of percentages from `html` through `body`, `#root` and the route wrapper, every
+link of which has to be exactly the screen. Installed, one of them was not. The
+root is `fixed inset-0` now, which asks the viewport directly; this is a
+full-screen app in every route that renders it, so there was never a case where
+the chain was buying anything. The test measures the surface against
+`window.innerWidth/innerHeight`, which is the assertion that was missing while
+this was three layers of `height: 100%` nobody could see through.
+
+**Reverses if:** the board is ever embedded in a page with anything else on it,
+at which point `fixed` is wrong and the chain has to be made correct instead.

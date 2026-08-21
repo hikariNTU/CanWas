@@ -35,6 +35,39 @@
   }
 }
 
+/* The insets the chrome layer holds itself clear with (D68), as one class
+   rather than four utilities — because on iOS they need a floor under them.
+
+   Installed to a home screen with `black-translucent`, WebKit hands the page
+   the whole screen and then reports `safe-area-inset-top` as 0, so padding
+   that trusts the value puts the top islands under the clock. The floor is
+   44px, the status bar on a device with a cutout: a phone whose bar is the
+   older 20px loses a little space, and one with a Dynamic Island keeps its
+   corners clear of the text at either end of it, which is what the islands sit
+   beside. `max()` means a browser that reports the truth is still believed.
+
+   `@supports (-webkit-touch-callout: none)` is WebKit-on-iOS and nothing else,
+   and `display-mode: standalone` is what separates the installed app — where
+   this is wrong — from a Safari tab, where the browser's own chrome occupies
+   the same space and the reported 0 is correct (D96).
+
+   Unlayered, so it outranks the utilities it replaces if any survive. */
+.chrome-inset {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    .chrome-inset {
+      padding-top: max(env(safe-area-inset-top), 44px);
+      padding-bottom: max(env(safe-area-inset-bottom), 20px);
+    }
+  }
+}
+
 /* Floating chrome, as one surface treatment.
    Translucent and heavily blurred, with the saturation boost that makes a
    blurred backdrop read as glass rather than as fog, and a bright hairline

@@ -234,7 +234,12 @@ export function Canvas({ boardId }: { boardId: string }) {
   const hairline = 2 / viewport.scale;
 
   return (
-    <div className="relative h-full overflow-hidden">
+    // Pinned to the viewport rather than sized by its ancestors. `h-full` is a
+    // chain of percentages, and every link in it has to be exactly the screen
+    // for the board to reach the bottom of one; installed on a phone it was
+    // not, and the dots stopped short. `fixed` asks the viewport directly, and
+    // this is a full-screen app in every route that renders it (D96).
+    <div className="fixed inset-0 overflow-hidden">
       <div
         ref={surfaceRef}
         data-testid="canvas-surface"
@@ -496,7 +501,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             (D68). */}
         <div
           data-testid="chrome-layer"
-          className="pointer-events-none absolute inset-0 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]"
+          className="chrome-inset pointer-events-none absolute inset-0"
         >
           <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1">
             <BoardMenu boardId={boardId} onResetView={resetViewport} />
