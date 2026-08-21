@@ -16,12 +16,19 @@ export function measureHeight(element: HTMLElement | null): number {
 /**
  * Shared so that entering and leaving edit mode cannot move a single glyph.
  *
- * The transparent border is load-bearing: editing swaps in a `.glass` field,
+ * The transparent border is load-bearing: editing swaps in a glass field,
  * whose border would otherwise eat two pixels of content width and rewrap the
  * text the moment it was double-clicked.
+ *
+ * What is *not* shared is the background. `bg-transparent` lived here, and
+ * since `glass` became a utility it silently won — same layer, same
+ * specificity, and `.bg-transparent` is emitted after `.glass` — so the field
+ * had no tint at all and white text sat on a white screenshot. The read-only
+ * half is a `div`, which is transparent without being told; only the textarea
+ * has a background to suppress, and glass is what replaces it.
  */
 const SHARED_TEXT_STYLE =
-  "w-full resize-none border border-transparent bg-transparent p-1 leading-snug break-words whitespace-pre-wrap";
+  "w-full resize-none border border-transparent p-1 leading-snug break-words whitespace-pre-wrap";
 
 export function TextNodeView({
   node,

@@ -338,19 +338,26 @@ export function Canvas({ boardId }: { boardId: string }) {
                     // through reads as one more highlight. White also says the
                     // node is in a different mode, which is the thing a
                     // double-click just changed.
-                    outline: isSelected
-                      ? `${hairline}px solid ${
-                          isReading
-                            ? "var(--color-neutral-100)"
-                            : "var(--color-sky-500)"
-                        }`
-                      : undefined,
+                    //
+                    // Absent while the node is being edited: the field that
+                    // swaps in is glass with a caret in it, which says the same
+                    // thing at closer range, and the outline sitting two pixels
+                    // outside it made two rounded edges with a gap between.
+                    outline:
+                      isSelected && !isEditing
+                        ? `${hairline}px solid ${
+                            isReading
+                              ? "var(--color-neutral-100)"
+                              : "var(--color-sky-500)"
+                          }`
+                        : undefined,
                     // Held off the content rather than drawn on its edge. A
                     // screenshot of a white page swallowed a white outline
                     // completely, and a blue one is no safer against a blue
                     // screenshot — pushed out by its own width, the line always
                     // has the board behind it.
-                    outlineOffset: isSelected ? hairline : undefined,
+                    outlineOffset:
+                      isSelected && !isEditing ? hairline : undefined,
                   }}
                 >
                   {node.kind === "image" && asset ? (

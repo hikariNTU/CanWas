@@ -303,3 +303,40 @@ test("the size island sits after undo/redo so they never shift", async ({
   const size = (await page.getByTestId("font-size-12").boundingBox())!;
   expect(size.x).toBeGreaterThan(undoAfter.x);
 });
+
+test("the field being typed into is a surface, not a hole", async ({
+  page,
+}) => {
+  const surface = await surfaceBox(page);
+  await page.mouse.dblclick(surface.x + surface.width * 0.5, surface.y + 200);
+
+  const input = page.getByTestId("text-node-input");
+  await expect(input).toBeFocused();
+
+  // Glass, not `bg-transparent`. The two were fighting in one class list and
+  // the transparent one won, which put white text on whatever the node
+  // happened to be over — invisible against a screenshot of a white page.
+  const background = await input.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+  expect(background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(background).toContain("srgb");
+
+  // And it is the only edge. The node's selection outline sat two pixels
+  // outside the field's own rounded border, so an editing node had two nested
+  // rounded edges with a gap between them.
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveCSS("outline-style", "none");
+
+  // It returns the moment editing ends. Typed into first: an empty text node
+  // is discarded when it loses the caret, and a discarded node has no outline
+  // for reasons that have nothing to do with this.
+  await page.keyboard.type("Colour reference");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("text-node-body")).toBeVisible();
+  // Leaving an edit does not select the node, so selecting it is a click of
+  // its own — and it is the state this half is about.
+  await node.click();
+  await expect(node).toHaveAttribute("data-selected", "true");
+  await expect(node).not.toHaveCSS("outline-style", "none");
+});

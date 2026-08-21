@@ -2397,3 +2397,26 @@ with no page to open. Both cases return `null` and the item does not render.
 
 **Reverses if:** the item is wanted while offline, which would mean recording the
 Drive id locally and invalidating it on every account change.
+
+## D87 — An editing field is the only edge it needs
+
+Two things were wrong with a text node while it was being typed into.
+
+`SHARED_TEXT_STYLE` carried `bg-transparent`, and the editing field adds
+`glass`. Same layer, same specificity, and Tailwind emits `.bg-transparent`
+after `.glass` — so the field had no tint at all, and white text sat directly
+on whatever the node was over. Invisible against a screenshot of a white page,
+which is most of what this app holds. That is the fourth thing D84's layering
+change woke up, and the pattern is now clear enough to state: **a utility that
+sets the same property as `glass` will win, wherever it sits in the class
+list.** The fix is not to reorder anything but to stop setting the property
+twice — the read-only half is a `div`, which is transparent without being told.
+
+And the node's selection outline stayed on, two pixels outside a field that has
+its own rounded border, so an editing node showed two nested rounded edges with
+a gap between them. The outline is gone while editing: a glass field with a
+caret in it says the node is active at closer range, and the outline returns as
+soon as the edit ends.
+
+**Reverses if:** a text node ever gains a second editing affordance that is not a
+surface, in which case the outline is the only thing saying which node it is.

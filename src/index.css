@@ -63,7 +63,7 @@
      only the prefix, so every build shipped `-webkit-backdrop-filter` alone.
      Chrome and Safari accept that alias, which is why this survived review;
      Firefox does not, and the glass was flat there. It adds the prefix itself. */
-  backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(4px) saturate(180%);
   box-shadow:
     inset 0 1px 0 0
       color-mix(in srgb, var(--color-neutral-100) 10%, transparent),
