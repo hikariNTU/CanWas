@@ -2514,3 +2514,41 @@ count back to zero at the most recent one.
 **Reverses if:** history stops being squash-merged, or the sha changing under an
 amend ever costs more than the number is worth. The lint half stands on its own
 either way.
+
+## D90 — A pan slides the grid, it does not repaint it
+
+The dots and the images are drawn by two different halves of the browser. The
+scene rides a `transform`, which the compositor interpolates at subpixel
+precision. The grid is a tiled background, and iOS rounds `background-position`
+and `background-size` to whole device pixels. At a fractional zoom — anything a
+pinch leaves behind — the two disagree by up to a pixel, and which way the
+background rounds flips as the board moves. The dots crawl against the images
+they are supposed to sit behind. On a laptop the same code looks fine, which is
+what made this take a while to name: it is not a slow repaint, it is a rounded
+one.
+
+So a pan does not touch the background at all. The grid layer is painted once
+per committed viewport, and a live gesture slides the whole layer with a
+transform, which is not rounded. The pattern repeats every tile, so sliding by
+the pan modulo one tile is indistinguishable from sliding by the whole pan and
+keeps the travel bounded — which is what lets the layer overhang the surface by
+one tile's worth of margin (`GRID_SPACING * MAX_SCALE`, 192px) rather than by
+anything unbounded.
+
+A zoom still repaints, because a tiled background cannot change its tile size
+under a transform without stretching the dots with it. That is the one case
+where the rounding is still there, and it is the case where it does not show:
+the whole board is changing size, so a half-pixel in the dot spacing has nothing
+steady to be measured against.
+
+The overhang cost a bug of its own. A box with `overflow: hidden` is still a
+scrollable box: nothing draws a scrollbar, but anything that scrolls an element
+into view — Playwright's own click does — can find that 192px and drag the whole
+board with it. The surface is `overflow: clip` instead, which is the value that
+means "cut this off and do not make a scroll container out of it". It showed up
+as an image landing 192px from where it started, only under parallel load, which
+is exactly the shape of a bug that gets dismissed as a flake.
+
+**Reverses if:** iOS starts interpolating background geometry the way it
+interpolates transforms, at which point the straightforward version is one line
+shorter.

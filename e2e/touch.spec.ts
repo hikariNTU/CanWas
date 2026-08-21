@@ -597,3 +597,109 @@ test("the camera is its own button, and asks for the camera", async ({
   await expect(node).toHaveAttribute("data-node-kind", "image");
   await expect(node).toHaveAttribute("data-ocr-status", /queued|running|done/);
 });
+
+/**
+ * The dots and the images are drawn by two different parts of the browser: the
+ * scene rides a `transform`, which is interpolated at subpixel precision, and
+ * the grid is a tiled background. iOS rounds `background-position` and
+ * `background-size` to whole device pixels, so at a fractional zoom the two
+ * disagree by up to a pixel, and which way they round changes as the board
+ * moves — the dots crawl against the images they sit behind.
+ *
+ * The fix is that a pan does not touch the background at all: it slides the
+ * whole layer with a transform, which is not rounded, by the pan modulo one
+ * tile.
+ */
+test("a pan slides the dots, it does not repaint them", async ({ page }) => {
+  const surface = (await page.getByTestId("canvas-surface").boundingBox())!;
+  const centre = {
+    x: surface.x + surface.width / 2,
+    y: surface.y + surface.height / 2,
+  };
+  // A fractional zoom, which is the only place the rounding is visible: at 1:1
+  // a tile is exactly 24px and nothing has to round.
+  await pinch(page, centre, 200, 260);
+  const grid = page.getByTestId("canvas-grid");
+  const painted = await grid.evaluate((element) => ({
+    position: (element as HTMLElement).style.backgroundPosition,
+    size: (element as HTMLElement).style.backgroundSize,
+    transform: (element as HTMLElement).style.transform,
+  }));
+  expect(painted.transform, "a settled grid carries no transform").toBe("none");
+  expect(painted.size).not.toBe("24px 24px");
+
+  // A pan that is still running: fingers down, nothing lifted.
+  const live = await page.evaluate(
+    async (start) => {
+      const target = document.querySelector("[data-testid=canvas-surface]")!;
+      const send = (type: string, x: number, y: number) =>
+        target.dispatchEvent(
+          new PointerEvent(type, {
+            pointerId: 1,
+            pointerType: "touch",
+            isPrimary: true,
+            button: 0,
+            buttons: type === "pointerup" ? 0 : 1,
+            clientX: x,
+            clientY: y,
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      send("pointerdown", start.x, start.y);
+      send("pointermove", start.x + 37, start.y + 53);
+      // The paint is coalesced into an animation frame, so wait for one.
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const element = document.querySelector(
+        "[data-testid=canvas-grid]",
+      ) as HTMLElement;
+      return {
+        position: element.style.backgroundPosition,
+        size: element.style.backgroundSize,
+        transform: element.style.transform,
+        scene: (
+          document.querySelector("[data-testid=canvas-scene]") as HTMLElement
+        ).style.transform,
+      };
+    },
+    { x: centre.x, y: centre.y },
+  );
+
+  expect(live.position, "the background was repainted mid-pan").toBe(
+    painted.position,
+  );
+  expect(live.size).toBe(painted.size);
+  expect(live.scene, "the scene did not move").not.toBe(
+    "translate(0px, 0px) scale(1)",
+  );
+  const moved = /translate3d\((-?[\d.]+)px, (-?[\d.]+)px, 0px\)/.exec(
+    live.transform,
+  );
+  expect(moved, `the grid did not slide: ${live.transform}`).not.toBeNull();
+  // Wrapped into one tile, which is the whole reason the layer only has to
+  // overhang the surface by a tile's worth of margin.
+  const tile = Number.parseFloat(painted.size);
+  for (const value of [Number(moved![1]), Number(moved![2])]) {
+    expect(value).toBeGreaterThanOrEqual(0);
+    expect(value).toBeLessThan(tile);
+  }
+});
+
+/**
+ * The grid hangs 192px past the surface on every side. A box with
+ * `overflow: hidden` is still a scrollable box — anything that scrolls an
+ * element into view can find that overhang and drag the whole board sideways,
+ * which is why the surface is clipped instead.
+ */
+test("the overhanging grid cannot be scrolled into view", async ({ page }) => {
+  const surfaceTop = await page.evaluate(() => {
+    document
+      .querySelector("[data-testid=canvas-grid]")!
+      .scrollIntoView({ block: "end" });
+    return document
+      .querySelector("[data-testid=canvas-surface]")!
+      .getBoundingClientRect().top;
+  });
+  // Not "the grid refused to scroll" — the board is what must not have moved.
+  expect(surfaceTop).toBe(0);
+});

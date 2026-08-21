@@ -124,7 +124,12 @@ export function useViewportControls(
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = 0;
       if (liveRef.current) {
-        paintViewport(sceneRef.current, gridRef.current, liveRef.current);
+        paintViewport(
+          sceneRef.current,
+          gridRef.current,
+          liveRef.current,
+          committedRef.current,
+        );
       }
     });
   }, []);
@@ -162,9 +167,17 @@ export function useViewportControls(
   // yanks the board back to where the gesture started for one frame.
   useLayoutEffect(() => {
     committedRef.current = viewport;
-    if (liveRef.current) {
-      paintViewport(sceneRef.current, gridRef.current, liveRef.current);
-    }
+    // The grid is painted on the way out of every render, live gesture or not.
+    // A gesture leaves a transform on it (see `paintViewport`), and React will
+    // not take that back: the `transform: none` in `gridStyle` is the same
+    // string it rendered last time, so React sees no change and writes nothing.
+    // Clearing it is this call's job.
+    paintViewport(
+      sceneRef.current,
+      gridRef.current,
+      liveRef.current ?? viewport,
+      liveRef.current ? viewport : undefined,
+    );
   });
 
   useEffect(

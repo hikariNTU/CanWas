@@ -244,16 +244,24 @@ export function Canvas({ boardId }: { boardId: string }) {
         // of text, and iOS shows a copy/share callout for a held image even
         // when selection is off (D69). `OCR_WORD` turns both back on for the
         // one thing here that is genuinely text.
-        className="absolute inset-0 cursor-default touch-none bg-neutral-950 select-none [-webkit-touch-callout:none]"
+        // `overflow-clip`, not `overflow-hidden`: the grid layer hangs past
+        // this box on every side, and a hidden box is still a scrollable one —
+        // anything that scrolls an element into view can drag the whole board
+        // 192px sideways. A clipped box cannot be scrolled at all.
+        className="absolute inset-0 cursor-default touch-none overflow-clip bg-neutral-950 select-none [-webkit-touch-callout:none]"
       >
         {/* The grid is its own layer rather than a background on the surface:
             it fades out when the dots crowd together, and fading the surface
-            would take the whole scene with it. */}
+            would take the whole scene with it.
+
+            It overhangs the surface by `GRID_MARGIN` (192px, which is what
+            `-inset-48` spells) because a pan slides it by up to one tile
+            instead of repainting it. */}
         <div
           ref={gridRef}
           aria-hidden
           data-testid="canvas-grid"
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute -inset-48"
           style={gridStyle(viewport)}
         />
         <div
