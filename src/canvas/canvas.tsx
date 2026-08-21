@@ -234,7 +234,13 @@ export function Canvas({ boardId }: { boardId: string }) {
       <div
         ref={surfaceRef}
         data-testid="canvas-surface"
-        className="canvas-surface absolute inset-0 cursor-default touch-none bg-neutral-950"
+        // A press-and-hold on the board is a gesture, never a text selection:
+        // without `select-none` a held finger raises the OS selection handles
+        // and takes the whole canvas — every label, every button — as one blob
+        // of text, and iOS shows a copy/share callout for a held image even
+        // when selection is off (D69). `OCR_WORD` turns both back on for the
+        // one thing here that is genuinely text.
+        className="absolute inset-0 cursor-default touch-none bg-neutral-950 select-none [-webkit-touch-callout:none]"
       >
         {/* The grid is its own layer rather than a background on the surface:
             it fades out when the dots crowd together, and fading the surface
@@ -467,10 +473,19 @@ export function Canvas({ boardId }: { boardId: string }) {
       <TipProvider>
         {/* One padded layer holds every island. An absolutely positioned child
             is laid out against its containing block's padding box, so the
-            safe-area insets applied by `.chrome-layer` move all of them clear
+            safe-area insets on the chrome layer move all of them clear
             of a cutout at once while the canvas underneath stays full bleed
             (D68). */}
-        <div className="chrome-layer pointer-events-none absolute inset-0">
+        {/* Padding rather than per-widget offsets: an absolutely positioned
+            child is laid out against its containing block's PADDING box, so
+            these four move all five islands clear of a cutout at once and each
+            keeps its own plain `top-3` / `bottom-3`. The canvas underneath is
+            deliberately not inset — it runs edge to edge and under the camera
+            (D68). */}
+        <div
+          data-testid="chrome-layer"
+          className="pointer-events-none absolute inset-0 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]"
+        >
           <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1">
             <BoardMenu boardId={boardId} onResetView={resetViewport} />
             <BoardName boardId={boardId} />

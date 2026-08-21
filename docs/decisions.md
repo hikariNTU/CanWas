@@ -2298,3 +2298,44 @@ mid-session for free.
 **Reverses if:** the board grows an action that only makes sense on empty
 canvas — paste at a point, select all. Then the surface needs its own menu, and
 the two have to agree about what a press with nothing under it means.
+
+## D84 — The stylesheet keeps only what has no element to live on
+
+Six hand-written classes had accumulated, and five of them were a second
+styling system running beside the first: to know what a node's OCR word looked
+like you opened `index.css`, and to know what the icon span did you opened it
+again.
+
+Four are gone. `.canvas-surface` and `.chrome-layer` had one use site each and
+are now utilities on the elements themselves. `.material-symbol` had one too —
+the `Icon` component is the only Material Symbol the app will ever render — so
+its thirteen declarations moved into that component's class list, arbitrary
+properties and all. `.ocr-word` had two use sites, one of them a span built in
+plain DOM by the measurement code, so it became `OCR_WORD`: a constant both
+paths spread, which is stronger than the class was — the two spans have to
+agree exactly or every `scaleX` correction is computed from a wrong width.
+`body` and the height chain moved into `index.html`, which Tailwind scans like
+any other file.
+
+**What stays, stays for a reason.** `glass` and `glass-strong` are thirty-one
+use sites of one decision, and a two-function `backdrop-filter` with a
+`color-mix` shadow has no utilities to be. The cursor rule is element and role
+selectors — its whole point is catching every control without naming any, and
+there is no markup to inline it into.
+
+**Layering was the real find.** Those cursor declarations were unlayered, and
+unlayered CSS outranks every layered rule whatever its specificity — so
+`cursor-default` in `menuItemClass` had never once applied. Nobody saw it,
+because the rule it lost to was the rule that was wanted. They are now in
+`@layer base`, where a utility beats them, and the dead utility is deleted.
+This is the third time this exact trap has been found here (`glass`,
+`material-symbol`, and now these): a plain class or a bare element rule in this
+file silently outranks the markup.
+
+**Tests stopped asserting on style names.** Three specs used `.material-symbol`
+to mean "an icon" and one read `index.css` as text. Icons now carry
+`data-icon`, the chrome layer carries a testid, and the selection rule is
+checked on a real recognised word instead of a synthetic probe.
+
+**Reverses if:** a treatment reaches three or four use sites and starts drifting
+between them. That is what `glass` is, and it earned the file.

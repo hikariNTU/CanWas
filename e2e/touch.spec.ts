@@ -170,7 +170,7 @@ test("the mode chip is there, and pan is the mode a phone starts in", async ({
   await page.evaluate(() => document.fonts.ready);
   const glyphs = await page
     .getByTestId("touch-bar")
-    .locator(".material-symbol")
+    .locator("[data-icon]")
     .evaluateAll((elements) =>
       elements.map((element) => ({
         name: element.textContent ?? "",
@@ -274,7 +274,11 @@ test("a tap on empty canvas clears, and a pan does not", async ({ page }) => {
 test("holding the board does not select the whole page as text", async ({
   page,
 }) => {
-  await pasteImage(page, 600, 400);
+  // A page of text rather than a blank swatch, because the second half of this
+  // test needs a recognised word to ask about.
+  await pasteTextImage(page, ["Hold me", "and copy"]);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveAttribute("data-ocr-status", "done");
 
   const styles = await page.evaluate(() => {
     const surface = document.querySelector("[data-testid=canvas-surface]")!;
@@ -283,29 +287,33 @@ test("holding the board does not select the whole page as text", async ({
   expect(styles.select, "a long press can select the canvas").toBe("none");
 
   // The callout is the iOS half and Chromium does not implement it, so it
-  // computes to nothing here however it is declared. The rule itself is what
-  // can be checked: without it, holding an image on an iPhone still raises the
-  // copy/share sheet even with selection off (D69).
-  const css = readFileSync(root + "src/index.css", "utf8");
-  expect(css, "the iOS callout suppression is gone").toMatch(
-    /\.canvas-surface\s*\{[^}]*-webkit-touch-callout:\s*none/,
-  );
+  // computes to nothing here however it is declared — the declaration itself is
+  // all that can be checked. Without it, holding an image on an iPhone raises
+  // the copy/share sheet even with selection off (D69).
+  await expect(
+    page.getByTestId("canvas-surface"),
+    "the iOS callout suppression is gone",
+  ).toHaveClass(/\[-webkit-touch-callout:none\]/);
 
   // The one exception, and the reason this is a rule with a hole in it rather
   // than a blanket: recognised text is real text, and long-press is the only
   // way to copy it on a phone (D69).
-  const overlay = await page.evaluate(() => {
-    const style = document.createElement("style");
-    document.head.append(style);
-    const probe = document.createElement("span");
-    probe.className = "ocr-word";
-    document.querySelector("[data-testid=canvas-surface]")!.append(probe);
-    const value = getComputedStyle(probe).userSelect;
-    probe.remove();
-    style.remove();
-    return value;
-  });
-  expect(overlay, "recognised text can no longer be selected").toBe("text");
+  // Asked of a real recognised word rather than of a synthetic probe: the
+  // words are styled from one constant shared with the code that measures
+  // them, and a probe assembled here would only assert what this test itself
+  // wrote down. They exist only in reading mode, which is also the only place
+  // selecting them means anything — two taps to get in.
+  const box = (await node.boundingBox())!;
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  const word = page
+    .locator("[data-testid=ocr-overlay][data-active] [data-word]")
+    .first();
+  await expect(word).toBeAttached();
+  await expect(word, "recognised text can no longer be selected").toHaveCSS(
+    "user-select",
+    "text",
+  );
 });
 
 test("the chrome holds itself clear of a cutout", async ({ page }) => {
@@ -313,7 +321,7 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   // measurable half is that every island is inside the padded layer and the
   // canvas is not — that is what makes one rule move all of them (D68).
   const layered = await page.evaluate(() => {
-    const layer = document.querySelector(".chrome-layer");
+    const layer = document.querySelector("[data-testid=chrome-layer]");
     const chip = document.querySelector("[data-testid=touch-bar]");
     const surface = document.querySelector("[data-testid=canvas-surface]");
     return {
@@ -325,6 +333,11 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   expect(layered.exists, "no chrome layer to carry the insets").toBe(true);
   expect(layered.holdsChip).toBe(true);
   expect(layered.holdsCanvas, "the canvas must stay full bleed").toBe(false);
+
+  // The insets themselves, which resolve to 0 here and so cannot be measured.
+  await expect(page.getByTestId("chrome-layer")).toHaveClass(
+    /pt-\[env\(safe-area-inset-top\)\]/,
+  );
 
   // And the declaration itself, which no amount of DOM inspection can reach.
   const html = readFileSync(root + "index.html", "utf8");

@@ -60,7 +60,7 @@ test("a remembered account puts a reconnect under the icons", async ({
     "aria-label",
     "Reconnect as Some One someone@example.com",
   );
-  await expect(pill.locator(".material-symbol")).toHaveText("warning");
+  await expect(pill.locator("[data-icon]")).toHaveText("warning");
 
   // The photo cannot load. A broken image where a face should be reads as a
   // broken connection, so the fallback is the initial.

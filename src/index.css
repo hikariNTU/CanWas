@@ -7,122 +7,32 @@
   color-scheme: dark;
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
-
-body {
-  margin: 0;
-  overscroll-behavior: none;
-  background-color: var(--color-neutral-950);
-  color: var(--color-neutral-100);
-  font-weight: 700;
-  font-family:
-    "Noto Sans",
-    "Noto Sans TC",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    sans-serif;
-}
-
 /* Tailwind's reset gives buttons `cursor: default`, which is correct for a
    native control and wrong for this app: every button here is chrome floating
    over a canvas that has cursors of its own — grab, grabbing, move, text — so
    a control that does not change the cursor reads as part of the board. Set
    once, rather than as a utility on forty class lists that would each have to
-   remember it.
+   remember it. Element and role selectors, so there is nothing to inline
+   into — the point is to catch every control without naming any of them.
 
    `:not(:disabled)` because a disabled control is exactly the case where the
    default arrow is the honest answer. Base UI renders its menu and dialog
-   items as divs, which is what the role selectors are for. */
-button:not(:disabled),
-label[for],
-summary,
-[role="menuitem"]:not([data-disabled]),
-[role="menuitemradio"]:not([data-disabled]) {
-  cursor: pointer;
-}
+   items as divs, which is what the role selectors are for.
 
-/* Material Symbols renders a glyph from the element's text via a ligature, so
-   the text must survive untouched: no capitalisation, no letter-spacing, and
-   `translate="no"` on the element itself.
-
-   `@utility`, not a plain class, for the reason `glass` is one: an unlayered
-   class outranks every layered rule whatever its specificity, so `display` and
-   `user-select` here would beat any utility a caller passed through `Icon`'s
-   `className` — silently, and only for the properties this block happens to
-   set. As a utility it loses to a later utility the way it should. */
-@utility material-symbol {
-  /* Block, not inline-block: an inline box is positioned against the text
-     baseline, which lifts the glyph above the label beside it. `vertical-align:
-     middle` only trades that for a smaller offset in the other direction, since
-     it centres on the baseline plus half an x-height rather than on the line.
-     As a block the glyph is laid out by its flex or grid parent, which centres
-     it exactly. Every use site is inside such a container. */
-  display: block;
-  font-family: "Material Symbols Rounded";
-  font-style: normal;
-  font-weight: 700;
-  font-variation-settings:
-    "FILL" 0,
-    "wght" 700,
-    "GRAD" 0,
-    "opsz" 24;
-  font-feature-settings: "liga";
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  user-select: none;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* The layer every floating widget lives in.
-   Padding rather than per-widget offsets: an absolutely positioned child is
-   laid out against its containing block's PADDING box, so one rule here moves
-   all five islands clear of a cutout at once and each keeps its own plain
-   `top-3` / `bottom-3`. The canvas underneath is deliberately not inset — it
-   runs edge to edge and under the camera (D68). */
-.chrome-layer {
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
-}
-
-/* A press-and-hold on the board is a gesture, never a text selection.
-   Without this, holding a finger on an image raises the OS selection handles
-   and takes the whole canvas — every label, every button — as one blob of
-   text. `-webkit-touch-callout` is the second half: iOS shows a copy/share
-   callout for a held image even when selection is off (D69). The exception is
-   `.ocr-word` below, which re-enables selection so recognised text can still
-   be held and copied. */
-.canvas-surface {
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-
-/* The OCR overlay: real text, invisible ink. The browser draws the selection
-   highlight itself, so it lands exactly where a native text selection would.
-   Font must match OVERLAY_FONT in ocr-overlay.tsx — the widths measured there
-   are what each span's scaleX correction is built from. */
-.ocr-word {
-  font-family: "Noto Sans", ui-sans-serif, sans-serif;
-  font-weight: 700;
-  /* Back on, against `.canvas-surface`. This is the one thing on the board
-     that is genuinely text, and long-press is the only way to copy it on a
-     phone. */
-  user-select: text;
-  -webkit-touch-callout: default;
-  border-bottom: 2px dashed
-    color-mix(in srgb, var(--color-sky-400) 70%, transparent);
-}
-.ocr-word::selection {
-  background: color-mix(in srgb, var(--color-sky-400) 45%, transparent);
-  color: transparent;
+   `@layer base` matters as much as the rule. Unlayered CSS outranks every
+   layered rule whatever its specificity, so as plain declarations these beat
+   any `cursor-*` utility written on a control — which is exactly how
+   `cursor-default` in `menuItemClass` came to be dead text nobody noticed. In
+   the base layer they are the default they were meant to be, and a utility
+   wins. */
+@layer base {
+  button:not(:disabled),
+  label[for],
+  summary,
+  [role="menuitem"]:not([data-disabled]),
+  [role="menuitemradio"]:not([data-disabled]) {
+    cursor: pointer;
+  }
 }
 
 /* Floating chrome, as one surface treatment.

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" class="dark h-full">
   <head>
     <meta charset="UTF-8" />
     <!-- `viewport-fit=cover` lets the board paint under a notch, a punch-hole
@@ -39,8 +39,14 @@
     />
     <title>CanWas</title>
   </head>
-  <body>
-    <div id="root"></div>
+  <!-- The page's own ground, in the markup rather than in a `body` rule: the
+       stylesheet keeps only what has no element to live on. `overscroll-none`
+       stops the rubber-band that would otherwise drag the whole page while the
+       canvas is being panned. -->
+  <body
+    class="h-full overscroll-none bg-neutral-950 font-[Noto_Sans,Noto_Sans_TC,ui-sans-serif,system-ui,-apple-system,sans-serif] font-bold text-neutral-100"
+  >
+    <div id="root" class="h-full"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -17,6 +17,28 @@ import type { Word } from "@/board/types";
  */
 
 /**
+ * One recognised word: real text, invisible ink.
+ *
+ * Utilities rather than a class in `index.css`, so the whole appearance of a
+ * word is readable in one place — but shared as a constant, because two paths
+ * render one of these and they must agree exactly. The JSX below draws the
+ * words; `measureWidths` draws throwaway copies to measure, and a font
+ * difference of any kind between the two turns every `scaleX` correction into
+ * a wrong number.
+ *
+ * `select-text` and the callout are the exceptions to the canvas surface
+ * (D69), which turns both off for the whole board: this is the one thing on it
+ * that is genuinely text, and a long press is the only way to copy it on a
+ * phone. The selection colours are painted by the browser, so they land
+ * exactly where a native selection would.
+ */
+const OCR_WORD =
+  'font-["Noto_Sans",ui-sans-serif,sans-serif] font-bold ' +
+  "select-text [-webkit-touch-callout:default] " +
+  "border-b-2 border-dashed border-sky-400/70 " +
+  "selection:bg-sky-400/45 selection:text-transparent";
+
+/**
  * Measures every word at the size it will actually render at, in one offscreen
  * pass.
  *
@@ -47,8 +69,8 @@ function measureWidths(
 
   const probes = texts.map((text, index) => {
     const span = document.createElement("span");
-    // The same class the real spans carry, so the same font is measured.
-    span.className = "ocr-word";
+    // The same classes the real spans carry, so the same font is measured.
+    span.className = OCR_WORD;
     // Each probe is taken out of flow so it starts at x = 0. Laid out as inline
     // siblings on one line they each begin at a fractional offset, and glyph
     // positions snap to that offset — enough to move a measured width by half a
@@ -81,7 +103,7 @@ function measureWidths(
  * `fonts.ready` resolves once, and `loadingdone` covers fonts that arrive
  * later, so both are watched.
  */
-/** Must name the same face as `.ocr-word` in index.css. */
+/** Must name the same face as `OCR_WORD` above. */
 const OVERLAY_FONT_QUERY = '700 100px "Noto Sans"';
 
 function useFontRevision(): number {
@@ -275,7 +297,7 @@ export function OcrOverlay({
                   <span
                     key={index}
                     data-word
-                    className="ocr-word inline-block origin-top-left align-top whitespace-pre text-transparent"
+                    className={`${OCR_WORD} inline-block origin-top-left align-top whitespace-pre text-transparent`}
                     style={{
                       // Pinned to the measured width so the trailing space below
                       // overflows instead of widening the box the correction is

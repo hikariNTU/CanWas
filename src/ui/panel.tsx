@@ -30,7 +30,7 @@ import { Icon } from "@/ui/icon";
  * covers the pointer, which is what makes dropping the ring safe.
  */
 export const menuItemClass =
-  "flex w-full cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-neutral-300 select-none data-[highlighted]:bg-white/10 data-[highlighted]:text-neutral-100" +
+  "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-neutral-300 select-none data-[highlighted]:bg-white/10 data-[highlighted]:text-neutral-100" +
   " outline-none";
 
 /** A rule between sections. Never a fixed grey — see above. */

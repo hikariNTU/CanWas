@@ -26,15 +26,13 @@ test("every icon resolves to a glyph rather than to its own name", async ({
 
   await page.evaluate(() => document.fonts.ready);
 
-  const glyphs = await page
-    .locator(".material-symbol")
-    .evaluateAll((elements) =>
-      elements.map((element) => {
-        const rect = element.getBoundingClientRect();
-        const size = parseFloat(getComputedStyle(element).fontSize);
-        return { name: element.textContent ?? "", width: rect.width, size };
-      }),
-    );
+  const glyphs = await page.locator("[data-icon]").evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      const size = parseFloat(getComputedStyle(element).fontSize);
+      return { name: element.textContent ?? "", width: rect.width, size };
+    }),
+  );
 
   expect(glyphs.length).toBeGreaterThan(0);
   for (const glyph of glyphs) {
