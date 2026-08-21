@@ -167,3 +167,18 @@ test("reordering is reachable without a keyboard", async ({ page }) => {
     )
     .toEqual([before[1], before[0]]);
 });
+
+test("the highlighted item is not also ringed by the browser", async ({
+  page,
+}) => {
+  await paste(page);
+  await page.getByTestId("board-node").click({ button: "right" });
+
+  // Base UI focuses the item it highlights, so without `outline-none` the
+  // browser draws its own ring on top of the wash — two indicators for one
+  // state, and the ring does not follow the item's rounding.
+  await page.keyboard.press("ArrowDown");
+  const item = page.getByTestId("node-menu-copy");
+  await expect(item).toBeFocused();
+  await expect(item).toHaveCSS("outline-style", "none");
+});

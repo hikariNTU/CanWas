@@ -7,6 +7,7 @@ import { useState } from "react";
 import { isBoardDeleted } from "@/board/types";
 import { boardSlug } from "@/lib/slug";
 import { Icon } from "@/ui/icon";
+import { menuItemClass } from "@/ui/panel";
 import { boardsMetaAtom } from "@/storage/boards-atom";
 import {
   createBoard,
@@ -24,9 +25,6 @@ const languages: { value: ProvidedLang; label: string }[] = [
   { value: "en-US", label: "English" },
   { value: "zh-TW", label: "繁體中文" },
 ];
-
-const itemClass =
-  "flex w-full cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-neutral-300 select-none data-[highlighted]:bg-white/10 data-[highlighted]:text-neutral-100";
 
 /**
  * The board screen's only menu. With no home screen (D31), everything that is
@@ -101,7 +99,7 @@ export function BoardMenu({
             <Menu.Popup className="max-h-[80vh] min-w-56 overflow-y-auto rounded-lg glass-strong p-1 text-sm">
               <Menu.Item
                 data-testid="menu-new-board"
-                className={itemClass}
+                className={menuItemClass}
                 onClick={() => void openNewBoard()}
               >
                 <Icon
@@ -111,7 +109,7 @@ export function BoardMenu({
                 />
                 {t("home.create")}
               </Menu.Item>
-              <Menu.Item className={itemClass} onClick={onResetView}>
+              <Menu.Item className={menuItemClass} onClick={onResetView}>
                 <Icon
                   name="recenter"
                   size={18}
@@ -121,7 +119,7 @@ export function BoardMenu({
               </Menu.Item>
               <Menu.Item
                 data-testid="menu-delete-board"
-                className={`${itemClass} data-[highlighted]:text-red-400`}
+                className={`${menuItemClass} data-[highlighted]:text-red-400`}
                 onClick={() => setConfirmingDelete(true)}
               >
                 <Icon
@@ -155,7 +153,7 @@ export function BoardMenu({
                     key={board.id}
                     value={board.id}
                     data-testid="menu-board-item"
-                    className={itemClass}
+                    className={menuItemClass}
                   >
                     <Indicator />
                     <span className="truncate">{board.name}</span>
@@ -175,7 +173,7 @@ export function BoardMenu({
                   <Menu.RadioItem
                     key={language.value}
                     value={language.value}
-                    className={itemClass}
+                    className={menuItemClass}
                   >
                     <Indicator />
                     {language.label}

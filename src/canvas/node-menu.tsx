@@ -8,6 +8,7 @@ import { boardNodesAtom } from "@/board/store";
 import type { Asset, BoardNode } from "@/board/types";
 import { useTranslation, type TranslationsKey } from "@/translations";
 import { Icon } from "@/ui/icon";
+import { menuItemClass } from "@/ui/panel";
 
 /**
  * What a right-click or a long press on a node offers (D83).
@@ -18,9 +19,6 @@ import { Icon } from "@/ui/icon";
  * by the primitive, which starts a timer on `pointerdown` and cancels it if the
  * finger travels; nothing here has to know about touch at all.
  */
-
-const itemClass =
-  "flex w-full cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-neutral-300 select-none data-[highlighted]:bg-white/10 data-[highlighted]:text-neutral-100";
 
 /**
  * Puts nodes on the system clipboard, outside a `copy` event.
@@ -73,7 +71,9 @@ function Item({
     <ContextMenu.Item
       data-testid={testId}
       className={
-        danger ? `${itemClass} data-[highlighted]:text-red-400` : itemClass
+        danger
+          ? `${menuItemClass} data-[highlighted]:text-red-400`
+          : menuItemClass
       }
       onClick={onClick}
     >
