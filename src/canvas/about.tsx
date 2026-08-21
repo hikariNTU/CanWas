@@ -49,14 +49,15 @@ function formatBytes(bytes: number): string {
  * as one dense line rather than five rows — it is a reading to relay, not a
  * setting to understand (D98).
  *
- * `pad` is what the chrome layer actually resolved to, `env` is what the
- * browser reports before any floor is applied, and the two flags are the
- * conditions the floor is gated on. A disagreement between `pad` and `env` is
- * the floor working; `std no` on an installed app is the floor never running.
+ * `off` is where the chrome layer's edges actually landed, `env` is what the
+ * browser reports before any floor or gutter is applied, and the two flags are
+ * the conditions the floor is gated on. `off` under `env` at the bottom is the
+ * 12px gutter being absorbed (D101); `std no` on an installed app is the floor
+ * never running.
  */
 function measureEdges(): string {
   const layer = document.querySelector("[data-testid=chrome-layer]");
-  const pad = layer ? getComputedStyle(layer) : null;
+  const offsets = layer ? getComputedStyle(layer) : null;
   // A throwaway element is the only way to read an `env()` the stylesheet has
   // not already been asked to apply somewhere.
   const probe = document.createElement("div");
@@ -72,7 +73,9 @@ function measureEdges(): string {
     Math.round(parseFloat(String(value)));
 
   return [
-    `pad ${round(pad?.paddingTop ?? 0)}/${round(pad?.paddingBottom ?? 0)}`,
+    // The layer's own offsets, which is where the insets live since D99 —
+    // this row read `padding` until padding turned out to be the bug.
+    `off ${round(offsets?.top ?? 0)}/${round(offsets?.bottom ?? 0)}`,
     `env ${Math.round(rect.height)}/${Math.round(rect.width)}`,
     `std ${standalone ? "yes" : "no"}`,
     `cal ${callout ? "yes" : "no"}`,

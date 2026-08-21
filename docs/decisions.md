@@ -2912,3 +2912,34 @@ everything else it checks, this is one key away at all times and invisible until
 someone installs the app on a phone.
 
 **Reverses if:** Android stops masking, which it will not.
+
+## D101 — The bottom inset absorbs the gutter it would otherwise stack with
+
+With the insets finally reaching the islands (D99), the top was right and the
+bottom was too far in. Every island sits 12px from its edge, and at the bottom
+that 12 landed on top of the home indicator's 34 rather than beside it: 46px of
+nothing under the controls that are meant to be under a thumb, on the corner of
+the screen where reach is scarcest.
+
+The bottom inset is `max(env(safe-area-inset-bottom) - 12px, 0px)` now, so the
+gutter is taken out of the safe area rather than added to it and the chrome's
+own edge falls exactly on the safe-area line. `max(…, 0px)` keeps a device
+without a home indicator at its plain 12px.
+
+Not applied at the top, where the same 12px reads as the gap between the islands
+and the status bar rather than as waste — which is what the device showed, and
+the reason this is a rule about the bottom rather than a symmetrical one.
+
+The standalone floor for the bottom goes with it. It was only ever insurance
+against a browser reporting 0, and a browser reporting 0 at the bottom has no
+home indicator to clear. The top floor stays.
+
+The About readout moved with the mechanism: it printed `pad`, which read the
+padding that D99 removed and so reported 0/0 on a layout that was working. It
+prints `off` now — the layer's own resolved offsets. A diagnostic that measures
+the property the code used to use is worse than none, because it reads as a
+failure.
+
+**Reverses if:** the bottom chrome ever stops being edge-hugging — a footer with
+its own background would want the full inset, since the inset is what keeps it
+off the indicator rather than what spaces it from the edge.

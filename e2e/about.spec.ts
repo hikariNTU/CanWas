@@ -104,7 +104,7 @@ test("the panel reports what this device says about its edges", async ({
   await expect(edges).toBeVisible();
 
   const text = (await edges.innerText()).trim();
-  expect(text).toMatch(/pad \d+\/\d+/);
+  expect(text).toMatch(/off \d+\/\d+/);
   expect(text).toMatch(/env \d+\/\d+/);
   expect(text).toMatch(/std (yes|no)/);
   expect(text).toMatch(/cal (yes|no)/);
