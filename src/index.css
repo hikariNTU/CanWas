@@ -111,6 +111,8 @@ summary,
      phone. */
   user-select: text;
   -webkit-touch-callout: default;
+  border-bottom: 2px dashed
+    color-mix(in srgb, var(--color-sky-400) 70%, transparent);
 }
 .ocr-word::selection {
   background: color-mix(in srgb, var(--color-sky-400) 45%, transparent);

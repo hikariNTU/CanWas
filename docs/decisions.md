@@ -2224,3 +2224,34 @@ This was worth doing on its own terms.
 **Reverses if:** a page ever needs to be listed that is not a build input — a
 redirect, or something served from `public/`. Then `DOCUMENTS` stops being the
 input map and becomes a list the input map is derived from.
+
+## D82 — The silent path names the account
+
+`prompt: ""` was doing less than it appeared to. It suppresses the _consent_
+screen, and it suppresses the account chooser only when there is nothing to
+choose: one Google session, one possible answer, popup opens and closes. On a
+browser signed into two accounts there is an ambiguity, so Google asks — every
+reconnect, however many times the same person has already picked the same
+account. Which is the machine most likely to have two accounts, and the least
+likely to forgive being asked hourly.
+
+`lastAccount()` already held the email, for a different purpose: telling a
+signed-out browser whose Reconnect button to draw. It is also the answer to the
+ambiguity, so it is now passed as `hint`.
+
+**Per request, not at construction.** `initTokenClient` is called once and the
+client cached for the life of the page, so a hint fixed there could never
+change — signing out to switch accounts would go on naming the old one.
+
+**Only on the silent path.** `prompt: "consent"` is what runs when someone is
+deliberately connecting, and hinting there would steer them back toward the
+account they may be trying to leave. Sign-out clears the remembered account, so
+the next connection is unhinted by construction.
+
+Worth noting what the hint is not: it opens nothing, proves nothing, and is
+refused like any other request if the grant is gone. It is a suggestion about
+whose session to use, checked against session cookies on Google's own origin.
+
+**Reverses if:** the app ever supports two accounts at once. Then "the last
+account" stops being a single answer and the hint has to come from whichever
+account owns the board being synced.

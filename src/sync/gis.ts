@@ -15,7 +15,18 @@ export interface TokenResponse {
 }
 
 export interface TokenClient {
-  requestAccessToken(overrides?: { prompt?: "" | "none" | "consent" }): void;
+  requestAccessToken(overrides?: {
+    prompt?: "" | "none" | "consent";
+    /**
+     * Which account to assume, as an email address.
+     *
+     * Passed per request rather than baked into `initTokenClient`, because the
+     * client is created once and cached for the life of the page: a hint fixed
+     * at construction could never be changed, and signing out to switch
+     * accounts would keep offering the old one.
+     */
+    hint?: string;
+  }): void;
 }
 
 interface GoogleOAuth2 {

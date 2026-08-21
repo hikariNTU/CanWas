@@ -118,13 +118,24 @@ export async function requestToken(
     },
   });
 
+  // Which account, when this browser already knows. Without it, Google shows
+  // its account chooser to anyone signed into more than one account — every
+  // time, however often they have already chosen, because `prompt: ""` only
+  // suppresses the chooser when there is no ambiguity to resolve. The hint is
+  // the answer to that ambiguity (D82).
+  //
+  // Only on the silent path. `prompt: "consent"` is what runs when the user is
+  // deliberately connecting an account, and hinting there would quietly steer
+  // them back to the one they may be trying to leave.
+  const hint = prompt === "" ? (lastAccount()?.email ?? "") : "";
+
   const result = await new Promise<{
     token?: string;
     expiresIn?: number;
     error?: string;
   }>((resolve) => {
     pending = resolve;
-    client!.requestAccessToken({ prompt });
+    client!.requestAccessToken({ prompt, ...(hint ? { hint } : {}) });
   });
 
   if (!result.token) {
