@@ -2757,10 +2757,12 @@ is the same condition D91 recorded and remains unmet.
 Two things went wrong the moment D93 made the board full bleed on an installed
 iPhone, and they look like one thing on a screenshot.
 
-**The islands landed under the clock.** With `black-translucent`, WebKit hands
-the page the whole screen and then reports `safe-area-inset-top` as 0, so the
-chrome layer's padding — correct, and doing exactly what D68 asked — resolved to
-nothing and the top row sat over the status bar. The four utilities are now one
+**The islands landed under the clock.** The diagnosis below — that WebKit
+reports `safe-area-inset-top` as 0 under `black-translucent` — was wrong, and
+D99 records the measurement that disproved it. The device reports 62 and 34,
+truthfully. The floor added here is harmless and stays for a browser that does
+report 0, but it fixed nothing, because the padding it floored was never moving
+anything (D99). The four utilities are now one
 `.chrome-inset` class with `max(env(safe-area-inset-top), 44px)` under
 `@supports (-webkit-touch-callout: none)` and `(display-mode: standalone)`:
 WebKit-on-iOS, installed, and nowhere else. A Safari tab reports 0 correctly,
@@ -2839,3 +2841,43 @@ half an hour that a permanent row costs nothing.
 **Reverses if:** the panel ever becomes something a user is expected to read
 rather than a place to look things up, at which point diagnostics belong behind
 something else.
+
+## D99 — Padding does not move an absolutely positioned child
+
+Four attempts at the same overlap (D68, D93, D96, and the floor), and the bug
+was in the first one the whole time.
+
+D68 put the safe-area insets on the chrome layer as *padding*, reasoning that an
+absolutely positioned child is laid out against its containing block's padding
+box. That is true and it is not what it sounds like: the padding box *includes*
+the padding, so `top: 12px` on an island measures from just inside the layer's
+border, and no amount of padding moves it. Padding would have shifted in-flow
+children, and this layer has none — every island in it is absolutely positioned.
+
+The layer is inset instead of padded now: `top: env(safe-area-inset-top)` and
+its three siblings on the layer itself, which shrinks the containing block and
+takes the islands with it.
+
+The measurement is what ended this, and it took a readout on the device (D98) to
+get one. The panel said:
+
+```
+pad 62/34 · env 62/34 · std yes · cal yes · 402×812
+```
+
+Every guess this had been through was wrong. The insets were not zero — 62 for a
+Dynamic Island, 34 for the home indicator, exactly right. `black-translucent`
+was working. The floor was applying. The padding was 62px, as asked. And the
+islands were still at 12px from the top of the screen, because padding was never
+going to move them. A probe in the emulated browser then reproduced it in one
+line: set the layer's `padding-top` to 62 and the board menu's
+`getBoundingClientRect().top` stays at 12; set the layer's `top` to 62 and it
+becomes 74.
+
+That probe is now the test. Three rounds of this shipped with a test that
+asserted the class name was present and never that it did anything, which is the
+whole reason a wrong mechanism survived four attempts — on a desktop the insets
+are 0, so a layer that ignores them looks identical to one that honours them.
+
+**Reverses if:** nothing. Padding is not going to start moving absolutely
+positioned children.

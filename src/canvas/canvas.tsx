@@ -501,7 +501,7 @@ export function Canvas({ boardId }: { boardId: string }) {
             (D68). */}
         <div
           data-testid="chrome-layer"
-          className="chrome-inset pointer-events-none absolute inset-0"
+          className="chrome-inset pointer-events-none"
         >
           <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1">
             <BoardMenu boardId={boardId} onResetView={resetViewport} />

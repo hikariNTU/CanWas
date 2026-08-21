@@ -334,6 +334,26 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   expect(layered.holdsChip).toBe(true);
   expect(layered.holdsCanvas, "the canvas must stay full bleed").toBe(false);
 
+  // That the insets actually move something, which is the assertion three
+  // rounds of this went without. Padding on the layer moved nothing: an
+  // absolutely positioned child measures `top` from inside the border, and the
+  // padding box it is laid out against includes the padding rather than
+  // starting after it. The layer's own offsets do move it (D99). Driven with
+  // an inline style because `env()` resolves to 0 in every browser this suite
+  // can reach.
+  const moved = await page.evaluate(() => {
+    const layer = document.querySelector(
+      "[data-testid=chrome-layer]",
+    ) as HTMLElement;
+    const menu = document.querySelector("[data-testid=board-menu]")!;
+    const before = menu.getBoundingClientRect().top;
+    layer.style.top = "62px";
+    const after = menu.getBoundingClientRect().top;
+    layer.style.top = "";
+    return after - before;
+  });
+  expect(moved, "the layer's inset does not carry its islands").toBe(62);
+
   // The insets themselves, which resolve to 0 here and so cannot be measured.
   // One class rather than four utilities, because iOS needs a floor under the
   // top one and `max()` does not fit in a class name (D96).
@@ -344,8 +364,12 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   );
   expect(
     css,
-    "iOS reports the top inset as 0 in a standalone app, so it needs a floor",
+    "a browser that reports 0 where it should not still needs a floor",
   ).toContain("max(env(safe-area-inset-top), 44px)");
+  // Offsets, not padding: the whole point of D99.
+  expect(css, "the layer is padded rather than inset").not.toContain(
+    "padding-top: env(safe-area-inset-top)",
+  );
 
   // And the declaration itself, which no amount of DOM inspection can reach.
   const html = readFileSync(root + "index.html", "utf8");

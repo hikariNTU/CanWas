@@ -35,8 +35,15 @@
   }
 }
 
-/* The insets the chrome layer holds itself clear with (D68), as one class
-   rather than four utilities — because on iOS they need a floor under them.
+/* The insets the chrome layer holds itself clear with (D68).
+
+   Offsets, not padding. Padding was the original mistake and it survived three
+   attempts at this because it is invisible everywhere it can be tested: an
+   absolutely positioned child is laid out against its containing block's
+   padding box, and the padding box *includes* the padding — so `top: 12px`
+   measures from inside the border and padding moves nothing. Only in-flow
+   children would have shifted, and this layer has none. Inset the layer itself
+   and its children come with it (D99).
 
    Installed to a home screen with `black-translucent`, WebKit hands the page
    the whole screen and then reports `safe-area-inset-top` as 0, so padding
@@ -51,19 +58,25 @@
    this is wrong — from a Safari tab, where the browser's own chrome occupies
    the same space and the reported 0 is correct (D96).
 
+   The floor stays for a browser that reports 0 where it should not, which is
+   what the published accounts of `black-translucent` describe. On the device
+   this was diagnosed against it changes nothing: that phone reports 62 and 34,
+   truthfully, and `max()` believes it.
+
    Unlayered, so it outranks the utilities it replaces if any survive. */
 .chrome-inset {
-  padding-top: env(safe-area-inset-top);
-  padding-right: env(safe-area-inset-right);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
+  position: absolute;
+  top: env(safe-area-inset-top);
+  right: env(safe-area-inset-right);
+  bottom: env(safe-area-inset-bottom);
+  left: env(safe-area-inset-left);
 }
 
 @supports (-webkit-touch-callout: none) {
   @media (display-mode: standalone) {
     .chrome-inset {
-      padding-top: max(env(safe-area-inset-top), 44px);
-      padding-bottom: max(env(safe-area-inset-bottom), 20px);
+      top: max(env(safe-area-inset-top), 44px);
+      bottom: max(env(safe-area-inset-bottom), 20px);
     }
   }
 }
