@@ -362,3 +362,35 @@ test("editing the name does not trigger board shortcuts", async ({ page }) => {
   await input.press("Enter");
   await expect(page.getByTestId("board-name")).toHaveText("ab");
 });
+
+test("a long board name does not stretch the menu across the canvas", async ({
+  page,
+}) => {
+  await page.goto("?engine=mock#/longname");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+
+  await page.getByTestId("board-name").click();
+  const input = page.getByTestId("board-name-input");
+  await input.fill("test long board name so long it reaches the other side");
+  await input.press("Enter");
+
+  await page.getByTestId("board-menu").click();
+  const popup = page.getByTestId("board-menu-popup");
+  await expect(popup).toBeVisible();
+
+  // Bounded by the popup, not by the longest name in it. The name is whatever
+  // someone typed, and one long one used to widen every item with it.
+  const width = await popup.evaluate(
+    (element) => element.getBoundingClientRect().width,
+  );
+  expect(width).toBeLessThanOrEqual(288);
+
+  // Clipped rather than wrapped: a row that grows to two lines is the same
+  // problem in the other direction.
+  const item = page.getByTestId("menu-board-item").first();
+  const clipped = await item.evaluate((element) => {
+    const span = element.querySelector("span")!;
+    return span.scrollWidth > span.clientWidth;
+  });
+  expect(clipped).toBe(true);
+});

@@ -96,7 +96,15 @@ export function BoardMenu({
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner sideOffset={6} align="start">
-            <Menu.Popup className="max-h-[80vh] min-w-56 overflow-y-auto rounded-lg glass-strong p-1 text-sm outline-none">
+            {/* Bounded in both directions. A board is named by whoever made it,
+                and one long name stretched the whole menu across the canvas —
+                every other item with it. `min(…, 100vw - 2rem)` so the bound
+                is the phone's screen when the screen is the smaller of the
+                two. */}
+            <Menu.Popup
+              data-testid="board-menu-popup"
+              className="max-h-[80vh] w-[min(18rem,calc(100vw-2rem))] overflow-y-auto rounded-lg glass-strong p-1 text-sm outline-none"
+            >
               <Menu.Item
                 data-testid="menu-new-board"
                 className={menuItemClass}
@@ -156,6 +164,9 @@ export function BoardMenu({
                     className={menuItemClass}
                   >
                     <Indicator />
+                    {/* No `min-w-0`: `truncate` sets `overflow: hidden`, and a
+                        flex item whose overflow is not visible resolves its
+                        automatic minimum to zero on its own. */}
                     <span className="truncate">{board.name}</span>
                   </Menu.RadioItem>
                 ))}
