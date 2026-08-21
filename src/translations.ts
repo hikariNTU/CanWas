@@ -146,6 +146,10 @@ const translations = {
     "zh-TW": "拍照",
     "en-US": "Take a photo",
   },
+  "about.display": {
+    "zh-TW": "螢幕邊界",
+    "en-US": "Edges",
+  },
   "image.failed": {
     "zh-TW": "圖片無法加入",
     "en-US": "That image could not be added",

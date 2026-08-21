@@ -91,3 +91,27 @@ test("the sync panel offers exactly one of sign-in or an explanation", async ({
   const google = page.locator('script[src*="accounts.google.com"]');
   await expect(google).toHaveCount(0);
 });
+
+test("the panel reports what this device says about its edges", async ({
+  page,
+}) => {
+  // The values differ per device and per install and cannot be read from
+  // anywhere else: a phone has no developer tools, and this emulator reports
+  // zeroes. What is assertable here is the shape of the line and that the
+  // flags are real answers rather than blanks (D98).
+  await page.getByTestId("about-open").click();
+  const edges = page.getByTestId("about-display");
+  await expect(edges).toBeVisible();
+
+  const text = (await edges.innerText()).trim();
+  expect(text).toMatch(/pad \d+\/\d+/);
+  expect(text).toMatch(/env \d+\/\d+/);
+  expect(text).toMatch(/std (yes|no)/);
+  expect(text).toMatch(/cal (yes|no)/);
+  // The viewport, which is the one number here a headless browser knows.
+  const inner = await page.evaluate(() => [
+    window.innerWidth,
+    window.innerHeight,
+  ]);
+  expect(text).toContain(`${inner[0]}×${inner[1]}`);
+});

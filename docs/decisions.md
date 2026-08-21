@@ -2803,3 +2803,39 @@ served. What survives is `if (open && reading)`.
 **Reverses if:** reading ever becomes a mode you stay in — a document reader
 rather than a look at one picture — at which point a menu inside it is worth
 the collision, and it should be a menu built for reading rather than the board's.
+
+## D98 — The About panel reports what the device says about its own edges
+
+Three attempts at the iOS status bar (D93, D96) were three guesses, and the
+third still overlapped the top islands. The reason they were guesses is that
+nothing in this repository can observe the failure: an installed app on a phone
+has no developer tools, the emulated Pixel in the test suite reports zero for
+every inset, and the published record on this corner of WebKit contradicts
+itself — the `black-translucent` recipe is variously described as required, as
+unnecessary since iOS 26, and as broken outright, and Apple's own forum thread
+asking how to do it has no replies.
+
+So the panel now prints a reading:
+
+```
+pad 44/20 · env 0/0 · std yes · cal yes · 393×852
+```
+
+`pad` is what the chrome layer's padding actually resolved to, `env` is what the
+browser reports for the top and bottom insets before any floor is applied, `std`
+and `cal` are the two conditions the floor is gated on — `(display-mode:
+standalone)` and `@supports (-webkit-touch-callout: none)` — and the last pair
+is the viewport. Every failure mode this has been through is a different line.
+`std no` on an installed app means the floor never ran. `pad 0/0` with `std yes`
+means the rule is there and something else is overriding it. `env 47/34` with
+the islands still under the clock means the padding is not reaching the elements
+and the containing block is wrong.
+
+One line rather than five rows, because it is a reading to relay, not a setting
+to understand. It stays after this is fixed: the next device-specific layout
+problem will want the same numbers, and building this again from scratch is
+half an hour that a permanent row costs nothing.
+
+**Reverses if:** the panel ever becomes something a user is expected to read
+rather than a place to look things up, at which point diagnostics belong behind
+something else.

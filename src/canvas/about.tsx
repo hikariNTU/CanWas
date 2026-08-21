@@ -40,6 +40,46 @@ function formatBytes(bytes: number): string {
   return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
 }
 
+/**
+ * What this device says about its own edges.
+ *
+ * Here because the answers differ per device and per install, and none of them
+ * can be reached from a machine that is not the one having the problem: a phone
+ * has no developer tools, and an emulator reports zeroes for all of it. Written
+ * as one dense line rather than five rows — it is a reading to relay, not a
+ * setting to understand (D98).
+ *
+ * `pad` is what the chrome layer actually resolved to, `env` is what the
+ * browser reports before any floor is applied, and the two flags are the
+ * conditions the floor is gated on. A disagreement between `pad` and `env` is
+ * the floor working; `std no` on an installed app is the floor never running.
+ */
+function measureEdges(): string {
+  const layer = document.querySelector("[data-testid=chrome-layer]");
+  const pad = layer ? getComputedStyle(layer) : null;
+  // A throwaway element is the only way to read an `env()` the stylesheet has
+  // not already been asked to apply somewhere.
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;top:0;left:0;visibility:hidden;height:env(safe-area-inset-top);width:env(safe-area-inset-bottom)";
+  document.body.append(probe);
+  const rect = probe.getBoundingClientRect();
+  probe.remove();
+
+  const standalone = window.matchMedia("(display-mode: standalone)").matches;
+  const callout = CSS.supports("-webkit-touch-callout", "none");
+  const round = (value: string | number) =>
+    Math.round(parseFloat(String(value)));
+
+  return [
+    `pad ${round(pad?.paddingTop ?? 0)}/${round(pad?.paddingBottom ?? 0)}`,
+    `env ${Math.round(rect.height)}/${Math.round(rect.width)}`,
+    `std ${standalone ? "yes" : "no"}`,
+    `cal ${callout ? "yes" : "no"}`,
+    `${Math.round(window.innerWidth)}×${Math.round(window.innerHeight)}`,
+  ].join(" · ");
+}
+
 function Row({
   label,
   testId,
@@ -67,6 +107,9 @@ export function About() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [storage, setStorage] = useState<StorageBreakdown | null>(null);
+  // Measured when the panel opens rather than at render: it depends on layout,
+  // and it changes when the phone is rotated or the app is reinstalled.
+  const [edges, setEdges] = useState("");
 
   const refresh = useCallback(() => {
     void storageBreakdown()
@@ -85,7 +128,18 @@ export function About() {
   const weightsCached = (storage?.modelCount ?? 0) > 0;
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        // Measured from the event rather than from an effect: the chrome layer
+        // is already laid out, and nothing here is synchronising with an
+        // external system that could change while the panel is shut.
+        if (next) {
+          setEdges(measureEdges());
+        }
+      }}
+    >
       <Popover.Trigger
         data-testid="about-open"
         aria-label={t("about.open")}
@@ -112,6 +166,9 @@ export function About() {
               <span className="ml-2 text-neutral-500">
                 {__BUILD_TIME__.slice(0, 10)}
               </span>
+            </Row>
+            <Row label="about.display" testId="about-display">
+              <span className="text-[11px] break-all">{edges}</span>
             </Row>
             <Row label="about.engine">{MODEL_LABEL}</Row>
             <Row label="about.runtime">onnxruntime-web {__ORT_VERSION__}</Row>
