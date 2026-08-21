@@ -96,7 +96,7 @@ export function BoardMenu({
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner sideOffset={6} align="start">
-            <Menu.Popup className="max-h-[80vh] min-w-56 overflow-y-auto rounded-lg glass-strong p-1 text-sm">
+            <Menu.Popup className="max-h-[80vh] min-w-56 overflow-y-auto rounded-lg glass-strong p-1 text-sm outline-none">
               <Menu.Item
                 data-testid="menu-new-board"
                 className={menuItemClass}

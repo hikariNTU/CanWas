@@ -158,6 +158,10 @@ const translations = {
     "zh-TW": "閱讀文字",
     "en-US": "Read text",
   },
+  "node.doubleClick": {
+    "zh-TW": "點兩下",
+    "en-US": "Double-click",
+  },
   "node.front": {
     "zh-TW": "移至最上層",
     "en-US": "Bring to front",

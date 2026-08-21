@@ -2287,6 +2287,14 @@ handler the keyboard path already installed.
 `done` with no words, and both text items are hidden there rather than offering
 an empty string and a mode with nothing in it.
 
+**Every item names its other route.** Cmd/Ctrl+C, `]`, `[`, Delete, and
+"double-click" for reading mode, set right in the row. The menu is the only
+route on a phone and a slower one everywhere else, so on a desktop it doubles
+as the place the shortcuts are learnt. Hidden under `pointer-fine`, in CSS
+rather than in JavaScript: naming a key nobody has is noise on the device
+where the menu is not a convenience, and a variant follows a mouse plugged in
+mid-session for free.
+
 **Reverses if:** the board grows an action that only makes sense on empty
 canvas — paste at a point, select all. Then the surface needs its own menu, and
 the two have to agree about what a press with nothing under it means.

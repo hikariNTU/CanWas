@@ -48,8 +48,14 @@ summary,
 
 /* Material Symbols renders a glyph from the element's text via a ligature, so
    the text must survive untouched: no capitalisation, no letter-spacing, and
-   `translate="no"` on the element itself. */
-.material-symbol {
+   `translate="no"` on the element itself.
+
+   `@utility`, not a plain class, for the reason `glass` is one: an unlayered
+   class outranks every layered rule whatever its specificity, so `display` and
+   `user-select` here would beat any utility a caller passed through `Icon`'s
+   `className` — silently, and only for the properties this block happens to
+   set. As a utility it loses to a later utility the way it should. */
+@utility material-symbol {
   /* Block, not inline-block: an inline box is positioned against the text
      baseline, which lifts the glyph above the label beside it. `vertical-align:
      middle` only trades that for a smaller offset in the other direction, since

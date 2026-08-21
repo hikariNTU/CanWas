@@ -21,6 +21,19 @@ import { menuItemClass } from "@/ui/panel";
  */
 
 /**
+ * `Cmd` on a Mac, `Ctrl` everywhere else.
+ *
+ * Read from the user agent because there is nothing better: the platform APIs
+ * that answered this were deprecated without a replacement. Getting it wrong
+ * costs a wrong glyph in a hint, which is why a guess is acceptable here and
+ * would not be in a key handler — `useBoardShortcuts` accepts either modifier
+ * from everyone, whatever this says.
+ */
+const APPLE =
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.userAgent);
+
+/**
  * Puts nodes on the system clipboard, outside a `copy` event.
  *
  * The keyboard path writes synchronously into `event.clipboardData` (D21),
@@ -57,12 +70,15 @@ function Item({
   label,
   icon,
   testId,
+  hint,
   danger,
   onClick,
 }: {
   label: TranslationsKey;
   icon: string;
   testId: string;
+  /** The keyboard or pointer route to the same action, if there is one. */
+  hint?: string;
   danger?: boolean;
   onClick: () => void;
 }) {
@@ -79,6 +95,15 @@ function Item({
     >
       <Icon name={icon} size={18} className="shrink-0 text-neutral-500" />
       <span className="truncate">{t(label)}</span>
+      {/* Hidden on a touch screen, where naming a key nobody has is noise in
+          the one place the menu is not a convenience but the only route. Done
+          with a variant rather than in JavaScript so it costs no state and
+          follows a mouse plugged in mid-session. */}
+      {hint !== undefined && (
+        <span className="ml-auto hidden pl-4 font-mono text-xs text-neutral-500 pointer-fine:block">
+          {hint}
+        </span>
+      )}
     </ContextMenu.Item>
   );
 }
@@ -98,6 +123,7 @@ export function NodeMenu({
   onRead: () => void;
   children: React.ReactElement;
 }) {
+  const { t } = useTranslation();
   const store = useStore();
   const { commit } = useBoardHistory(boardId);
   const { selection, setSelection } = useSelection(boardId);
@@ -133,12 +159,17 @@ export function NodeMenu({
         <ContextMenu.Positioner>
           <ContextMenu.Popup
             data-testid="node-menu"
-            className="min-w-48 rounded-lg glass-strong p-1 text-sm"
+            // The popup itself takes focus when it opens, and the browser's
+            // default ring on a box this size reads as an error state rather
+            // than as focus. The items inside carry the highlight that
+            // actually says where you are.
+            className="min-w-48 rounded-lg glass-strong p-1 text-sm outline-none"
           >
             <Item
               testId="node-menu-copy"
               label="node.copy"
               icon="content_copy"
+              hint={APPLE ? "\u2318C" : "Ctrl C"}
               onClick={() => {
                 const nodes = store.get(boardNodesAtom)[boardId] ?? [];
                 void copyNodes(
@@ -167,6 +198,7 @@ export function NodeMenu({
                 testId="node-menu-read"
                 label="node.read"
                 icon="menu_book"
+                hint={t("node.doubleClick")}
                 onClick={() => {
                   setSelection([node.id]);
                   onRead();
@@ -180,6 +212,7 @@ export function NodeMenu({
               testId="node-menu-front"
               label="node.front"
               icon="flip_to_front"
+              hint="]"
               onClick={() => {
                 commit((current) => reorderNodes(current, targets, "front"));
               }}
@@ -188,6 +221,7 @@ export function NodeMenu({
               testId="node-menu-back"
               label="node.back"
               icon="flip_to_back"
+              hint="["
               onClick={() => {
                 commit((current) => reorderNodes(current, targets, "back"));
               }}
@@ -199,6 +233,7 @@ export function NodeMenu({
               testId="node-menu-delete"
               label="node.delete"
               icon="delete"
+              hint={APPLE ? "\u232B" : "Del"}
               danger
               onClick={() => {
                 commit((current) => deleteNodes(current, targets));

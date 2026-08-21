@@ -53,32 +53,86 @@ test("a right-click on a node opens a menu that can delete it", async ({
   await expect(node).toHaveCount(0);
 });
 
-test("copy from the menu puts the node on the system clipboard", async ({
+test("copy from the menu hands the clipboard the same payload Cmd+C does", async ({
   page,
-  context,
 }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  // `clipboard.write` refuses on a document that is not focused, and a page
-  // running beside three others in parallel is not focused by default.
-  await page.bringToFront();
+  // The write is recorded rather than performed. Both halves of the clipboard
+  // API refuse on a document that is not focused, and a page sharing a machine
+  // with three other workers cannot hold focus — so driving the real clipboard
+  // here tests the harness, not the app. What the OS does with a well-formed
+  // ClipboardItem is settled, and `copy.spec.ts` proves the round trip once for
+  // the keyboard path.
+  await page.addInitScript(() => {
+    const written: Record<string, string>[] = [];
+    (window as unknown as { __written: unknown }).__written = written;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        write: async (items: ClipboardItem[]) => {
+          for (const item of items) {
+            const flavours: Record<string, string> = {};
+            for (const type of item.types) {
+              flavours[type] = await (await item.getType(type)).text();
+            }
+            written.push(flavours);
+          }
+        },
+        writeText: async (text: string) => {
+          written.push({ "text/plain": text });
+        },
+      },
+    });
+  });
+
+  await page.reload();
   await paste(page);
   await page.getByTestId("board-node").click({ button: "right" });
   await page.getByTestId("node-menu-copy").click();
 
-  // The same payload Cmd+C writes, by way of the async clipboard rather than a
-  // copy event: a menu click is not one.
   await expect
     .poll(() =>
-      page.evaluate(async () => {
-        for (const item of await navigator.clipboard.read()) {
-          if (item.types.includes("text/html")) {
-            return (await item.getType("text/html")).text();
-          }
-        }
-        return "";
-      }),
+      page.evaluate(
+        () =>
+          (window as unknown as { __written: Record<string, string>[] })
+            .__written,
+      ),
     )
-    .toContain("data-canwas");
+    .toEqual([{ "text/html": expect.stringContaining("data-canwas") }]);
+});
+
+test("copy text takes the recognised words and nothing else", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const written: string[] = [];
+    (window as unknown as { __text: unknown }).__text = written;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async (text: string) => void written.push(text) },
+    });
+  });
+
+  await page.reload();
+  await pasteTextImage(page, ["Hello there", "second line"]);
+  const node = page.getByTestId("board-node");
+  await expect(node).toHaveAttribute("data-ocr-status", "done");
+
+  await node.click({ button: "right" });
+  await page.getByTestId("node-menu-copy-text").click();
+
+  // The mock recognizer invents its own words (D41), so what is asserted is
+  // the shape rather than the letters: one write, plain text, the words joined
+  // — and emphatically not the node payload the other item writes.
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as unknown as { __text: string[] }).__text),
+    )
+    .toEqual([expect.not.stringContaining("data-canwas")]);
+
+  const [copied] = await page.evaluate(
+    () => (window as unknown as { __text: string[] }).__text,
+  );
+  expect(copied!.split(" ").length).toBeGreaterThan(1);
 });
 
 test("right-clicking outside the selection acts on what was clicked", async ({
@@ -177,8 +231,27 @@ test("the highlighted item is not also ringed by the browser", async ({
   // Base UI focuses the item it highlights, so without `outline-none` the
   // browser draws its own ring on top of the wash — two indicators for one
   // state, and the ring does not follow the item's rounding.
+  // The popup takes focus before any item does, so it is ringed first.
+  await expect(page.getByTestId("node-menu")).toHaveCSS(
+    "outline-style",
+    "none",
+  );
+
   await page.keyboard.press("ArrowDown");
   const item = page.getByTestId("node-menu-copy");
   await expect(item).toBeFocused();
   await expect(item).toHaveCSS("outline-style", "none");
+});
+
+test("items name the keyboard route to the same action", async ({ page }) => {
+  await paste(page);
+  await page.getByTestId("board-node").click({ button: "right" });
+
+  // A mouse is what this test has, so the hints are shown. On a touch screen
+  // the same markup hides them: naming a key nobody has is noise in the one
+  // place the menu is the only route rather than a convenience.
+  await expect(page.getByTestId("node-menu-copy")).toContainText(/⌘C|Ctrl C/);
+  await expect(page.getByTestId("node-menu-front")).toContainText("]");
+  await expect(page.getByTestId("node-menu-back")).toContainText("[");
+  await expect(page.getByTestId("node-menu-delete")).toContainText(/⌫|Del/);
 });
