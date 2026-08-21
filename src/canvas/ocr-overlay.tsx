@@ -153,6 +153,22 @@ function groupIntoLines(words: readonly Word[]): number[][] {
   return lines;
 }
 
+/**
+ * The words as text, carrying the line breaks the layout already implies.
+ *
+ * Shares `groupIntoLines` with the overlay rather than joining everything on a
+ * space. A selection dragged across the rendered spans comes out broken into
+ * lines, because each line is a block box — so a menu item called "Copy text"
+ * that flattened the same words into one run would give a different answer
+ * from the same picture, and the wrong one: a two-column form or a paragraph
+ * would arrive as a single line of soup.
+ */
+export function textOf(words: readonly Word[]): string {
+  return groupIntoLines(words)
+    .map((line) => line.map((index) => words[index].text).join(" "))
+    .join("\n");
+}
+
 /** Stable, so the memos below do not rebuild on every render of an idle node. */
 const EMPTY_WORDS: readonly Word[] = [];
 

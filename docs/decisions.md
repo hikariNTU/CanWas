@@ -2299,6 +2299,13 @@ mid-session for free.
 canvas — paste at a point, select all. Then the surface needs its own menu, and
 the two have to agree about what a press with nothing under it means.
 
+**Copy text copies lines, not a run of words.** The overlay renders each line as
+a block box, so a selection dragged across it arrives with the breaks in it.
+The menu item shares `groupIntoLines` with the overlay rather than joining
+every word on a space — otherwise the same picture gives two different answers
+depending on how the text was taken, and the flat one turns a two-column form
+into soup.
+
 ## D84 — The stylesheet keeps only what has no element to live on
 
 Six hand-written classes had accumulated, and five of them were a second

@@ -133,6 +133,11 @@ test("copy text takes the recognised words and nothing else", async ({
     () => (window as unknown as { __text: string[] }).__text,
   );
   expect(copied!.split(" ").length).toBeGreaterThan(1);
+  // Two lines in, two lines out. The overlay renders each line as a block, so
+  // dragging a selection across it copies with the breaks in it — and this
+  // item has to agree with the selection, or the same picture gives two
+  // different answers depending on how the text was taken.
+  expect(copied!.split("\n")).toHaveLength(2);
 });
 
 test("right-clicking outside the selection acts on what was clicked", async ({

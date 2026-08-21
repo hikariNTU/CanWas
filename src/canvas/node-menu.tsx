@@ -8,6 +8,7 @@ import { deleteNodes, reorderNodes } from "@/board/mutations";
 import { boardNodesAtom } from "@/board/store";
 import type { Asset, BoardNode } from "@/board/types";
 import { useTranslation, type TranslationsKey } from "@/translations";
+import { textOf } from "@/canvas/ocr-overlay";
 import { syncTransportAtom } from "@/sync/use-sync";
 import { Icon } from "@/ui/icon";
 import { menuItemClass } from "@/ui/panel";
@@ -222,9 +223,7 @@ export function NodeMenu({
                 label="node.copyText"
                 icon="subject"
                 onClick={() => {
-                  void navigator.clipboard.writeText(
-                    words.map((word) => word.text).join(" "),
-                  );
+                  void navigator.clipboard.writeText(textOf(words));
                 }}
               />
             )}
