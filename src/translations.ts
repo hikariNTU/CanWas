@@ -246,8 +246,13 @@ const translations = {
     "en-US": "Edit anyway",
   },
   "guard.held": {
-    "zh-TW": "你剛才的操作會保留，選擇後就會套用。",
-    "en-US": "Your last action is being held, and lands as soon as you choose.",
+    "zh-TW": "你剛才的操作會保留，選擇後就會套用，或是直接放棄。",
+    "en-US":
+      "Your last action is being held. It lands as soon as you choose, or you can discard it.",
+  },
+  "guard.discard": {
+    "zh-TW": "放棄這個操作",
+    "en-US": "Discard the edit",
   },
   "guard.syncing": {
     "zh-TW": "同步中…",

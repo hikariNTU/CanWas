@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   allowEditsAtom,
+  discardHeldEditAtom,
   heldEditAtom,
   releaseHeldEditAtom,
 } from "@/sync/edit-guard";
@@ -23,6 +24,7 @@ export function StaleEditDialog() {
   const status = useAtomValue(syncStatusAtom);
   const allow = useSetAtom(allowEditsAtom);
   const release = useSetAtom(releaseHeldEditAtom);
+  const discard = useSetAtom(discardHeldEditAtom);
   const { isConfigured, signIn } = useGoogleAccount();
   const { t } = useTranslation();
 
@@ -50,7 +52,18 @@ export function StaleEditDialog() {
   }
 
   return (
-    <AlertDialog.Root open={held !== null}>
+    // Dismissing *is* discarding: the dialog has no state of its own, so
+    // closing it any other way would leave an edit held with nothing left on
+    // screen to release it. This is also what makes Escape work.
+    <AlertDialog.Root
+      open={held !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          setConnecting(false);
+          discard();
+        }
+      }}
+    >
       <AlertDialog.Portal>
         <AlertDialog.Backdrop className="fixed inset-0 bg-neutral-950/70 backdrop-blur-sm" />
         <AlertDialog.Popup
@@ -73,6 +86,19 @@ export function StaleEditDialog() {
             </p>
           )}
           <div className="mt-5 flex justify-end gap-2">
+            {/* Leftmost and quietest of the three. Neither of the other two
+                leaves the board as it was found: one edits blind, the other
+                waits on a network. Dropping the change is the third honest
+                answer, and until now the only way to give it was to make a
+                choice nobody wanted. */}
+            <button
+              type="button"
+              data-testid="discard-edit"
+              onClick={() => discard()}
+              className="mr-auto rounded-md px-3 py-1.5 text-sm text-neutral-400 transition-colors duration-150 hover:bg-white/10 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none"
+            >
+              {t("guard.discard")}
+            </button>
             <button
               type="button"
               data-testid="edit-anyway"

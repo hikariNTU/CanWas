@@ -231,3 +231,40 @@ test("a rename to the name it already has asks nothing", async ({ page }) => {
   await expect(page.getByTestId("stale-edit-dialog")).toBeHidden();
   await expect(page.getByTestId("board-name")).toHaveText(BOARD);
 });
+
+test("the held edit can simply be dropped", async ({ page }) => {
+  await cutOff(page);
+
+  const node = page.getByTestId("board-node");
+  await node.click();
+  await page.keyboard.press("Delete");
+  await expect(page.getByTestId("stale-edit-dialog")).toBeVisible();
+
+  // The third answer. Neither of the other two leaves the board as it was
+  // found — one edits blind, the other waits on a network — so without this
+  // the only way out of the dialog was a choice nobody wanted.
+  await page.getByTestId("discard-edit").click();
+  await expect(page.getByTestId("stale-edit-dialog")).toBeHidden();
+  await expect(node).toHaveCount(1);
+
+  // Dropping one edit is not permission for the next: the board is still cut
+  // off, and the next edit asks again.
+  await node.click();
+  await page.keyboard.press("Delete");
+  await expect(page.getByTestId("stale-edit-dialog")).toBeVisible();
+});
+
+test("escape drops the held edit too", async ({ page }) => {
+  await cutOff(page);
+
+  await page.getByTestId("board-node").click();
+  await page.keyboard.press("Delete");
+  await expect(page.getByTestId("stale-edit-dialog")).toBeVisible();
+
+  // The dialog holds no state of its own, so any dismissal has to release the
+  // edit one way or the other — closed with an edit still held would be a
+  // board that cannot be edited again.
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("stale-edit-dialog")).toBeHidden();
+  await expect(page.getByTestId("board-node")).toHaveCount(1);
+});

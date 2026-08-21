@@ -2444,3 +2444,10 @@ produce one. A gesture that ends in nothing needs no permission.
 
 **Reverses if:** provisional changes ever become something a merge can lose. They
 are exempt because an empty node is worth nothing to either side.
+
+**A third answer.** Neither existing button leaves the board as it was found:
+one edits blind, the other waits on a network that may not come back. Dropping
+the change is the honest third option, and until it existed the only way out of
+the dialog was a choice nobody wanted. Escape does the same thing, because the
+dialog holds no state of its own — closed with an edit still held, it could
+never be released. Discarding is not permission: the next edit asks again.
