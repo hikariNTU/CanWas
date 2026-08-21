@@ -1,7 +1,7 @@
 {
   "name": "canwas",
   "private": true,
-  "version": "0.46.2",
+  "version": "0.46.3",
   "type": "module",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks",

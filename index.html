@@ -12,6 +12,20 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <!-- What actually lets `viewport-fit=cover` do anything on an iPhone.
+         Installed to the home screen, iOS defaults this to `default`, which
+         reserves the status bar as a band the web view cannot reach and paints
+         it with the manifest's `background_color` — the same near-black as the
+         board, so it reads as the dots simply stopping short of the top.
+         `black-translucent` hands the whole screen to the page and moves the
+         status bar over it; the insets then become non-zero and the chrome
+         layer's `env(safe-area-inset-*)` padding holds the islands clear
+         (D68). No colour is asked for: the bar's glyphs are drawn light,
+         which is what a dark board wants under them. -->
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"

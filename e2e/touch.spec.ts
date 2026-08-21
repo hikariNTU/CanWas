@@ -344,6 +344,15 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   expect(html, "without viewport-fit=cover the insets are always 0").toContain(
     "viewport-fit=cover",
   );
+  // And its other half. On an installed iPhone app `viewport-fit=cover` alone
+  // changes nothing: iOS reserves the status bar unless the page asks for it
+  // by name, and the reserved band is painted with the manifest's
+  // `background_color` — the board's own near-black, so the only visible
+  // symptom is dots that stop short of the top (D93).
+  expect(
+    html,
+    "without black-translucent iOS keeps the status bar for itself",
+  ).toContain('content="black-translucent"');
 });
 
 test("the touch controls sit above the corner islands, never on them", async ({

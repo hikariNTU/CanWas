@@ -2634,6 +2634,33 @@ could not be added, with the cause in the console. This is not specific to
 WebCrypto: a corrupt file or an image too large to decode failed the same silent
 way.
 
-**Reverses if:** the dev server moves to HTTPS *and* some future origin problem
+**Reverses if:** the dev server moves to HTTPS _and_ some future origin problem
 proves the fallback is load-bearing for nothing — at which point the software
 digest is dead weight. The error surfacing does not reverse.
+
+## D93 — `viewport-fit=cover` needs Apple's permission to mean anything
+
+D68 made the board full bleed and gave the chrome `env(safe-area-inset-*)`
+padding, which is right and was not enough. Installed to an iPhone's home
+screen, the status bar area is reserved by iOS unless the page asks for it by
+name: `apple-mobile-web-app-status-bar-style` defaults to `default`, which
+letterboxes the web view and paints the band with the manifest's
+`background_color`. Ours is `#0a0a0a`, the same near-black as the canvas — so
+the band was invisible as a band and only showed as the dot grid stopping short
+of the top and bottom of the screen, which reads as a sizing bug rather than an
+inset one.
+
+`black-translucent` gives the page the whole screen and floats the status bar
+over it. The insets then resolve to something other than zero, and the padded
+chrome layer D68 already built does the rest. No colour is specified: the style
+draws the glyphs light, which is what belongs over a dark board.
+
+This is invisible in every environment where the code gets tested. A desktop
+browser resolves the insets to zero, Playwright has no notch, and Safari on iOS
+*with a tab bar* is unaffected — only an installed app on a device with a cutout
+shows it. The test therefore asserts the declaration in `index.html` rather than
+any measurement, alongside the `viewport-fit=cover` assertion it belongs to.
+
+**Reverses if:** the app ever wants an opaque bar over the board — a light theme
+would, since light glyphs over pale dots are unreadable, and that is a colour
+decision this style cannot express.
