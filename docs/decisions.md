@@ -2514,3 +2514,63 @@ count back to zero at the most recent one.
 **Reverses if:** history stops being squash-merged, or the sha changing under an
 amend ever costs more than the number is worth. The lint half stands on its own
 either way.
+
+## D90 — The grid jitter on iOS is open, and the first fix is reverted
+
+On iOS the dotted grid does not stay stuck to the board. Pan with one finger and
+the dots crawl against the images they sit behind; the images themselves are in
+the right place throughout, so it is the grid that is wrong, not the viewport.
+It does not reproduce on a laptop, and it does not reproduce in Chromium under
+Playwright on any emulated device — the emulation gives a phone's viewport and
+pointer, not its rasteriser.
+
+### What was tried, and reverted in 0299538
+
+The hypothesis was rounding. The scene rides a `transform`, which the compositor
+interpolates at subpixel precision; the grid is a tiled background, and iOS
+rounds `background-position` and `background-size` to whole device pixels. At a
+fractional zoom the two disagree by up to a pixel, and which way the background
+rounds flips as the board moves.
+
+So the pan stopped touching the background: the layer was painted once per
+committed viewport and slid with a `translate3d` during the gesture, wrapped
+modulo one tile so the travel stayed inside a one-tile overhang
+(`GRID_SPACING * MAX_SCALE`, 192px). A zoom still repainted, since a tiled
+background cannot change tile size under a transform without stretching the dots.
+
+**It did not fix it.** The jitter is still there on a real phone, which means the
+hypothesis is at best incomplete: either the rounding is not the mechanism, or it
+is not the only one. The change was reverted rather than kept — an unexplained
+fix for an unfixed bug is worse than neither, because the next person reads it as
+territory already covered.
+
+### What the attempt did establish
+
+Two things worth keeping, neither of which needs the fix to be true.
+
+The overhang the slide needed turned the surface into a scroll container. A box
+with `overflow: hidden` is still scrollable: nothing draws a scrollbar, but
+anything that scrolls an element into view — Playwright's own click does — can
+find that 192px and drag the whole board with it. It surfaced as an image landing
+192px from where it started, and only under parallel load, which is the shape of a
+bug that gets dismissed as a flake. Any future version of this fix that gives the
+grid margin needs `overflow: clip` on the surface, which is the value that means
+"cut this off and do not make a scroll container out of it".
+
+And the arithmetic is not the problem. The scene and the grid are written by one
+call, in one frame, from one viewport: `background-position` is `(tx, ty)` and
+tile size is `GRID_SPACING * scale`. Whatever is wrong is below that, in how the
+two are rasterised.
+
+### Where to look next
+
+Unexplored: whether the jitter tracks device pixel ratio (a Pixel 7 and an iPhone
+disagree on 3x vs 2x); whether it appears at integer zoom (1.0) or only at
+fractional ones, which would separate rounding from something else entirely;
+whether a grid drawn inside the scene's own transform — one element, one
+rasterisation, no second geometry to disagree with — is sound at 0.1x and 8x, or
+whether it just moves the problem into blurry dots. Diagnosing it needs a real
+iOS device with Safari's remote inspector, not another emulated run.
+
+**Reverses if:** someone reproduces it deterministically, at which point this
+becomes a decision about a fix instead of a record of one that failed.
