@@ -24,6 +24,7 @@ import { BoardName } from "@/canvas/board-name";
 import { About } from "@/canvas/about";
 import { AddImage, TakePhoto } from "@/canvas/add-image";
 import { measureHeight, TextNodeView } from "@/canvas/text-node";
+import { NodeMenu } from "@/canvas/node-menu";
 import { MissingAsset } from "@/canvas/missing-asset";
 import { OcrBadge } from "@/canvas/ocr-badge";
 import { OcrOverlay } from "@/canvas/ocr-overlay";
@@ -267,162 +268,172 @@ export function Canvas({ boardId }: { boardId: string }) {
             // deleted. Skipping it rendered a board with an invisible hole in
             // it that still caught clicks — see `MissingAsset`.
             return (
-              <div
+              // Every node is its own context-menu trigger (D83). The primitive
+              // merges its handlers into the element rather than wrapping it,
+              // so this adds no box to a tree that has one per node.
+              <NodeMenu
                 key={node.id}
-                data-testid="board-node"
-                data-node-kind={node.kind}
-                data-node-id={node.id}
-                data-selected={isSelected || undefined}
-                data-ocr-status={asset?.ocr.status}
-                data-ocr-words={
-                  asset?.ocr.status === "done"
-                    ? asset.ocr.words.length
-                    : undefined
-                }
-                onPointerDown={(event) => {
-                  // A node being read is not draggable: the same drag is how
-                  // its text gets selected. Neither is any node in pan mode,
-                  // where a press belongs to the viewport (D70).
-                  if (!isEditing && !isReading && mode === "select") {
-                    startMove(event, node.id);
-                  }
-                }}
-                onDoubleClick={() => {
-                  if (node.kind === "text" && !isEditing) {
-                    startEditing(node.id, node.text);
-                    return;
-                  }
-                  // Double-click means "go inside this node" for both kinds:
-                  // into the text to edit it, into the image to read it.
-                  if (node.kind === "image" && asset?.ocr.status === "done") {
-                    select([node.id]);
-                    setReadingId(node.id);
-                  }
-                }}
-                className={clsx(
-                  // `group` so the recognition badge can expand from an icon
-                  // to a sentence while the pointer is anywhere on the node.
-                  "group absolute rounded-lg",
-                  isReading ? "cursor-text" : "cursor-move",
-                )}
-                style={{
-                  left: rect.x,
-                  top: rect.y,
-                  width: rect.w,
-                  // Text lays out at automatic height; only images are sized
-                  // in both axes.
-                  height: node.kind === "image" ? rect.h : undefined,
-                  // An outline follows the element's own `border-radius`, so
-                  // rounding the node rounds the selection with it and the two
-                  // can never drift apart.
-                  //
-                  // White while reading, accent otherwise. Inside this mode the
-                  // accent belongs to the text selection itself, and a node
-                  // outlined in the same colour as the words being dragged
-                  // through reads as one more highlight. White also says the
-                  // node is in a different mode, which is the thing a
-                  // double-click just changed.
-                  outline: isSelected
-                    ? `${hairline}px solid ${
-                        isReading
-                          ? "var(--color-neutral-100)"
-                          : "var(--color-sky-500)"
-                      }`
-                    : undefined,
-                  // Held off the content rather than drawn on its edge. A
-                  // screenshot of a white page swallowed a white outline
-                  // completely, and a blue one is no safer against a blue
-                  // screenshot — pushed out by its own width, the line always
-                  // has the board behind it.
-                  outlineOffset: isSelected ? hairline : undefined,
-                }}
+                boardId={boardId}
+                node={node}
+                asset={asset ?? null}
+                onRead={() => setReadingId(node.id)}
               >
-                {node.kind === "image" && asset ? (
-                  <>
-                    <img
-                      src={asset.url}
-                      alt=""
-                      draggable={false}
-                      // Rounded on the image rather than by clipping the node:
-                      // `overflow-hidden` here would also cut off the resize
-                      // handle, which sits deliberately outside the box.
-                      //
-                      // The radius is in world units, so it scales with the
-                      // zoom. That is the point — it belongs to the picture the
-                      // way its size does, and a corner that sharpened as you
-                      // zoomed in would read as chrome painted on top.
-                      className="pointer-events-none block h-full w-full rounded-lg select-none"
-                    />
-                    <OcrBadge
-                      ocr={asset.ocr}
-                      scale={viewport.scale}
-                      width={rect.w}
-                      height={rect.h}
-                      expanded={isSelected}
-                    />
-                    {asset.ocr.status === "done" && (
-                      <OcrOverlay
-                        words={asset.ocr.words}
-                        assetWidth={asset.width}
-                        nodeWidth={rect.w}
-                        active={isReading}
+                <div
+                  data-testid="board-node"
+                  data-node-kind={node.kind}
+                  data-node-id={node.id}
+                  data-selected={isSelected || undefined}
+                  data-ocr-status={asset?.ocr.status}
+                  data-ocr-words={
+                    asset?.ocr.status === "done"
+                      ? asset.ocr.words.length
+                      : undefined
+                  }
+                  onPointerDown={(event) => {
+                    // A node being read is not draggable: the same drag is how
+                    // its text gets selected. Neither is any node in pan mode,
+                    // where a press belongs to the viewport (D70).
+                    if (!isEditing && !isReading && mode === "select") {
+                      startMove(event, node.id);
+                    }
+                  }}
+                  onDoubleClick={() => {
+                    if (node.kind === "text" && !isEditing) {
+                      startEditing(node.id, node.text);
+                      return;
+                    }
+                    // Double-click means "go inside this node" for both kinds:
+                    // into the text to edit it, into the image to read it.
+                    if (node.kind === "image" && asset?.ocr.status === "done") {
+                      select([node.id]);
+                      setReadingId(node.id);
+                    }
+                  }}
+                  className={clsx(
+                    // `group` so the recognition badge can expand from an icon
+                    // to a sentence while the pointer is anywhere on the node.
+                    "group absolute rounded-lg",
+                    isReading ? "cursor-text" : "cursor-move",
+                  )}
+                  style={{
+                    left: rect.x,
+                    top: rect.y,
+                    width: rect.w,
+                    // Text lays out at automatic height; only images are sized
+                    // in both axes.
+                    height: node.kind === "image" ? rect.h : undefined,
+                    // An outline follows the element's own `border-radius`, so
+                    // rounding the node rounds the selection with it and the two
+                    // can never drift apart.
+                    //
+                    // White while reading, accent otherwise. Inside this mode the
+                    // accent belongs to the text selection itself, and a node
+                    // outlined in the same colour as the words being dragged
+                    // through reads as one more highlight. White also says the
+                    // node is in a different mode, which is the thing a
+                    // double-click just changed.
+                    outline: isSelected
+                      ? `${hairline}px solid ${
+                          isReading
+                            ? "var(--color-neutral-100)"
+                            : "var(--color-sky-500)"
+                        }`
+                      : undefined,
+                    // Held off the content rather than drawn on its edge. A
+                    // screenshot of a white page swallowed a white outline
+                    // completely, and a blue one is no safer against a blue
+                    // screenshot — pushed out by its own width, the line always
+                    // has the board behind it.
+                    outlineOffset: isSelected ? hairline : undefined,
+                  }}
+                >
+                  {node.kind === "image" && asset ? (
+                    <>
+                      <img
+                        src={asset.url}
+                        alt=""
+                        draggable={false}
+                        // Rounded on the image rather than by clipping the node:
+                        // `overflow-hidden` here would also cut off the resize
+                        // handle, which sits deliberately outside the box.
+                        //
+                        // The radius is in world units, so it scales with the
+                        // zoom. That is the point — it belongs to the picture the
+                        // way its size does, and a corner that sharpened as you
+                        // zoomed in would read as chrome painted on top.
+                        className="pointer-events-none block h-full w-full rounded-lg select-none"
                       />
-                    )}
-                  </>
-                ) : node.kind === "image" ? (
-                  // The bytes are not here, but the geometry is: the board
-                  // travelled and the image has not caught up. Rendering
-                  // nothing left a node that could be selected, dragged and
-                  // deleted while being invisible.
-                  <MissingAsset scale={viewport.scale} />
-                ) : node.kind === "text" ? (
-                  <TextNodeView
-                    node={isEditing ? { ...node, text: draft } : node}
-                    editing={isEditing}
-                    maxLength={MAX_TEXT_LENGTH}
-                    onChange={setDraft}
-                    onFinish={finishEditing}
-                    bodyRef={bodyRef}
-                  />
-                ) : null}
-                {isSelected &&
-                  selection.length === 1 &&
-                  !isEditing &&
-                  !isReading &&
-                  // Not in pan mode: there the press under it belongs to the
-                  // viewport, so a handle would be a grip that does nothing —
-                  // worse than absent, because it advertises a gesture the
-                  // mode does not have (D70).
-                  mode === "select" && (
-                    // The dot is 12px on screen and the grab area is 24px:
-                    // a handle small enough to look right is smaller than
-                    // anyone can reliably hit, so the two are separated.
-                    <div
-                      data-testid="resize-handle"
-                      onPointerDown={(event) => startResize(event, node.id)}
-                      className="group/handle absolute grid cursor-nwse-resize place-items-center"
-                      style={{
-                        width: hairline * 12,
-                        height: hairline * 12,
-                        right: -hairline * 6,
-                        bottom: -hairline * 6,
-                      }}
-                    >
-                      {/* A dot with a light ring, not a solid square: the
+                      <OcrBadge
+                        ocr={asset.ocr}
+                        scale={viewport.scale}
+                        width={rect.w}
+                        height={rect.h}
+                        expanded={isSelected}
+                      />
+                      {asset.ocr.status === "done" && (
+                        <OcrOverlay
+                          words={asset.ocr.words}
+                          assetWidth={asset.width}
+                          nodeWidth={rect.w}
+                          active={isReading}
+                        />
+                      )}
+                    </>
+                  ) : node.kind === "image" ? (
+                    // The bytes are not here, but the geometry is: the board
+                    // travelled and the image has not caught up. Rendering
+                    // nothing left a node that could be selected, dragged and
+                    // deleted while being invisible.
+                    <MissingAsset scale={viewport.scale} />
+                  ) : node.kind === "text" ? (
+                    <TextNodeView
+                      node={isEditing ? { ...node, text: draft } : node}
+                      editing={isEditing}
+                      maxLength={MAX_TEXT_LENGTH}
+                      onChange={setDraft}
+                      onFinish={finishEditing}
+                      bodyRef={bodyRef}
+                    />
+                  ) : null}
+                  {isSelected &&
+                    selection.length === 1 &&
+                    !isEditing &&
+                    !isReading &&
+                    // Not in pan mode: there the press under it belongs to the
+                    // viewport, so a handle would be a grip that does nothing —
+                    // worse than absent, because it advertises a gesture the
+                    // mode does not have (D70).
+                    mode === "select" && (
+                      // The dot is 12px on screen and the grab area is 24px:
+                      // a handle small enough to look right is smaller than
+                      // anyone can reliably hit, so the two are separated.
+                      <div
+                        data-testid="resize-handle"
+                        onPointerDown={(event) => startResize(event, node.id)}
+                        className="group/handle absolute grid cursor-nwse-resize place-items-center"
+                        style={{
+                          width: hairline * 12,
+                          height: hairline * 12,
+                          right: -hairline * 6,
+                          bottom: -hairline * 6,
+                        }}
+                      >
+                        {/* A dot with a light ring, not a solid square: the
                           square vanished into any screenshot with a pale
                           corner, and the ring holds its edge against both. */}
-                      <div
-                        className="rounded-full border-neutral-100 bg-sky-500 transition-colors group-hover/handle:bg-sky-400"
-                        style={{
-                          width: hairline * 6,
-                          height: hairline * 6,
-                          borderWidth: hairline,
-                          borderStyle: "solid",
-                        }}
-                      />
-                    </div>
-                  )}
-              </div>
+                        <div
+                          className="rounded-full border-neutral-100 bg-sky-500 transition-colors group-hover/handle:bg-sky-400"
+                          style={{
+                            width: hairline * 6,
+                            height: hairline * 6,
+                            borderWidth: hairline,
+                            borderStyle: "solid",
+                          }}
+                        />
+                      </div>
+                    )}
+                </div>
+              </NodeMenu>
             );
           })}
           {lasso && (

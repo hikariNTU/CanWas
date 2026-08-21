@@ -2255,3 +2255,38 @@ whose session to use, checked against session cookies on Google's own origin.
 **Reverses if:** the app ever supports two accounts at once. Then "the last
 account" stops being a single answer and the hint has to come from whichever
 account owns the board being synced.
+
+## D83 — Long press is the phone's keyboard
+
+Every board action was a keystroke: Cmd+C to copy, Delete to delete, `[` and
+`]` to reorder, double-click to read. A phone has none of them. The touch bar
+(D70) carried the two that could not wait — add an image, delete a selection —
+and everything else was simply unreachable by touch, including the one that
+matters most on a phone: getting recognised text off an image without dragging
+a finger across an overlay while the board pans underneath it.
+
+So each node is a context-menu trigger. Right-click on a desktop, press and
+hold on a touch screen, both handled by the primitive — it starts a timer on
+`pointerdown` and cancels it if the finger travels, so nothing in this app has
+to know about touch. `-webkit-touch-callout: none` was already set on the
+canvas surface (D69), which is the other half on iOS.
+
+**It acts on the selection, unless it was aimed outside one.** Right-clicking a
+node that is not selected selects it first, as every application does.
+Right-clicking inside a selection leaves it alone: collapsing five nodes to one
+on the way to Delete deletes the wrong four.
+
+**Copy goes through the async clipboard, not a `copy` event.** A menu click is
+not a clipboard event, so the synchronous path (D21) is unavailable — but the
+click is the user gesture `clipboard.write` needs, and the flavours are built
+by the same `encodeNodes`. `execCommand("copy")` is the fallback for browsers
+that refuse `text/html`, and it works by firing a real `copy` event into the
+handler the keyboard path already installed.
+
+**Recognition that found nothing offers nothing.** A blank screenshot reaches
+`done` with no words, and both text items are hidden there rather than offering
+an empty string and a mode with nothing in it.
+
+**Reverses if:** the board grows an action that only makes sense on empty
+canvas — paste at a point, select all. Then the surface needs its own menu, and
+the two have to agree about what a press with nothing under it means.

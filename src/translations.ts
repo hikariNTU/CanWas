@@ -146,6 +146,30 @@ const translations = {
     "zh-TW": "壓縮後（同步用）",
     "en-US": "WebP for sync",
   },
+  "node.copy": {
+    "zh-TW": "複製",
+    "en-US": "Copy",
+  },
+  "node.copyText": {
+    "zh-TW": "複製文字",
+    "en-US": "Copy text",
+  },
+  "node.read": {
+    "zh-TW": "閱讀文字",
+    "en-US": "Read text",
+  },
+  "node.front": {
+    "zh-TW": "移至最上層",
+    "en-US": "Bring to front",
+  },
+  "node.back": {
+    "zh-TW": "移至最下層",
+    "en-US": "Send to back",
+  },
+  "node.delete": {
+    "zh-TW": "刪除",
+    "en-US": "Delete",
+  },
   "about.overview": {
     "zh-TW": "關於 CanWas",
     "en-US": "About CanWas",
