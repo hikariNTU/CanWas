@@ -1,5 +1,6 @@
 import { useRegisterSW } from "virtual:pwa-register/react";
 
+import { applyUpdate } from "@/pwa/apply-update";
 import { Icon } from "@/ui/icon";
 import { useTranslation } from "@/translations";
 
@@ -35,7 +36,13 @@ export function UpdatePrompt() {
       <button
         type="button"
         data-testid="update-reload"
-        onClick={() => void updateServiceWorker(true)}
+        onClick={() =>
+          void applyUpdate({
+            updateServiceWorker,
+            container: navigator.serviceWorker,
+            reload: () => window.location.reload(),
+          })
+        }
         className="h-8 rounded-full bg-sky-500 px-3 text-xs text-neutral-950 transition-colors hover:bg-sky-400"
       >
         {t("pwa.reload")}

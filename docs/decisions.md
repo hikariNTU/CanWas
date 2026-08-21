@@ -2657,10 +2657,60 @@ draws the glyphs light, which is what belongs over a dark board.
 
 This is invisible in every environment where the code gets tested. A desktop
 browser resolves the insets to zero, Playwright has no notch, and Safari on iOS
-*with a tab bar* is unaffected — only an installed app on a device with a cutout
+_with a tab bar_ is unaffected — only an installed app on a device with a cutout
 shows it. The test therefore asserts the declaration in `index.html` rather than
 any measurement, alongside the `viewport-fit=cover` assertion it belongs to.
 
 **Reverses if:** the app ever wants an opaque bar over the board — a light theme
 would, since light glyphs over pale dots are unreadable, and that is a colour
 decision this style cannot express.
+
+## D94 — The reload button owes an answer even when the worker is gone
+
+`registerType: "prompt"` (D72) means a new build waits for permission, and the
+button that grants it called `updateServiceWorker(true)` and nothing else. That
+works on iOS and not always on Android, where the update instead appears at the
+next launch and the button does nothing at all.
+
+The cause is one guard in workbox-window:
+
+```js
+messageSkipWaiting() {
+  this.registration && this.registration.waiting && messageSW(this.registration.waiting, { type: "SKIP_WAITING" })
+}
+```
+
+`registration` is the object captured when the page registered, and `waiting` is
+read off it at click time. If it is null the call returns silently — no message,
+no `controlling` event, no reload, no error. Chrome on Android gets there by
+itself: it freezes and discards service workers under memory pressure, and it
+can activate a waiting worker while the app is in the background. The prompt is
+a piece of React state, so it survives all of that and stays on screen with
+nothing behind it.
+
+`applyUpdate` asks three times, in increasing order of rudeness. The library's
+own path first, since it is the one built for this. Then a registration fetched
+fresh at click time — `getRegistration()` plus `update()`, which also covers a
+prompt left on screen long enough for another build to ship — and a
+`SKIP_WAITING` posted straight at whatever is waiting now. Then, after two
+seconds, a plain reload.
+
+The reload is not a fix and is not meant to be. It is a guarantee: a button that
+reloads the page when it cannot do better is still honest, whereas one that
+silently does nothing teaches people to stop pressing it. In the Android case it
+is also usually sufficient, because the worker that went missing went missing by
+activating.
+
+The timeout is deliberately not cancelled when the message is sent. A message
+can reach a worker that never activates, and the point of this is that there is
+no path out of the function that leaves the button looking dead.
+
+Not reproducible in a browser, which is why the tests drive `applyUpdate`
+against a stubbed `ServiceWorkerContainer` rather than a real one: they assert
+that a waiting worker is asked at click time, that one appearing only after
+`update()` is still asked, that a reload happens when every polite path is a
+no-op, and that a controller change reloads once rather than racing the timeout.
+
+**Reverses if:** workbox-window ever re-reads the registration in
+`messageSkipWaiting`, at which point the middle attempt is the library's job
+again. The reload floor stays regardless.
