@@ -57,6 +57,15 @@ export interface SyncTransport {
   listBoards(): Promise<RemoteBoardMeta[]>;
   getBoard(id: string): Promise<SyncBoard | null>;
   putBoard(board: SyncBoard): Promise<void>;
+  /**
+   * Where this asset can be opened in the remote's own interface, if anywhere.
+   *
+   * `null` from a transport that has no such place, and from one that has the
+   * place but not this file — an asset this device has never pushed exists
+   * locally and nowhere else, and a link to it would be a 404 wearing a menu
+   * item. The caller shows the item only when this answers.
+   */
+  assetUrl(id: string): Promise<string | null>;
   hasAsset(id: string): Promise<boolean>;
   getAsset(id: string): Promise<RemoteAsset | null>;
   putAsset(id: string, asset: RemoteAsset): Promise<void>;

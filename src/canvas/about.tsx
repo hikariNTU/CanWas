@@ -89,7 +89,7 @@ export function About() {
       <Popover.Trigger
         data-testid="about-open"
         aria-label={t("about.open")}
-        className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full glass text-neutral-400 transition-colors hover:bg-white/10 hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11"
+        className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full glass glass-hover text-neutral-400 hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11"
       >
         <Icon name="info" size={18} />
       </Popover.Trigger>

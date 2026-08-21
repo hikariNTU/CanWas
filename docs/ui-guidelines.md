@@ -87,10 +87,17 @@ Divisions are white at a low alpha and tint with whatever is behind them.
 | Rule between sections | `border-white/10` |
 | Track behind a bar    | `bg-white/10`     |
 | Control hover         | `bg-white/10`     |
+| Glass control hover   | `glass-hover`     |
 
-**Every control that can be pressed takes `bg-white/10` on hover, without
+**Every control that can be pressed takes a 10% white hover, without
 exception** — including the icons in the corners, the board's name, and the
 reconnect pill. A control that only changes its text colour reads as text.
+
+A control that is _itself_ glass takes it as `glass-hover`, not
+`hover:bg-white/10`. `background-color` is one slot, so the utility replaces the
+tint rather than brightening it, and 10% white over a white photograph is a
+control nobody can see (D85). Buttons nested inside a glass bar can use either —
+they have no tint to preserve — and use `glass-hover` for one vocabulary.
 
 The cursor is not set per control: `src/index.css` gives every enabled
 `button`, `summary` and menu item `cursor: pointer` in one rule, because

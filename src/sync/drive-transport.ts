@@ -178,6 +178,19 @@ export function createDriveTransport(getSession: SessionSource): SyncTransport {
       state.boards.set(name, { ...written, name });
     },
 
+    async assetUrl(id) {
+      const { assets } = await open();
+      const name = [...assets.keys()].find((candidate) =>
+        candidate.startsWith(`${id}.`),
+      );
+      const file = name ? assets.get(name) : undefined;
+      // Built from the id rather than asked for: Drive returns a `webViewLink`
+      // field, but only if the listing asks for it on every file of every
+      // folder, and the link it returns is this same string. The shape has been
+      // stable for the life of the v3 API.
+      return file ? `https://drive.google.com/file/d/${file.id}/view` : null;
+    },
+
     async hasAsset(id) {
       const { assets } = await open();
       return [...assets.keys()].some((name) => name.startsWith(`${id}.`));

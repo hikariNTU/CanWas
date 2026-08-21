@@ -131,7 +131,7 @@ function Picker({
           aria-label={label}
           onClick={() => inputRef.current?.click()}
           className={clsx(
-            "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-neutral-300 transition-colors hover:bg-white/10 hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500",
+            "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full glass-hover text-neutral-300 hover:text-neutral-100 focus-visible:outline-2 focus-visible:outline-sky-500",
             className ?? "glass",
           )}
         >

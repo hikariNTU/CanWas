@@ -107,6 +107,13 @@ export const fakeRemote: SyncTransport = {
     );
   },
 
+  // No interface to open anything in: this remote is an IndexedDB database on
+  // this machine. Returning `null` is what hides the menu item under
+  // `?sync=fake`, which is also how the tests assert it stays hidden.
+  assetUrl() {
+    return Promise.resolve(null);
+  },
+
   async hasAsset(id) {
     const count = await run<number>(ASSET_STORE, "readonly", (store) =>
       store.count(id),

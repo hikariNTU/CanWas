@@ -92,3 +92,33 @@
     transparent
   );
 }
+
+/* Hover for a control that is itself glass.
+   `hover:bg-white/10` cannot do this job: `background-color` is one slot, so
+   the utility does not brighten the tint, it *replaces* it — and a button that
+   is 10% white over a white photograph is the pale disc that made this rule
+   necessary. It looked right for as long as `glass` was a plain class, because
+   an unlayered class outranked the hover and the hover never ran at all.
+   Painting into `background-image` instead composites over the tint rather
+   than evicting it, so the control stays dark glass and gets 10% brighter,
+   whatever is behind it.
+
+   Safe on the nested buttons too — a transparent button in a glass bar has no
+   tint to preserve, so a white overlay lands exactly where `bg-white/10` did.
+
+   The resting gradient is transparent rather than absent because `none` to a
+   gradient is a discrete transition and would snap; two gradients of the same
+   shape interpolate. The transition lives here, with `color` restated, because
+   a `transition-colors` in the markup would name a property list that leaves
+   `background-image` out. */
+@utility glass-hover {
+  background-image: linear-gradient(transparent 0 0);
+  transition:
+    background-image 150ms,
+    color 150ms;
+  &:hover {
+    background-image: linear-gradient(
+      color-mix(in srgb, var(--color-neutral-100) 10%, transparent) 0 0
+    );
+  }
+}

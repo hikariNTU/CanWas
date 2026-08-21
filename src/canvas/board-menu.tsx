@@ -90,7 +90,7 @@ export function BoardMenu({
         <Menu.Trigger
           data-testid="board-menu"
           aria-label={t("menu.open")}
-          className="pointer-events-auto grid h-9 w-9 place-items-center rounded-full glass text-neutral-400 transition-colors duration-150 hover:bg-white/10 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none pointer-coarse:h-11 pointer-coarse:w-11"
+          className="pointer-events-auto grid h-9 w-9 place-items-center rounded-full glass glass-hover text-neutral-400 hover:text-neutral-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none pointer-coarse:h-11 pointer-coarse:w-11"
         >
           <Icon name="menu" />
         </Menu.Trigger>

@@ -1,5 +1,6 @@
 import { ContextMenu } from "@base-ui/react/context-menu";
-import { useStore } from "jotai";
+import { useAtomValue, useStore } from "jotai";
+import { useState } from "react";
 
 import { encodeNodes } from "@/board/clipboard";
 import { useBoardHistory, useSelection } from "@/board/history";
@@ -7,6 +8,7 @@ import { deleteNodes, reorderNodes } from "@/board/mutations";
 import { boardNodesAtom } from "@/board/store";
 import type { Asset, BoardNode } from "@/board/types";
 import { useTranslation, type TranslationsKey } from "@/translations";
+import { syncTransportAtom } from "@/sync/use-sync";
 import { Icon } from "@/ui/icon";
 import { menuItemClass } from "@/ui/panel";
 
@@ -127,6 +129,22 @@ export function NodeMenu({
   const store = useStore();
   const { commit } = useBoardHistory(boardId);
   const { selection, setSelection } = useSelection(boardId);
+  const transport = useAtomValue(syncTransportAtom);
+
+  /**
+   * Where this image lives on the remote, resolved while the menu opens.
+   *
+   * Resolved then rather than on click because the answer is a promise and a
+   * tab opened after an `await` is a pop-up as far as Safari is concerned. It
+   * also means the item can be absent rather than dead: an asset this device
+   * has not pushed yet has no link, and nor does the fake remote, which is an
+   * IndexedDB database with no page to open.
+   *
+   * Usually a microtask — the folder listing it reads is cached for the
+   * session, and by the time anyone right-clicks a node the sync loop has
+   * already made it.
+   */
+  const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
 
   // Right-clicking outside the selection acts on what was clicked, as every
   // other application does. Inside it, the selection is left alone: a menu that
@@ -143,7 +161,24 @@ export function NodeMenu({
       : null;
 
   return (
-    <ContextMenu.Root>
+    <ContextMenu.Root
+      onOpenChange={(open) => {
+        setRemoteUrl(null);
+        if (!open || node.kind !== "image" || !transport) {
+          return;
+        }
+        void transport.assetUrl(node.assetId).then(
+          (url) => {
+            setRemoteUrl(url);
+          },
+          () => {
+            // A failed lookup is a missing menu item, not an error: the item is
+            // a convenience, and the picture is already on the board.
+            setRemoteUrl(null);
+          },
+        );
+      }}
+    >
       <ContextMenu.Trigger
         // Base UI merges its handlers into the element rather than wrapping it,
         // so the node keeps its own gestures and this costs no extra box in the
@@ -226,6 +261,20 @@ export function NodeMenu({
                 commit((current) => reorderNodes(current, targets, "back"));
               }}
             />
+
+            {remoteUrl !== null && (
+              <>
+                <ContextMenu.Separator className="my-1 h-px bg-white/10" />
+                <Item
+                  testId="node-menu-drive"
+                  label="node.openInDrive"
+                  icon="open_in_new"
+                  onClick={() => {
+                    window.open(remoteUrl, "_blank", "noopener,noreferrer");
+                  }}
+                />
+              </>
+            )}
 
             <ContextMenu.Separator className="my-1 h-px bg-white/10" />
 

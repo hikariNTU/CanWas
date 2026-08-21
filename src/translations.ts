@@ -170,6 +170,10 @@ const translations = {
     "zh-TW": "移至最下層",
     "en-US": "Send to back",
   },
+  "node.openInDrive": {
+    "zh-TW": "在雲端硬碟開啟",
+    "en-US": "Open in Drive",
+  },
   "node.delete": {
     "zh-TW": "刪除",
     "en-US": "Delete",

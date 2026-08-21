@@ -255,3 +255,14 @@ test("items name the keyboard route to the same action", async ({ page }) => {
   await expect(page.getByTestId("node-menu-back")).toContainText("[");
   await expect(page.getByTestId("node-menu-delete")).toContainText(/⌫|Del/);
 });
+
+test("nothing connected means no link to open", async ({ page }) => {
+  await paste(page);
+  await page.getByTestId("board-node").click({ button: "right" });
+  await expect(page.getByTestId("node-menu")).toBeVisible();
+  // The rest of the menu is still there — this is an item that is absent, not
+  // a menu that failed to open. Where the link *does* point when there is a
+  // remote is settled in Node, in drive-link.spec.ts, since it needs a Drive.
+  await expect(page.getByTestId("node-menu-copy")).toBeVisible();
+  await expect(page.getByTestId("node-menu-drive")).toHaveCount(0);
+});

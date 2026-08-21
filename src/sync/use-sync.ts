@@ -39,6 +39,16 @@ export type SyncStatus =
 export const syncStatusAtom = atom<SyncStatus>({ state: "off" });
 
 /**
+ * The live transport, for the handful of places outside the loop that need it.
+ *
+ * Published rather than rebuilt, because building a second Drive transport
+ * would mean a second walk of the folder tree — three lookups and three
+ * listings — to learn what the first one already knows. `null` whenever there
+ * is nothing connected, which is the state every reader has to handle anyway.
+ */
+export const syncTransportAtom = atom<SyncTransport | null>(null);
+
+/**
  * Keeps one board in step with the remote.
  *
  * Pulls when the board opens and pushes once local edits go quiet, rather than
@@ -94,6 +104,11 @@ export function useSync(boardId: string): {
         })
       : null;
   }, [auth.status, store]);
+
+  const publishTransport = useSetAtom(syncTransportAtom);
+  useEffect(() => {
+    publishTransport(transport);
+  }, [publishTransport, transport]);
 
   const hydrated = useAtomValue(hydratedBoardsAtom)[boardId] === true;
 

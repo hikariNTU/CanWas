@@ -192,7 +192,7 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
           data-sync-state={status.state}
           data-sync-failed={failure ? "" : undefined}
           aria-label={failure ?? t(label)}
-          className={`pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-full glass transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11 ${tone}`}
+          className={`pointer-events-auto relative flex h-9 w-9 items-center justify-center rounded-full glass glass-hover focus-visible:outline-2 focus-visible:outline-sky-500 pointer-coarse:h-11 pointer-coarse:w-11 ${tone}`}
         >
           <Icon name={icon} size={18} />
           {failure && (
@@ -472,7 +472,7 @@ export function ReconnectPill() {
         aria-label={reconnectLabel}
         disabled={state.status === "connecting"}
         onClick={() => void signIn()}
-        className="pointer-events-auto flex h-9 items-center gap-1.5 rounded-full glass pr-2.5 pl-1.5 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11 pointer-coarse:gap-2 pointer-coarse:pr-3 pointer-coarse:pl-2"
+        className="pointer-events-auto flex h-9 items-center gap-1.5 rounded-full glass glass-hover pr-2.5 pl-1.5 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:opacity-50 pointer-coarse:h-11 pointer-coarse:gap-2 pointer-coarse:pr-3 pointer-coarse:pl-2"
       >
         {/* Grows with the pill. At 44px tall a 22px avatar sits in the
             middle of a lot of glass, with the left padding reading as half

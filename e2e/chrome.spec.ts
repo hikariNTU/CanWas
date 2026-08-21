@@ -33,6 +33,20 @@ function backgroundOf(page: Page, testId: string) {
     .evaluate((element) => getComputedStyle(element).backgroundColor);
 }
 
+/**
+ * Everything the control paints, tint and overlay together.
+ *
+ * Two properties rather than one because the hover is deliberately not
+ * `background-color`: a glass control already has a tint in that slot, and a
+ * hover written there replaces it instead of lightening it.
+ */
+function paintOf(page: Page, testId: string) {
+  return page.getByTestId(testId).evaluate((element) => {
+    const style = getComputedStyle(element);
+    return `${style.backgroundColor} | ${style.backgroundImage}`;
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("?engine=mock#/chrome");
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
@@ -53,14 +67,29 @@ test("a control that cannot be pressed keeps the arrow", async ({ page }) => {
 
 test("every corner control lights up under the pointer", async ({ page }) => {
   for (const id of CORNER) {
-    const resting = await backgroundOf(page, id);
+    const resting = await paintOf(page, id);
     await page.getByTestId(id).hover();
-    const hovered = await backgroundOf(page, id);
+    const hovered = await paintOf(page, id);
     // White at low alpha over whatever the control already sits on, which is
     // the app's one hover tint (docs/ui-guidelines.md). What matters here is
     // that there is one at all.
     expect(hovered, id).not.toBe(resting);
   }
+});
+
+test("a glass control keeps its tint under the pointer", async ({ page }) => {
+  // The bug this pins: `hover:bg-white/10` on a control that is itself glass
+  // does not lighten the tint, it evicts it — and 10% white over a white
+  // photograph is a control you cannot see. It was invisible for as long as
+  // `glass` was a plain class, because an unlayered class outranked the hover
+  // and the hover never ran; making `glass` a utility woke it up on four
+  // controls at once.
+  const resting = await backgroundOf(page, "board-menu");
+  await page.getByTestId("board-menu").hover();
+  expect(await backgroundOf(page, "board-menu")).toBe(resting);
+  // The brightening moved to the layer above, where it composites.
+  const painted = await paintOf(page, "board-menu");
+  expect(painted).toContain("linear-gradient");
 });
 
 test("the two glass weights stay two", async ({ page }) => {

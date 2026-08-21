@@ -2339,3 +2339,54 @@ checked on a real recognised word instead of a synthetic probe.
 
 **Reverses if:** a treatment reaches three or four use sites and starts drifting
 between them. That is what `glass` is, and it earned the file.
+
+## D85 — A hover brightens the surface, it does not replace it
+
+**Every control that can be pressed takes a 10% white hover, and a control that
+is itself glass takes it in `background-image`, not `background-color`.**
+
+`background-color` is one slot. `hover:bg-white/10` on a glass button therefore
+does not lighten the tint, it evicts it — leaving 10% white over whatever the
+canvas is showing. Over a screenshot of a white page that is a pale disc with a
+barely visible icon in it, which is where this was noticed. On the dark canvas
+it looks fine, which is why it survived.
+
+It survived twice over: for as long as `glass` was a plain class, the hover
+never ran at all (D84 — unlayered CSS outranks every layered rule). Making
+`glass` a utility fixed the layering and woke the bug on four controls at once,
+so the fix for one trap uncovered the next.
+
+`glass-hover` paints a single-stop gradient into `background-image`, which
+composites _over_ `background-color` instead of taking its place: the control
+stays dark glass and gets 10% brighter, on any backdrop. It is safe on the
+nested buttons too — a transparent button in a glass bar has no tint to
+preserve, so the overlay lands exactly where `bg-white/10` did.
+
+Two details are load-bearing. The resting gradient is transparent rather than
+absent, because `none` to a gradient is a discrete transition and would snap
+while the text beside it faded. And the transition lives in the utility, with
+`color` restated, because a `transition-colors` in the markup names a property
+list that leaves `background-image` out.
+
+**Reverses if:** a browser stops interpolating between two gradients of the same
+shape, in which case the overlay moves to a pseudo-element and animates opacity.
+
+## D86 — An image node can be opened where it actually lives
+
+**The transport says where an asset can be opened, and answers `null` when
+there is nowhere.**
+
+The board stores a content hash, never a Drive id: the id is Drive's, it is
+per-account, and it is already in the folder listing the transport caches for
+the session. So `assetUrl(id)` is a transport method rather than a field on the
+node — no new state to keep correct, no id to invalidate when the signed-in
+account changes, and no second walk of the folder tree.
+
+The link resolves while the menu opens, not on click. A tab opened after an
+`await` is a pop-up as far as Safari is concerned, and resolving early also
+lets the item be _absent_ rather than dead: an asset this device has not pushed
+yet has no link, and nor does the fake remote, which is an IndexedDB database
+with no page to open. Both cases return `null` and the item does not render.
+
+**Reverses if:** the item is wanted while offline, which would mean recording the
+Drive id locally and invalidating it on every account change.
