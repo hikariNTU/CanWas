@@ -3283,3 +3283,42 @@ Specifics worth keeping:
 
 **Reverses if:** a text node's own chrome arrives. A size control attached to
 the node it sizes needs no row anywhere, and this becomes a desktop-only bar.
+
+## D110 — A caret is not a node
+
+**2026-08-22 · settled**
+
+Double-clicking empty canvas used to insert a text node and start editing it;
+blur deleted it again if nothing had been typed. That is correct only if the
+blur arrives. A reload, an app switch, a locked phone or a closed tab between
+the two left an empty text node on the board — and a text node with no text
+renders nothing and catches nothing, so it could not be seen, selected or
+deleted. It persisted, and it synced. On a phone the gap between opening a
+caret and blurring it is where the keyboard lives, so this was the common case
+rather than the rare one: a device came back with three of them.
+
+The node a caret sits in is now component state in `Canvas` (`pendingText`),
+rendered alongside the board's nodes and inserted for real on the first commit
+that has text in it. Persistence, sync, undo, the asset sweep and the merge
+never see it. The invariant is true rather than repaired.
+
+And `normalizeNodes` drops empty text nodes on the way in, which is where the
+ones already written land — both from the local record and from a sync round.
+
+Specifics worth keeping:
+
+- **No tombstone for a pruned node.** A tombstone says _someone deleted this_,
+  and nobody did; it would then propagate as a deletion. Every device drops
+  these for itself on arrival, which needs no agreement between them.
+- **The pending node renders last**, so the caret is over whatever it was
+  placed on. It carries `order: ""` until `insertNodes` hands out a real key.
+- **One commit, not two.** Creating and filling a node used to be a provisional
+  insert plus a real text commit. It is now a single `insertNodes` carrying the
+  text and the measured height — one undo step for one thing the user did.
+- **Emptying an _existing_ node still deletes it**, still provisionally. That
+  path is unchanged and is exempt for the reason D88 gives.
+
+**Reverses if:** something other than a double-click needs to create text at a
+caret — a toolbar with a text tool, say — in which case the pending node stops
+being one hook's private state and becomes a small piece of board-level state
+that several entry points write.

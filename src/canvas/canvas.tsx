@@ -19,7 +19,7 @@ import {
   MAX_TEXT_LENGTH,
   truncateText,
 } from "@/board/text";
-import type { NodeId } from "@/board/types";
+import type { NodeId, TextNode } from "@/board/types";
 import { assetsAtom, boardNodesAtom, readNodes } from "@/board/store";
 import { useBoardShortcuts } from "@/board/use-board-shortcuts";
 import { useIngest } from "@/board/use-ingest";
@@ -80,6 +80,21 @@ export function Canvas({ boardId }: { boardId: string }) {
    */
   const [readingId, setReadingId] = useState<NodeId | null>(null);
   const [draft, setDraft] = useState("");
+  /**
+   * The node a caret is sitting in, before anything has been typed into it.
+   *
+   * Held here rather than committed to the board. It used to be inserted at the
+   * moment of the double-click and deleted again on the way out, which is fine
+   * until the way out never comes: a reload, an app switch or a closed tab
+   * between the two left an empty node on the board — persisted, synced, and
+   * invisible, since a text node with no text renders nothing and cannot be
+   * selected. On a phone that gap is the common case, not the rare one (D110).
+   *
+   * It is rendered alongside the board's nodes and joins them on the first
+   * character. Nothing else — persistence, sync, undo, the asset sweep — ever
+   * sees it, which is the point: the invariant is true rather than repaired.
+   */
+  const [pendingText, setPendingText] = useState<TextNode | null>(null);
   const bodyRef = useRef<HTMLElement | null>(null);
   const { setSelection: select } = useSelection(boardId);
 
@@ -101,14 +116,30 @@ export function Canvas({ boardId }: { boardId: string }) {
     const height = measureHeight(bodyRef.current);
     const text = truncateText(draft);
     setEditingId(null);
+
+    // A new node reaches the board here or never. Abandoned, it was never on
+    // it, so there is nothing to delete and nothing to undo.
+    if (pendingText !== null) {
+      setPendingText(null);
+      if (text.trim() === "") {
+        return;
+      }
+      const { order: _order, updatedAt: _updatedAt, ...fresh } = pendingText;
+      commit((current) =>
+        insertNodes(current, [{ ...fresh, text, h: height }], "add text"),
+      );
+      select([id]);
+      return;
+    }
+
     if (text.trim() === "") {
-      // Removing a node nobody typed into undoes the provisional insert, and
-      // is exempt for the same reason it was.
+      // An existing node emptied out. Exempt from the guard for the same reason
+      // the text that filled it was: there is nothing left to protect.
       commitProvisional((current) => deleteNodes(current, [id]));
       return;
     }
     commit((current) => setTextContent(current, id, text, height));
-  }, [commit, commitProvisional, draft, editingId]);
+  }, [commit, commitProvisional, draft, editingId, pendingText, select]);
 
   // Double-clicking empty canvas starts a new text node where the pointer is.
   useEffect(() => {
@@ -126,14 +157,14 @@ export function Canvas({ boardId }: { boardId: string }) {
         viewport,
       );
       const node = createTextNode(world.x, world.y);
-      // Provisional: an empty node is a caret, not an edit.
-      commitProvisional((current) => insertNodes(current, [node], "add text"));
-      select([node.id]);
+      // A caret, not a node. It is drawn on top of everything until it earns a
+      // place in the order, which `insertNodes` hands out on the way in.
+      setPendingText({ ...node, order: "", updatedAt: Date.now() });
       startEditing(node.id, "");
     }
     surface.addEventListener("dblclick", handleDoubleClick);
     return () => surface.removeEventListener("dblclick", handleDoubleClick);
-  }, [commitProvisional, select, startEditing, surfaceRef, viewport]);
+  }, [startEditing, surfaceRef, viewport]);
 
   const { ingestFiles, ingestError, clearIngestError } = useIngest({
     boardId,
@@ -283,193 +314,201 @@ export function Canvas({ boardId }: { boardId: string }) {
             data-testid="world-origin"
             className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-neutral-800"
           />
-          {nodes.map((node) => {
-            const rect = rectFor(node);
-            const isSelected = selection.includes(node.id);
-            const isEditing = editingId === node.id;
-            const isReading = readingId === node.id;
-            const asset = node.kind === "image" ? assets[node.assetId] : null;
-            // An image with no asset is still a node: it has a position, a
-            // size, a place in the order, and it can be selected, moved and
-            // deleted. Skipping it rendered a board with an invisible hole in
-            // it that still caught clicks — see `MissingAsset`.
-            return (
-              // Every node is its own context-menu trigger (D83). The primitive
-              // merges its handlers into the element rather than wrapping it,
-              // so this adds no box to a tree that has one per node.
-              <NodeMenu
-                key={node.id}
-                boardId={boardId}
-                node={node}
-                asset={asset ?? null}
-                reading={isReading}
-                onRead={() => setReadingId(node.id)}
-              >
-                <div
-                  data-testid="board-node"
-                  data-node-kind={node.kind}
-                  data-node-id={node.id}
-                  data-selected={isSelected || undefined}
-                  data-ocr-status={asset?.ocr.status}
-                  data-ocr-words={
-                    asset?.ocr.status === "done"
-                      ? asset.ocr.words.length
-                      : undefined
-                  }
-                  onPointerDown={(event) => {
-                    // A node being read is not draggable: the same drag is how
-                    // its text gets selected. Neither is any node in pan mode,
-                    // where a press belongs to the viewport (D70).
-                    if (!isEditing && !isReading && mode === "select") {
-                      startMove(event, node.id);
-                    }
-                  }}
-                  onDoubleClick={() => {
-                    if (node.kind === "text" && !isEditing) {
-                      startEditing(node.id, node.text);
-                      return;
-                    }
-                    // Double-click means "go inside this node" for both kinds:
-                    // into the text to edit it, into the image to read it.
-                    if (node.kind === "image" && asset?.ocr.status === "done") {
-                      select([node.id]);
-                      setReadingId(node.id);
-                    }
-                  }}
-                  className={clsx(
-                    // `group` so the recognition badge can expand from an icon
-                    // to a sentence while the pointer is anywhere on the node.
-                    "group absolute rounded-lg",
-                    isReading ? "cursor-text" : "cursor-move",
-                  )}
-                  style={{
-                    left: rect.x,
-                    top: rect.y,
-                    width: rect.w,
-                    // Text lays out at automatic height; only images are sized
-                    // in both axes.
-                    height: node.kind === "image" ? rect.h : undefined,
-                    // An outline follows the element's own `border-radius`, so
-                    // rounding the node rounds the selection with it and the two
-                    // can never drift apart.
-                    //
-                    // White while reading, accent otherwise. Inside this mode the
-                    // accent belongs to the text selection itself, and a node
-                    // outlined in the same colour as the words being dragged
-                    // through reads as one more highlight. White also says the
-                    // node is in a different mode, which is the thing a
-                    // double-click just changed.
-                    //
-                    // Absent while the node is being edited: the field that
-                    // swaps in is glass with a caret in it, which says the same
-                    // thing at closer range, and the outline sitting two pixels
-                    // outside it made two rounded edges with a gap between.
-                    outline:
-                      isSelected && !isEditing
-                        ? `${hairline}px solid ${
-                            isReading
-                              ? "var(--color-neutral-100)"
-                              : "var(--color-sky-500)"
-                          }`
-                        : undefined,
-                    // Held off the content rather than drawn on its edge. A
-                    // screenshot of a white page swallowed a white outline
-                    // completely, and a blue one is no safer against a blue
-                    // screenshot — pushed out by its own width, the line always
-                    // has the board behind it.
-                    outlineOffset:
-                      isSelected && !isEditing ? hairline : undefined,
-                  }}
+          {/* The pending node last, so the caret is on top of whatever it was
+              placed over. It is not in `nodes` and never will be unless it is
+              typed into. */}
+          {(pendingText === null ? nodes : [...nodes, pendingText]).map(
+            (node) => {
+              const rect = rectFor(node);
+              const isSelected = selection.includes(node.id);
+              const isEditing = editingId === node.id;
+              const isReading = readingId === node.id;
+              const asset = node.kind === "image" ? assets[node.assetId] : null;
+              // An image with no asset is still a node: it has a position, a
+              // size, a place in the order, and it can be selected, moved and
+              // deleted. Skipping it rendered a board with an invisible hole in
+              // it that still caught clicks — see `MissingAsset`.
+              return (
+                // Every node is its own context-menu trigger (D83). The primitive
+                // merges its handlers into the element rather than wrapping it,
+                // so this adds no box to a tree that has one per node.
+                <NodeMenu
+                  key={node.id}
+                  boardId={boardId}
+                  node={node}
+                  asset={asset ?? null}
+                  reading={isReading}
+                  onRead={() => setReadingId(node.id)}
                 >
-                  {node.kind === "image" && asset ? (
-                    <>
-                      <img
-                        src={asset.url}
-                        alt=""
-                        draggable={false}
-                        // Rounded on the image rather than by clipping the node:
-                        // `overflow-hidden` here would also cut off the resize
-                        // handle, which sits deliberately outside the box.
-                        //
-                        // The radius is in world units, so it scales with the
-                        // zoom. That is the point — it belongs to the picture the
-                        // way its size does, and a corner that sharpened as you
-                        // zoomed in would read as chrome painted on top.
-                        className="pointer-events-none block h-full w-full rounded-lg select-none"
-                      />
-                      <OcrBadge
-                        ocr={asset.ocr}
-                        scale={viewport.scale}
-                        width={rect.w}
-                        height={rect.h}
-                        expanded={isSelected}
-                      />
-                      {asset.ocr.status === "done" && (
-                        <OcrOverlay
-                          words={asset.ocr.words}
-                          assetWidth={asset.width}
-                          nodeWidth={rect.w}
-                          active={isReading}
+                  <div
+                    data-testid="board-node"
+                    data-node-kind={node.kind}
+                    data-node-id={node.id}
+                    data-selected={isSelected || undefined}
+                    data-ocr-status={asset?.ocr.status}
+                    data-ocr-words={
+                      asset?.ocr.status === "done"
+                        ? asset.ocr.words.length
+                        : undefined
+                    }
+                    onPointerDown={(event) => {
+                      // A node being read is not draggable: the same drag is how
+                      // its text gets selected. Neither is any node in pan mode,
+                      // where a press belongs to the viewport (D70).
+                      if (!isEditing && !isReading && mode === "select") {
+                        startMove(event, node.id);
+                      }
+                    }}
+                    onDoubleClick={() => {
+                      if (node.kind === "text" && !isEditing) {
+                        startEditing(node.id, node.text);
+                        return;
+                      }
+                      // Double-click means "go inside this node" for both kinds:
+                      // into the text to edit it, into the image to read it.
+                      if (
+                        node.kind === "image" &&
+                        asset?.ocr.status === "done"
+                      ) {
+                        select([node.id]);
+                        setReadingId(node.id);
+                      }
+                    }}
+                    className={clsx(
+                      // `group` so the recognition badge can expand from an icon
+                      // to a sentence while the pointer is anywhere on the node.
+                      "group absolute rounded-lg",
+                      isReading ? "cursor-text" : "cursor-move",
+                    )}
+                    style={{
+                      left: rect.x,
+                      top: rect.y,
+                      width: rect.w,
+                      // Text lays out at automatic height; only images are sized
+                      // in both axes.
+                      height: node.kind === "image" ? rect.h : undefined,
+                      // An outline follows the element's own `border-radius`, so
+                      // rounding the node rounds the selection with it and the two
+                      // can never drift apart.
+                      //
+                      // White while reading, accent otherwise. Inside this mode the
+                      // accent belongs to the text selection itself, and a node
+                      // outlined in the same colour as the words being dragged
+                      // through reads as one more highlight. White also says the
+                      // node is in a different mode, which is the thing a
+                      // double-click just changed.
+                      //
+                      // Absent while the node is being edited: the field that
+                      // swaps in is glass with a caret in it, which says the same
+                      // thing at closer range, and the outline sitting two pixels
+                      // outside it made two rounded edges with a gap between.
+                      outline:
+                        isSelected && !isEditing
+                          ? `${hairline}px solid ${
+                              isReading
+                                ? "var(--color-neutral-100)"
+                                : "var(--color-sky-500)"
+                            }`
+                          : undefined,
+                      // Held off the content rather than drawn on its edge. A
+                      // screenshot of a white page swallowed a white outline
+                      // completely, and a blue one is no safer against a blue
+                      // screenshot — pushed out by its own width, the line always
+                      // has the board behind it.
+                      outlineOffset:
+                        isSelected && !isEditing ? hairline : undefined,
+                    }}
+                  >
+                    {node.kind === "image" && asset ? (
+                      <>
+                        <img
+                          src={asset.url}
+                          alt=""
+                          draggable={false}
+                          // Rounded on the image rather than by clipping the node:
+                          // `overflow-hidden` here would also cut off the resize
+                          // handle, which sits deliberately outside the box.
+                          //
+                          // The radius is in world units, so it scales with the
+                          // zoom. That is the point — it belongs to the picture the
+                          // way its size does, and a corner that sharpened as you
+                          // zoomed in would read as chrome painted on top.
+                          className="pointer-events-none block h-full w-full rounded-lg select-none"
                         />
-                      )}
-                    </>
-                  ) : node.kind === "image" ? (
-                    // The bytes are not here, but the geometry is: the board
-                    // travelled and the image has not caught up. Rendering
-                    // nothing left a node that could be selected, dragged and
-                    // deleted while being invisible.
-                    <MissingAsset scale={viewport.scale} />
-                  ) : node.kind === "text" ? (
-                    <TextNodeView
-                      node={isEditing ? { ...node, text: draft } : node}
-                      editing={isEditing}
-                      maxLength={MAX_TEXT_LENGTH}
-                      onChange={setDraft}
-                      onFinish={finishEditing}
-                      bodyRef={bodyRef}
-                    />
-                  ) : null}
-                  {isSelected &&
-                    selection.length === 1 &&
-                    !isEditing &&
-                    !isReading &&
-                    // Not in pan mode: there the press under it belongs to the
-                    // viewport, so a handle would be a grip that does nothing —
-                    // worse than absent, because it advertises a gesture the
-                    // mode does not have (D70).
-                    mode === "select" && (
-                      // The dot is 12px on screen and the grab area is 24px:
-                      // a handle small enough to look right is smaller than
-                      // anyone can reliably hit, so the two are separated.
-                      <div
-                        data-testid="resize-handle"
-                        onPointerDown={(event) => startResize(event, node.id)}
-                        className="group/handle absolute grid cursor-nwse-resize place-items-center"
-                        style={{
-                          width: hairline * 12,
-                          height: hairline * 12,
-                          right: -hairline * 6,
-                          bottom: -hairline * 6,
-                        }}
-                      >
-                        {/* A dot with a light ring, not a solid square: the
+                        <OcrBadge
+                          ocr={asset.ocr}
+                          scale={viewport.scale}
+                          width={rect.w}
+                          height={rect.h}
+                          expanded={isSelected}
+                        />
+                        {asset.ocr.status === "done" && (
+                          <OcrOverlay
+                            words={asset.ocr.words}
+                            assetWidth={asset.width}
+                            nodeWidth={rect.w}
+                            active={isReading}
+                          />
+                        )}
+                      </>
+                    ) : node.kind === "image" ? (
+                      // The bytes are not here, but the geometry is: the board
+                      // travelled and the image has not caught up. Rendering
+                      // nothing left a node that could be selected, dragged and
+                      // deleted while being invisible.
+                      <MissingAsset scale={viewport.scale} />
+                    ) : node.kind === "text" ? (
+                      <TextNodeView
+                        node={isEditing ? { ...node, text: draft } : node}
+                        editing={isEditing}
+                        maxLength={MAX_TEXT_LENGTH}
+                        onChange={setDraft}
+                        onFinish={finishEditing}
+                        bodyRef={bodyRef}
+                      />
+                    ) : null}
+                    {isSelected &&
+                      selection.length === 1 &&
+                      !isEditing &&
+                      !isReading &&
+                      // Not in pan mode: there the press under it belongs to the
+                      // viewport, so a handle would be a grip that does nothing —
+                      // worse than absent, because it advertises a gesture the
+                      // mode does not have (D70).
+                      mode === "select" && (
+                        // The dot is 12px on screen and the grab area is 24px:
+                        // a handle small enough to look right is smaller than
+                        // anyone can reliably hit, so the two are separated.
+                        <div
+                          data-testid="resize-handle"
+                          onPointerDown={(event) => startResize(event, node.id)}
+                          className="group/handle absolute grid cursor-nwse-resize place-items-center"
+                          style={{
+                            width: hairline * 12,
+                            height: hairline * 12,
+                            right: -hairline * 6,
+                            bottom: -hairline * 6,
+                          }}
+                        >
+                          {/* A dot with a light ring, not a solid square: the
                           square vanished into any screenshot with a pale
                           corner, and the ring holds its edge against both. */}
-                        <div
-                          className="rounded-full border-neutral-100 bg-sky-500 transition-colors group-hover/handle:bg-sky-400"
-                          style={{
-                            width: hairline * 6,
-                            height: hairline * 6,
-                            borderWidth: hairline,
-                            borderStyle: "solid",
-                          }}
-                        />
-                      </div>
-                    )}
-                </div>
-              </NodeMenu>
-            );
-          })}
+                          <div
+                            className="rounded-full border-neutral-100 bg-sky-500 transition-colors group-hover/handle:bg-sky-400"
+                            style={{
+                              width: hairline * 6,
+                              height: hairline * 6,
+                              borderWidth: hairline,
+                              borderStyle: "solid",
+                            }}
+                          />
+                        </div>
+                      )}
+                  </div>
+                </NodeMenu>
+              );
+            },
+          )}
           {lasso && (
             <div
               aria-hidden

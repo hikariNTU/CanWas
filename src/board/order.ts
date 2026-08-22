@@ -291,6 +291,19 @@ export function normalizeNodes(
   nodes: readonly BoardNode[],
   boardUpdatedAt: number,
 ): BoardNode[] {
+  // An empty text node is dropped on the way in, wherever it came from.
+  //
+  // Nothing creates one any more (D110), but a device that ran an older build
+  // wrote them to disk and pushed them to Drive, and they cannot be selected or
+  // seen — a board with three of them looks like a board with a bug rather than
+  // a board with three things on it. Both hydration paths come through here:
+  // reading the local record, and taking a board back from a sync round.
+  //
+  // No tombstone. A tombstone says *someone deleted this*, and nobody did;
+  // every device drops these on arrival for itself.
+  nodes = nodes.filter(
+    (node) => node.kind !== "text" || node.text.trim() !== "",
+  );
   const keys = nodes.every((node) => typeof node.order === "string")
     ? null
     : orderKeysBetween(null, null, nodes.length);

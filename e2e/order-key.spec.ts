@@ -161,3 +161,17 @@ test("malformed keys are rejected rather than silently reordered", () => {
   expect(() => orderKeyBetween("", null)).toThrow();
   expect(() => orderKeyBetween("a0V0", null)).toThrow();
 });
+
+test("an empty text node is dropped on the way in", () => {
+  const empty = { ...textNode("empty", "a1"), text: "" };
+  const blank = { ...textNode("blank", "a2"), text: "  \n " };
+  const kept = textNode("kept", "a3");
+
+  // Older builds inserted the node a caret sat in and deleted it again on the
+  // way out, so a reload or an app switch in between left one on the board —
+  // invisible, unselectable, and synced to every other device (D110). Nothing
+  // creates them now; hydration is where the ones already written are dropped.
+  expect(normalizeNodes([empty, blank, kept], 1700).map((n) => n.id)).toEqual([
+    "kept",
+  ]);
+});

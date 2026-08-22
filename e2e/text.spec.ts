@@ -66,6 +66,22 @@ test("an empty text node is discarded rather than stranded", async ({
   await expect(page.getByTestId("board-node")).toHaveCount(0);
 });
 
+test("a caret nobody typed into survives nothing", async ({ page }) => {
+  const surface = await surfaceBox(page);
+  await page.mouse.dblclick(surface.x + 400, surface.y + 200);
+  await expect(page.getByTestId("text-node-input")).toBeFocused();
+
+  // The node is not on the board yet, so a reload with the caret still open
+  // leaves nothing behind. It used to be inserted at the double-click and
+  // removed on blur, and anything that ended the session in between — a
+  // reload, an app switch, a phone locking — stranded an empty node that
+  // could not be seen or selected, on every device (D110).
+  await page.waitForTimeout(700);
+  await page.reload();
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+  await expect(page.getByTestId("board-node")).toHaveCount(0);
+});
+
 test("pasting text creates a text node at the cursor", async ({ page }) => {
   const surface = await surfaceBox(page);
   const cursor = {
