@@ -37,6 +37,14 @@ interface GoogleOAuth2 {
     callback: (response: TokenResponse) => void;
     error_callback?: (error: { type?: string; message?: string }) => void;
   }): TokenClient;
+  /**
+   * Not used, and deliberately (D108).
+   *
+   * Revoking is account-wide: it ends the grant on every device, not the one
+   * that asked. Signing out here forgets locally and leaves the grant alone,
+   * and the panel links to Google's own permissions page for anyone who wants
+   * the grant itself gone. Kept in this type as the record of that choice.
+   */
   revoke(token: string, done?: () => void): void;
 }
 

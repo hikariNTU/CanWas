@@ -78,8 +78,31 @@ export const isConfigured = CLIENT_ID !== "";
 
 let client: TokenClient | null = null;
 let pending:
-  | ((response: { token?: string; expiresIn?: number; error?: string }) => void)
+  | ((response: {
+      token?: string;
+      expiresIn?: number;
+      /** Google's own error identifier, e.g. `access_denied`, `popup_closed`. */
+      code?: string;
+      message?: string;
+    }) => void)
   | null = null;
+
+/**
+ * A failed sign-in, with Google's error code intact.
+ *
+ * The code is the difference between "this browser no longer has a grant" and
+ * "someone closed the popup", and the caller has to tell those apart: only the
+ * first is a reason to forget which account was here (D108).
+ */
+export class AuthError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = "AuthError";
+  }
+}
 
 /**
  * Asks Google for an access token.
@@ -89,14 +112,14 @@ let pending:
  * popup that a browser will block unless a click opened it. There is no refresh
  * token in a browser flow either — nothing to exchange in the background.
  *
- * `prompt: ""` is still worth passing once consent exists. It does not remove
- * the popup, but it removes what the popup *shows*: the window opens and closes
- * without an account chooser or a consent screen, which is the difference
- * between a click and a conversation.
+ * The prompt is always `""`, which is Google's *default*, not its silent mode:
+ * a chooser or a consent screen appears exactly when Google needs one, and not
+ * otherwise. Asking for `"consent"` ourselves used to be how a first
+ * connection was handled, which meant a second device asked again for consent
+ * the account had already given — a redundant consent screen and a redundant
+ * security email, for a grant that was never missing (D108).
  */
-export async function requestToken(
-  prompt: "" | "consent" = "",
-): Promise<Session> {
+export async function requestToken(): Promise<Session> {
   if (!isConfigured) {
     throw new Error("no Google client id was configured for this build");
   }
@@ -108,38 +131,43 @@ export async function requestToken(
       pending?.({
         token: response.access_token,
         expiresIn: response.expires_in,
-        error: response.error_description ?? response.error,
+        code: response.error,
+        message: response.error_description ?? response.error,
       });
       pending = null;
     },
     error_callback: (error) => {
-      pending?.({ error: error.message ?? error.type ?? "sign-in failed" });
+      pending?.({
+        code: error.type,
+        message: error.message ?? error.type ?? "sign-in failed",
+      });
       pending = null;
     },
   });
 
   // Which account, when this browser already knows. Without it, Google shows
   // its account chooser to anyone signed into more than one account — every
-  // time, however often they have already chosen, because `prompt: ""` only
-  // suppresses the chooser when there is no ambiguity to resolve. The hint is
-  // the answer to that ambiguity (D82).
+  // time, however often they have already chosen, because the default prompt
+  // only suppresses the chooser when there is no ambiguity to resolve. The
+  // hint is the answer to that ambiguity (D82).
   //
-  // Only on the silent path. `prompt: "consent"` is what runs when the user is
-  // deliberately connecting an account, and hinting there would quietly steer
-  // them back to the one they may be trying to leave.
-  const hint = prompt === "" ? (lastAccount()?.email ?? "") : "";
+  // A browser only knows once it has connected, and signing out forgets. So
+  // someone deliberately choosing a different account is never hinted back at
+  // the one they left — there is nothing left to hint with.
+  const hint = lastAccount()?.email ?? "";
 
   const result = await new Promise<{
     token?: string;
     expiresIn?: number;
-    error?: string;
+    code?: string;
+    message?: string;
   }>((resolve) => {
     pending = resolve;
-    client!.requestAccessToken({ prompt, ...(hint ? { hint } : {}) });
+    client!.requestAccessToken({ prompt: "", ...(hint ? { hint } : {}) });
   });
 
   if (!result.token) {
-    throw new Error(result.error ?? "sign-in was dismissed");
+    throw new AuthError(result.message ?? "sign-in was dismissed", result.code);
   }
   return {
     accessToken: result.token,
@@ -211,15 +239,6 @@ export function rememberAccount(account: RememberedAccount | null): void {
   } catch {
     // Nothing to do and nothing worth saying: the cost is one extra dialog.
   }
-}
-
-export function revoke(session: Session): Promise<void> {
-  return loadGoogleOAuth().then(
-    (oauth2) =>
-      new Promise<void>((resolve) => {
-        oauth2.revoke(session.accessToken, resolve);
-      }),
-  );
 }
 
 /** Whether a session still has time on it. */

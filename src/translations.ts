@@ -282,6 +282,10 @@ const translations = {
     "zh-TW": "登出",
     "en-US": "Sign out",
   },
+  "sync.revokeAccess": {
+    "zh-TW": "在 Google 帳戶移除授權",
+    "en-US": "Remove access in your Google Account",
+  },
   "sync.connecting": {
     "zh-TW": "連線中…",
     "en-US": "Connecting…",

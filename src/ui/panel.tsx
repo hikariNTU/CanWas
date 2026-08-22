@@ -51,6 +51,14 @@ export function PanelRule({ className }: { className?: string }) {
  * of a panel is indistinguishable from a caption until the pointer is over it,
  * and on a touch screen there is no such moment.
  */
+const panelActionClass = clsx(
+  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left",
+  "text-neutral-300 transition-colors",
+  "hover:bg-white/10 hover:text-neutral-50",
+  "focus-visible:outline-2 focus-visible:outline-sky-500",
+  "disabled:pointer-events-none disabled:opacity-50",
+);
+
 export function PanelButton({
   icon,
   className,
@@ -60,19 +68,39 @@ export function PanelButton({
   icon: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      {...rest}
-      className={clsx(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left",
-        "text-neutral-300 transition-colors",
-        "hover:bg-white/10 hover:text-neutral-50",
-        "focus-visible:outline-2 focus-visible:outline-sky-500",
-        "disabled:pointer-events-none disabled:opacity-50",
-        className,
-      )}
-    >
+    <button {...rest} className={clsx(panelActionClass, className)}>
       <Icon name={icon} size={16} />
       {children}
     </button>
+  );
+}
+
+/**
+ * The same row, when the action is somewhere else.
+ *
+ * A link and a button look alike here on purpose — both are one row in a list
+ * of things this panel can do — but they are not interchangeable in markup: a
+ * button that opens a page is invisible to anyone who wants to know where it
+ * goes before pressing it, and unreachable by every way a browser offers to
+ * open a link.
+ */
+export function PanelLink({
+  icon,
+  className,
+  children,
+  ...rest
+}: {
+  icon: string;
+} & React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return (
+    <a
+      {...rest}
+      target="_blank"
+      rel="noreferrer"
+      className={clsx(panelActionClass, className)}
+    >
+      <Icon name={icon} size={16} />
+      {children}
+    </a>
   );
 }

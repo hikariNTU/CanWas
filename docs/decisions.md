@@ -1149,6 +1149,11 @@ Specifics worth keeping:
   exactly what makes it wrong for a bearer token — any script on this origin can
   read it and it outlives the tab that earned it. An hour of silent re-consent
   is cheaper.
+
+  _Amended 2026-08-22 (D108):_ signing out used to revoke that token, which
+  ended the grant for the whole account. It no longer does — it forgets locally,
+  and the panel links to Google's permissions page for the rest.
+
 - **The Google script loads on demand**, not from `index.html`. It is a
   third-party request on every page load for a feature most sessions never
   touch, and this app opens straight onto a board.
@@ -2248,6 +2253,12 @@ deliberately connecting, and hinting there would steer them back toward the
 account they may be trying to leave. Sign-out clears the remembered account, so
 the next connection is unhinted by construction.
 
+_Amended 2026-08-22 (D108):_ there is no longer a second path. Every request
+passes `prompt: ""`, and the hint is attached whenever an account is remembered.
+The rule survives its own branch: a browser only remembers once it has
+connected, and signing out forgets, so someone choosing a different account
+still has nothing to be steered by.
+
 Worth noting what the hint is not: it opens nothing, proves nothing, and is
 refused like any other request if the grant is gone. It is a suggestion about
 whose session to use, checked against session cookies on Google's own origin.
@@ -3174,3 +3185,55 @@ is not verified, and it is worth being plain about which.
 
 **Reverses if:** the device says it did not work, in which case `translate3d` on
 the glass is next and dropping the blur during a gesture after that.
+
+## D108 — Sign out forgets; only Google revokes
+
+**2026-08-22 · settled**
+
+Three changes, one subject: a grant is held per _account_, and this app kept
+treating it as if it were held per browser.
+
+- **Signing out no longer revokes.** It clears the in-memory token and the
+  remembered account, and leaves the grant alone.
+- **Every token request passes `prompt: ""`.** The `prompt: "consent"` branch
+  for a first connection is gone.
+- **A failed sign-in forgets the account only on `access_denied`,
+  `interaction_required` or `invalid_grant`**, which is why `requestToken` now
+  throws an `AuthError` carrying Google's code instead of a flattened string.
+
+The symptom was a Google security email per device rather than per account, and
+a consent screen that kept coming back. Both were ours. Revoking on sign-out
+ends the grant everywhere, so the next sign-in on _any_ device is a first
+connection again — new consent, new alert. And `hasConnectedBefore()` reads
+`localStorage`, which is per browser, so a second device concluded it had never
+connected and asked for consent the account had already given.
+
+`prompt: ""` is Google's _default_, not its silent mode: a chooser or a consent
+screen appears exactly when Google needs one. So asking for consent ourselves
+could only ever demand a second one, never earn a first.
+
+Specifics worth keeping:
+
+- **Revoking is a link, not a button** — `myaccount.google.com/permissions`,
+  under the same rule as Sign out, and offered to a browser that merely
+  remembers an account too. A button in this panel would read as being about
+  this device, and revoking never is. Google's page says plainly what it ends.
+- **`revoke` stays in `gis.ts`'s type**, unused, with a comment saying why, and
+  a test asserts the stub is never called. A deleted function is a decision
+  nobody can see; an unused one with a test around it is one that stays made.
+- **A dismissed popup is not a lost grant.** Forgetting on any failure meant a
+  closed popup cost the next attempt a consent screen — the app manufacturing
+  the state the remembered account exists to avoid.
+- **What sign-out leaves behind**: an access token valid on Google's side for up
+  to an hour. Nothing local holds it — it lived in memory and sign-out drops the
+  last reference — so _signed out_ means this browser forgot, not that the token
+  is dead. On a shared machine that is the honest description, and the link is
+  there for anyone who wants more.
+
+What this does **not** fix: the hourly re-click (Google's browser flow issues no
+refresh token — only a backend can), and the unverified-app warning on the
+consent screen, which is verification status and not architecture.
+
+**Reverses if:** a token broker arrives. With a refresh token held server-side,
+sign-out becomes a server-side session to end, and this whole balance is redrawn
+around it.

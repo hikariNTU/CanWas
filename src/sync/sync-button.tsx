@@ -9,7 +9,7 @@ import { syncStatusAtom, type SyncStatus } from "@/sync/use-sync";
 import { useTranslation, type TranslationsKey } from "@/translations";
 import { DriveMark } from "@/ui/drive-mark";
 import { Icon } from "@/ui/icon";
-import { PanelButton, PanelRule } from "@/ui/panel";
+import { PanelButton, PanelLink, PanelRule } from "@/ui/panel";
 import { Tip } from "@/ui/tooltip";
 
 /**
@@ -337,22 +337,39 @@ export function SyncButton({ onSync }: { onSync: () => void }) {
               </p>
             )}
 
-            {/* Last, behind a rule, and the only thing below it. It was
-                  sitting between the account and Sync now, where it read as
-                  another step in using sync rather than as the end of it — and
-                  a bare underlined word directly above the primary action is a
-                  misclick waiting to revoke a token. */}
-            {state.status === "signedIn" && (
+            {/* Last, behind a rule, and the only things below it. Signing out
+                  was sitting between the account and Sync now, where it read as
+                  another step in using sync rather than as the end of it.
+
+                  Two actions, not one, because they are not the same size.
+                  Signing out forgets this browser. Revoking ends the grant for
+                  the account, on every device — which is why it is a link to
+                  Google's own permissions page rather than a button here: a
+                  button in this panel would read as being about this device,
+                  and it is not (D108). The link is offered to a browser that
+                  merely remembers an account too; wanting the grant gone is not
+                  a reason to have to sign in first. */}
+            {(state.status === "signedIn" || remembered) && (
               <>
                 <PanelRule />
-                <PanelButton
-                  data-testid="sync-sign-out"
-                  icon="logout"
-                  onClick={() => void signOut()}
+                {state.status === "signedIn" && (
+                  <PanelButton
+                    data-testid="sync-sign-out"
+                    icon="logout"
+                    onClick={signOut}
+                    className="text-xs text-neutral-500"
+                  >
+                    {t("sync.signOut")}
+                  </PanelButton>
+                )}
+                <PanelLink
+                  data-testid="sync-revoke"
+                  icon="open_in_new"
+                  href="https://myaccount.google.com/permissions"
                   className="text-xs text-neutral-500"
                 >
-                  {t("sync.signOut")}
-                </PanelButton>
+                  {t("sync.revokeAccess")}
+                </PanelLink>
               </>
             )}
           </Popover.Popup>

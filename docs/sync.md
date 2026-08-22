@@ -88,15 +88,19 @@ of the last account this browser connected with. All three come from the same
 `about` request that already reported the storage quota, so knowing them costs
 nothing. None of it is a credential — it opens no door, it only names one — and
 signing out erases it, because it is ordinary personal data on a machine
-somebody else may use next.
+somebody else may use next. Erasing it is _all_ signing out does: the grant on
+Google's side is untouched, because it belongs to the account rather than to
+this browser, and ending it is a link to Google's own permissions page (D108).
 
-Its presence is also the answer to "has this browser connected before", which
-buys three things:
+Its presence buys three things:
 
-- The request passes `prompt: ""`. That does not remove the popup, but it
-  removes what the popup shows: no account chooser, no consent screen, a window
-  that opens and closes. If it fails the record is cleared, so the next click
-  asks properly rather than failing the same way twice.
+- The request carries it as a `hint`, so Google knows which of two signed-in
+  accounts is meant and skips the chooser (D82).
+- Every request passes `prompt: ""` — Google's default, which shows a chooser or
+  a consent screen exactly when one is needed and otherwise opens and closes a
+  window. The record is cleared only when Google says the grant itself is the
+  problem; a dismissed popup leaves it alone, because forgetting there would
+  cost the next click the consent screen this record exists to skip (D108).
 - The button reads **Reconnect** rather than Connect, so a signed-out state
   looks like one click rather than like setting the whole thing up again.
 - Reconnect sits _beside_ the sync icon, wearing the face of the account it
