@@ -2,7 +2,11 @@ import clsx from "clsx";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useBoardHistory, useSelection } from "@/board/history";
+import {
+  type ChangeBuilder,
+  useBoardHistory,
+  useSelection,
+} from "@/board/history";
 import {
   deleteNodes,
   insertNodes,
@@ -616,34 +620,32 @@ export function Canvas({ boardId }: { boardId: string }) {
                 <Icon name="redo" />
               </IconButton>
             </Island>
-            {selectedText?.kind === "text" && (
-              <Island>
-                {FONT_SIZES.map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    data-testid={`font-size-${size}`}
-                    aria-label={t("text.size")}
-                    aria-pressed={selectedText.fontSize === size}
-                    onClick={() =>
-                      commit((current) =>
-                        setFontSize(current, selectedText.id, size),
-                      )
-                    }
-                    className={clsx(
-                      "grid h-8 w-8 place-items-center rounded-full transition-colors duration-150 pointer-coarse:h-11 pointer-coarse:w-11 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none",
-                      selectedText.fontSize === size
-                        ? "bg-white/10 text-sky-400"
-                        : "text-neutral-400 hover:text-neutral-100",
-                    )}
-                    style={{ fontSize: 8 + size / 4 }}
-                  >
-                    A
-                  </button>
-                ))}
-              </Island>
+            {/* Beside the others only where there is room for it. On a phone
+                this island is the third on a row that already fills the
+                screen — see the row it moves to below. */}
+            {!coarse && selectedText?.kind === "text" && (
+              <FontSizes selected={selectedText} commit={commit} />
             )}
           </div>
+
+          {/* The same island, a row of its own, on touch.
+
+              Four 44px targets, two islands already 260px wide, and a 402px
+              phone: the three of them came to 472 and the sizes ran off the
+              right edge. Nothing here shrinks to fix that — a 36px target is
+              below the floor every other control on this board holds to, and a
+              stepper or a menu would cost the thing that makes this control
+              work, which is four A's drawn at the size they set, comparable at
+              a glance and one tap away.
+
+              So it moves up instead of getting smaller, and it stays centred
+              and conditional: the permanent islands below never move when a
+              text node is selected. */}
+          {coarse && selectedText?.kind === "text" && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-36 flex justify-center">
+              <FontSizes selected={selectedText} commit={commit} />
+            </div>
+          )}
 
           {/* Touch only, and one row up from the zoom and undo islands rather
             than beside them: on a 412px-wide phone this bar is wide enough to
@@ -685,6 +687,48 @@ export function Canvas({ boardId }: { boardId: string }) {
 }
 
 /** A floating chrome group. Excalidraw calls these islands; so do we. */
+/**
+ * The four text sizes, as four A's drawn at the size each one sets.
+ *
+ * A component because it has two homes rather than one: beside the zoom and
+ * undo islands on a pointer, and a row of its own on touch, where three
+ * islands do not fit across a phone.
+ */
+function FontSizes({
+  selected,
+  commit,
+}: {
+  selected: { id: NodeId; fontSize: number };
+  commit: (build: ChangeBuilder) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Island>
+      {FONT_SIZES.map((size) => (
+        <button
+          key={size}
+          type="button"
+          data-testid={`font-size-${size}`}
+          aria-label={t("text.size")}
+          aria-pressed={selected.fontSize === size}
+          onClick={() =>
+            commit((current) => setFontSize(current, selected.id, size))
+          }
+          className={clsx(
+            "grid h-8 w-8 place-items-center rounded-full transition-colors duration-150 pointer-coarse:h-11 pointer-coarse:w-11 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none",
+            selected.fontSize === size
+              ? "bg-white/10 text-sky-400"
+              : "text-neutral-400 hover:text-neutral-100",
+          )}
+          style={{ fontSize: 8 + size / 4 }}
+        >
+          A
+        </button>
+      ))}
+    </Island>
+  );
+}
+
 export function Island({ children }: { children: React.ReactNode }) {
   return (
     <div className="pointer-events-auto flex items-center gap-0.5 rounded-full glass p-1">

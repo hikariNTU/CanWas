@@ -3237,3 +3237,49 @@ consent screen, which is verification status and not architecture.
 **Reverses if:** a token broker arrives. With a refresh token held server-side,
 sign-out becomes a server-side session to end, and this whole balance is redrawn
 around it.
+
+## D109 — The text sizes get their own row on a phone
+
+**2026-08-22 · settled**
+
+Two fixes to the same kind of mistake: a layout that was only ever checked where
+it had room.
+
+**The size island moves up on touch.** The bottom-left row held zoom (160px),
+undo/redo (100px) and, when a text node is selected, four font sizes (196px).
+At 44px a target that is 472px across, and a phone is 402. The largest A was
+simply off the screen. On a coarse pointer the island now renders centred in its
+own row above the mode bar; on a fine pointer nothing changes.
+
+What was rejected, and why:
+
+- **Smaller targets.** 36px is below the 44px floor every other control on this
+  board holds to, and four of them at 36 still overflowed.
+- **A stepper, or a menu.** Both destroy the control. Four A's drawn at the size
+  they set are comparable at a glance and one tap away; a stepper makes the
+  largest size three taps and shows the current one nowhere, and a menu buries a
+  formatting choice two gestures deep.
+- **Wrapping the existing row.** The last flex line is the bottom one, so the
+  permanent islands would move whenever a text node was selected — the exact
+  thing the rule about conditional controls exists to prevent.
+
+**The info panel's labels stop shrinking.** `flex justify-between` leaves both
+children shrinkable, and the screen-edges row carries the longest value in the
+app. On a phone in Chinese the label lost the fight: 螢幕邊界 came out one
+character per line, four lines tall, and the value wrapped anyway — the row got
+taller and nothing got wider. `shrink-0` on the label, `min-w-0` on the value.
+
+Han text is what exposed it. English refuses to break inside a word, so the same
+bug on the same screen shows as a slightly cramped label rather than as a
+vertical column of characters — which is why the test seeds `zh-TW`.
+
+Specifics worth keeping:
+
+- **A same-document navigation runs no init script.** The test that seeds the
+  language first navigated from `#/touch` to `#/aboutboard` on the same query,
+  which changes no document, so `addInitScript` never ran and the panel was
+  measured in English — where it passes either way. It sets the key and reloads.
+- **The island is a component now**, because it has two homes rather than one.
+
+**Reverses if:** a text node's own chrome arrives. A size control attached to
+the node it sizes needs no row anywhere, and this becomes a desktop-only bar.

@@ -109,8 +109,13 @@ function Row({
       data-testid={testId}
       className="flex items-baseline justify-between gap-6 py-1"
     >
-      <span className="text-neutral-400">{t(label)}</span>
-      <span className="text-right font-mono text-neutral-200 tabular-nums">
+      {/* The label never shrinks and the value never pushes it.
+          `justify-between` alone left both sides shrinkable, so a long value —
+          the safe-area readout, an engine name — squeezed a four-character
+          label into one character per line and left the row four lines tall
+          for no gain: the value wrapped anyway, just further right. */}
+      <span className="shrink-0 text-neutral-400">{t(label)}</span>
+      <span className="min-w-0 text-right font-mono text-neutral-200 tabular-nums">
         {children}
       </span>
     </div>

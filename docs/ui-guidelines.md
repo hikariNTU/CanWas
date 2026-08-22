@@ -153,9 +153,17 @@ No Unicode glyphs standing in for icons.
 - **Icon-only on touch.** The mode bar carries no text labels. A hand and a
   marquee are the two most-drawn icons in this category of app, and a label in
   two languages costs more width on a 412px screen than it explains.
-- **Conditional controls go at the end of a row.** A control that appears with
-  the selection must never move the permanent ones — undo and redo shifting
-  sideways as you select a node makes them feel unreliable to aim at.
+- **Conditional controls go at the end of a row** — and onto a row of their own
+  when the row runs out of phone. A control that appears with the selection must
+  never move the permanent ones: undo and redo shifting sideways as you select a
+  node makes them feel unreliable to aim at. On touch, three islands do not fit
+  across 402px at 44px a target, so the text sizes stack above the mode bar
+  rather than shrink below the floor ([D109](decisions.md)).
+- **A label never shrinks to make room for its value.** In a two-column row,
+  give the label `shrink-0` and the value `min-w-0`. Left equally shrinkable,
+  Han text has no word boundary to refuse at and breaks one character per line,
+  turning a four-character label into a four-line column — while the value it
+  yielded to wraps anyway.
 - **A surface means something.** Chrome that is only read carries no background;
   a background marks a thing as interactive or editable. The board title is bare
   text at rest and gains a field only while being edited.

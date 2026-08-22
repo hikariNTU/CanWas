@@ -853,3 +853,80 @@ test("a long press on the words being read is not a request for a menu", async (
   }, centreOfWord);
   await expect(page.getByTestId("node-menu")).toHaveCount(0);
 });
+
+test("the text sizes fit on the screen, and cost the other controls nothing", async ({
+  page,
+}) => {
+  await page.goto("?engine=mock#/sizeboard");
+  await expect(page.getByTestId("canvas-surface")).toBeVisible();
+
+  const zoom = page.getByTestId("zoom-reset");
+  const before = (await zoom.boundingBox())!;
+
+  await page.evaluate(() => {
+    const transfer = new DataTransfer();
+    transfer.setData("text/plain", "sizing");
+    window.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData: transfer,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+  await page.getByTestId("board-node").click();
+  await expect(page.getByTestId("font-size-12")).toBeVisible();
+
+  // Every size is reachable. Laid out beside the zoom and undo islands, the
+  // four of them ran past the right edge of a 402px phone and the largest was
+  // simply not there (D109).
+  const width = await page.evaluate(() => window.innerWidth);
+  for (const size of [12, 16, 24, 40]) {
+    const box = (await page.getByTestId(`font-size-${size}`).boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+  }
+
+  // And the permanent controls did not move to make room. A control that comes
+  // and goes must never shift one that stays.
+  const after = (await zoom.boundingBox())!;
+  expect(after.x).toBeCloseTo(before.x, 1);
+  expect(after.y).toBeCloseTo(before.y, 1);
+
+  // Above the mode bar, not on top of it. Two controls sharing a rectangle is
+  // not a layout.
+  const sizes = (await page.getByTestId("font-size-12").boundingBox())!;
+  const bar = (await page.getByTestId("touch-bar").boundingBox())!;
+  expect(sizes.y + sizes.height).toBeLessThanOrEqual(bar.y);
+});
+
+test("a long value in the info panel does not shred the label beside it", async ({
+  page,
+}) => {
+  // In Chinese, because that is where it bites: Han text has no word
+  // boundaries, so a squeezed label breaks between any two characters rather
+  // than refusing to fit.
+  //
+  // Set and reloaded rather than seeded through `addInitScript`: the suite has
+  // already navigated once, and going from `#/touch` to another hash on the
+  // same query is a same-document navigation — no reload, no init script, and
+  // an English panel measured for a Chinese failure.
+  await page.evaluate(() => {
+    localStorage.setItem("canwas.preferredLang", "zh-TW");
+  });
+  await page.goto("?engine=mock#/aboutboard");
+  await page.reload();
+  await page.getByTestId("about-open").click();
+
+  const row = page.getByTestId("about-display");
+  await expect(row).toBeVisible();
+  const label = row.locator("span").first();
+
+  // The screen-edges row carries the longest value in the panel, and on a
+  // phone it wraps — which is fine. What is not fine is the label wrapping
+  // with it: `justify-between` left both sides shrinkable, so a four-character
+  // Chinese label came out one character per line and four lines tall, while
+  // the value it made room for wrapped anyway (D109).
+  const box = (await label.boundingBox())!;
+  expect(box.height).toBeLessThan(32);
+});
