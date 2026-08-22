@@ -12,29 +12,21 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <!-- Apple's own standalone flag, and its standard replacement. iOS 16.4
-         learned to read `display: standalone` from the manifest, but the
-         status bar style below is a WebKit extension that is only consulted
-         for an app in *Apple's* standalone mode — so without this the meta
-         under it is read and ignored, and the status bar stays a reserved
-         band (D93). `mobile-web-app-capable` is the standardised spelling and
-         is what Chrome reads; both are declared rather than either alone. -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- The standardised standalone flag, and deliberately the only one.
+         Apple's own spelling of it is not declared: it opts the app into
+         Apple's legacy standalone path, where the web view is shifted up under
+         the status bar without being made any taller, and the band it vacates
+         at the bottom of the screen is clipped away — a 402x812 window on a
+         402x874 phone, measured (D106). Left to the manifest's
+         `display: standalone`, iOS 16.4 and later give the page the whole
+         screen, and the insets describe the parts of it that are spoken for.
+         -->
     <meta name="mobile-web-app-capable" content="yes" />
-    <!-- What actually lets `viewport-fit=cover` do anything on an iPhone.
-         Installed to the home screen, iOS defaults this to `default`, which
-         reserves the status bar as a band the web view cannot reach and paints
-         it with the manifest's `background_color` — the same near-black as the
-         board, so it reads as the dots simply stopping short of the top.
-         `black-translucent` hands the whole screen to the page and moves the
-         status bar over it; the insets then become non-zero and the chrome
-         layer's `env(safe-area-inset-*)` padding holds the islands clear
-         (D68). No colour is asked for: the bar's glyphs are drawn light,
-         which is what a dark board wants under them. -->
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <!-- The colour behind the status bar glyphs, which the manifest's
+         `theme_color` also carries; declared here as well so it applies before
+         the manifest is fetched. The board's own near-black, so the bar is not
+         a band. -->
+    <meta name="theme-color" content="#0a0a0a" />
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"

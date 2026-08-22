@@ -3073,3 +3073,47 @@ like D103 it needs its own copy of anything the canvas learns.
 `black-translucent`, at which point this doubles the overshoot instead of
 cancelling it. `box` against `scr` in the About readout is exactly the pair that
 would show it, and the two numbers should agree once this ships.
+
+## D106 — Off Apple's legacy standalone path
+
+`black-translucent` shifts the web view up under the status bar and does not
+make it any taller. The band it vacates at the bottom of the screen is outside
+the window, so nothing the page does can paint there — and D105's attempt to
+grow into it did exactly what that implies: the board reached `box 62→852` on a
+`402×874` screen, as designed, and the bottom controls were **cut**, drawn past
+the edge of an 812-tall window rather than onto the last 62px of glass.
+
+Which is the answer to the question that started this: full-bleed under the
+status bar and a bottom edge that reaches the screen are not both available on
+that path.
+
+`apple-mobile-web-app-capable` is what puts the app on that path. It opts out of
+manifest-driven standalone in favour of Apple's legacy rules, and the status bar
+style is a WebKit extension only read there. Both metas are gone. What remains
+is `mobile-web-app-capable`, the manifest's `display: standalone`,
+`viewport-fit=cover`, and a `theme-color` for the bar — and on iOS 16.4 and
+later that is a full-screen window with truthful insets.
+
+Everything built on top of the legacy behaviour goes with it:
+
+- The 44px floor under the top inset (D96). It was insurance against WebKit
+  reporting 0 under `black-translucent`, which the device never did.
+- `screen-fill` (D105), the height that added the shift back. There is no shift.
+
+What survives is the part that was always about the insets rather than about
+Apple: the layer carries them as offsets rather than padding (D99), the bottom
+one absorbs the islands' 12px gutter (D101), and the update banner has its own
+copy of the layer (D103).
+
+Verified against a second opinion after five wrong guesses. The measurements
+came first and matched it: window 62 short of the screen, 62 being exactly the
+top inset, and a fixed element past `y=812` clipped rather than shown.
+
+**Reverses if:** an iOS version puts a manifest-driven standalone window back
+inside the status bar rather than under it. `box` against `scr` in the About
+readout says which, and they should read `62→852` against `402×874` now — the
+same numbers as the broken state, but with the bottom controls on screen
+instead of past the edge.
+
+**Requires a reinstall.** These metas are read when the home screen icon is
+created; an existing icon keeps the old window.

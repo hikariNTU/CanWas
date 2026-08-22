@@ -362,10 +362,6 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   expect(css, "the insets are not declared anywhere").toContain(
     "env(safe-area-inset-top)",
   );
-  expect(
-    css,
-    "a browser that reports 0 where it should not still needs a floor",
-  ).toContain("max(env(safe-area-inset-top), 44px)");
   // The bottom absorbs the islands' own 12px gutter rather than stacking with
   // it (D101). Asserted against the built stylesheet as well as the source,
   // because this rule was written once, lost before it was committed, and
@@ -386,28 +382,6 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
     "padding-top: env(safe-area-inset-top)",
   );
 
-  // On an installed iPhone app the viewport is shorter than the screen, and
-  // the board is given back the difference as height (D105). Height has to beat
-  // `bottom: 0` for that to reach the bottom edge rather than stretch into
-  // nothing — over-constrained boxes drop `bottom`, and this is that rule made
-  // into an assertion, driven inline because `env()` is 0 here.
-  const grew = await page.evaluate(() => {
-    const root = document.querySelector(
-      "[data-testid=chrome-layer]",
-    )!.parentElement!;
-    const layer = document.querySelector("[data-testid=chrome-layer]")!;
-    const before = layer.getBoundingClientRect().bottom;
-    root.style.height = `${window.innerHeight + 62}px`;
-    const after = layer.getBoundingClientRect().bottom;
-    root.style.height = "";
-    return after - before;
-  });
-  expect(grew, "height does not carry the layer past the viewport").toBe(62);
-  await expect(page.getByTestId("chrome-layer")).toHaveClass(/chrome-inset/);
-  expect(css, "the board cannot grow past a short viewport").toContain(
-    "height: calc(100% + env(safe-area-inset-top))",
-  );
-
   // The update banner is the one piece of chrome outside the canvas, and it
   // appears without being asked for — under the clock, on a phone, unless it
   // carries the same layer (D103). Read from the source because it only renders
@@ -422,22 +396,27 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   expect(html, "without viewport-fit=cover the insets are always 0").toContain(
     "viewport-fit=cover",
   );
-  // And its other half. On an installed iPhone app `viewport-fit=cover` alone
-  // changes nothing: iOS reserves the status bar unless the page asks for it
-  // by name, and the reserved band is painted with the manifest's
-  // `background_color` — the board's own near-black, so the only visible
-  // symptom is dots that stop short of the top (D93).
+  // And the two lines that must NOT be there. Apple's own standalone flag opts
+  // the app into a path where the web view is shifted up under the status bar
+  // without being made any taller, so the band it vacates at the bottom of the
+  // screen is clipped — measured as a 402x812 window on a 402x874 phone, and
+  // the reason the bottom controls were cut in half (D106). The status bar
+  // style is a WebKit extension only read on that path, and goes with it.
   expect(
     html,
-    "without black-translucent iOS keeps the status bar for itself",
-  ).toContain('content="black-translucent"');
-  // And the flag that style is conditional on: it is a WebKit extension read
-  // only for an app in Apple's own standalone mode, so on its own the line
-  // above is decoration (D93).
+    "apple-mobile-web-app-capable puts iOS back on the legacy short window",
+  ).not.toContain('name="apple-mobile-web-app-capable"');
   expect(
     html,
-    "the status bar style is only read in Apple's standalone mode",
-  ).toContain('name="apple-mobile-web-app-capable"');
+    "black-translucent shifts the window up instead of filling the screen",
+  ).not.toContain('content="black-translucent"');
+  // What replaces them: the standard flag, and a colour for the bar.
+  expect(html, "nothing asks for a standalone window").toContain(
+    'name="mobile-web-app-capable"',
+  );
+  expect(html, "the status bar has no colour to take").toContain(
+    'name="theme-color"',
+  );
 });
 
 test("the board is the size of the screen, not of its ancestors", async ({

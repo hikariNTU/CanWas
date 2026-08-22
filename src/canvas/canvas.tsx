@@ -239,7 +239,7 @@ export function Canvas({ boardId }: { boardId: string }) {
     // for the board to reach the bottom of one; installed on a phone it was
     // not, and the dots stopped short. `fixed` asks the viewport directly, and
     // this is a full-screen app in every route that renders it (D96).
-    <div className="screen-fill fixed inset-0 overflow-hidden">
+    <div className="fixed inset-0 overflow-hidden">
       <div
         ref={surfaceRef}
         data-testid="canvas-surface"
