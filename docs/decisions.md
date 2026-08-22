@@ -3109,11 +3109,35 @@ Verified against a second opinion after five wrong guesses. The measurements
 came first and matched it: window 62 short of the screen, 62 being exactly the
 top inset, and a fixed element past `y=812` clipped rather than shown.
 
-**Reverses if:** an iOS version puts a manifest-driven standalone window back
-inside the status bar rather than under it. `box` against `scr` in the About
-readout says which, and they should read `62→852` against `402×874` now — the
-same numbers as the broken state, but with the bottom controls on screen
-instead of past the edge.
+**Confirmed on the device, and half the reasoning for it was wrong.** The
+second opinion said the modern path would hand the page the whole screen. It
+does not:
+
+```
+off 0/22 · env 0/34 · std yes · cal yes · 402×812 · scr 402×874 · box 0→790
+```
+
+Still an 812-tall window on an 874-tall screen — but positioned _below_ the
+status bar rather than shifted up under it. `env(safe-area-inset-top)` is 0
+because the page truthfully never reaches that band. The bottom is right: box
+bottom 790 is screen y=852, clearing the home indicator by the 22 D101 asks for,
+with the dots carrying to the glass.
+
+So iOS reserves the status bar on both paths, and the choice was only ever which
+end of the screen to lose:
+
+|                              | top                                            | bottom                                         |
+| ---------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| legacy (`black-translucent`) | page paints under the status bar               | 62px band outside the window, controls clipped |
+| manifest-driven              | 62px band reserved, painted with `theme_color` | window reaches the glass                       |
+
+The band is `#0a0a0a`, the board's own near-black, so what is actually lost up
+there is the dot grid and any image that would have slid under the clock. Losing
+that beats losing the controls.
+
+**Reverses if:** an iOS version extends a manifest-driven standalone window
+under the status bar — `env(safe-area-inset-top)` going non-zero on this path is
+the signal, and the About row reports it.
 
 **Requires a reinstall.** These metas are read when the home screen icon is
 created; an existing icon keeps the old window.
