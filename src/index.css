@@ -96,6 +96,15 @@
      Chrome and Safari accept that alias, which is why this survived review;
      Firefox does not, and the glass was flat there. It adds the prefix itself. */
   backdrop-filter: blur(4px) saturate(180%);
+  /* The other half of D107, on the sampling side. Safari blurs a copy of the
+     backdrop rather than live pixels, and it is free to drop or reuse that copy
+     while the board underneath is being transformed; naming the filter as
+     something that changes keeps it on a layer that is resampled rather than
+     one that is snapshotted. Paired with the scene declaring its own transform,
+     so both ends of the sampling are pinned. No `translate3d(0, 0, 0)` here:
+     that would promote every glass control on the screen, and it is the next
+     thing to try rather than the first. */
+  will-change: backdrop-filter;
   box-shadow:
     inset 0 1px 0 0
       color-mix(in srgb, var(--color-neutral-100) 10%, transparent),

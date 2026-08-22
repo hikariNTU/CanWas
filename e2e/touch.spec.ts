@@ -419,6 +419,23 @@ test("the chrome holds itself clear of a cutout", async ({ page }) => {
   );
 });
 
+test("the scene stays on its own layer, gesture or no gesture", async ({
+  page,
+}) => {
+  // Not a performance hint. Safari blurs a copy of the backdrop rather than
+  // live pixels, and a layer promoted at the start of a gesture and demoted at
+  // the end leaves that copy holding an old raster — the glass showing the
+  // board at the wrong scale (D107). Nothing here can see a WebKit compositing
+  // bug; what a test can hold is that the declaration is still on the scene.
+  await page.goto("?engine=mock#/board");
+  const scene = page.getByTestId("canvas-scene");
+  // Attached, not visible: an empty board's scene has no size of its own.
+  await expect(scene).toBeAttached();
+  expect(
+    await scene.evaluate((element) => getComputedStyle(element).willChange),
+  ).toBe("transform");
+});
+
 test("the board is the size of the screen, not of its ancestors", async ({
   page,
 }) => {

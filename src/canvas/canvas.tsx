@@ -264,7 +264,14 @@ export function Canvas({ boardId }: { boardId: string }) {
         <div
           ref={sceneRef}
           data-testid="canvas-scene"
-          className="absolute top-0 left-0 origin-top-left"
+          // `will-change: transform` for a reason that is not performance: it
+          // keeps the scene on a composited layer instead of being promoted at
+          // the start of every gesture and demoted at the end. Safari samples a
+          // `backdrop-filter` from a copy of the backdrop rather than from live
+          // pixels, and around that promotion the copy it holds is the layer's
+          // old raster — so the glass chrome showed the board at the wrong
+          // scale, a snapshot rather than what was under it (D107).
+          className="absolute top-0 left-0 origin-top-left will-change-transform"
           style={{ transform: sceneTransform(viewport) }}
         >
           <div

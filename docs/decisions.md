@@ -3141,3 +3141,36 @@ the signal, and the About row reports it.
 
 **Requires a reinstall.** These metas are read when the home screen icon is
 created; an existing icon keeps the old window.
+
+## D107 — The glass samples a snapshot, not the board
+
+Reported from an iPhone: the glass chrome blurs something that is not what is
+under it — the board at the wrong scale, a frame behind the gesture.
+
+Safari does not blur live pixels. It copies the backdrop into a layer and blurs
+the copy, and which copy it gets depends on how the content underneath is
+composited. The scene carries `translate(...) scale(...)`, rewritten on the DOM
+every frame during a gesture (D77), which promotes it to its own composited
+layer at the start of a gesture and demotes it at the end. Around that boundary
+the copy the blur holds is the old raster, at the old scale.
+
+Both ends are pinned rather than one:
+
+- The scene declares `will-change: transform`, so it stays composited instead of
+  being promoted and demoted around every gesture.
+- The glass declares `will-change: backdrop-filter`, so the filter is named as
+  something that changes rather than something that can be snapshotted and
+  reused.
+
+Not `transform: translate3d(0, 0, 0)` on the glass, which is the other common
+prescription. It would promote every glass control on screen — there are eight
+of them on a phone — and it is the next thing to try, not the first.
+
+Neither declaration can be verified here. A WebKit compositing bug does not
+reproduce in Chromium, and no assertion about layers is available to a test; all
+a test can hold is that the declarations are still on the elements, which is
+what `the scene stays on its own layer` does. This one is device-verified or it
+is not verified, and it is worth being plain about which.
+
+**Reverses if:** the device says it did not work, in which case `translate3d` on
+the glass is next and dropping the blur during a gesture after that.
